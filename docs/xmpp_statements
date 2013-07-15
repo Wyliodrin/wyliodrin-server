@@ -1,0 +1,16 @@
+<message>
+-->	<shells xmlns="wyliodrin" action="open" request="id"/>
+<--	<shells xmlns="wyliodrin" action="done" request="id"/>
+<--	<shells xmlns="wyliodrin" action="error" request="id"/>
+
+-->	<shells xmlns="wyliodrin" id="" action="close" request="id"/>
+
+-->	<shells xmlns="wyliodrin" id="" action="keys">data</shell>
+<--	<shells xmlns="wyliodrin" id="" action="keys">data</shell>
+
+-->	<shells xmlns="wyliodrin" id="" action="list">data</shell>
+<--	<shells xmlns="wyliodrin" id="" action="list">
+		<shell id="" command=""/>
+	</shells>
+
+</message>
