@@ -1,4 +1,4 @@
- #define _XOPEN_SOURCE 600
+#define _XOPEN_SOURCE 600
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -11,17 +11,23 @@
 #include <errno.h>
 #include <sys/epoll.h>
 #include <pthread.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <pthread.h>
 
 #include "shell.h"
  
 
 static shell* shell_list[MAX_SHELLS];	
-static int id = 0;
 static int efd;
 static char *received_keys;
 static int epoll_events = MAX_SHELLS;
 
 static keys_pressed function_keys_pressed = NULL;
+
+static pthread_t shell_thread;
+
+static int shell_exit = 0;
 
 shell* find_shell_fd(int fd, int *write)
 {
@@ -153,8 +159,7 @@ shell * create_shell_id()
 			}
 			else
 			{
-				id++;
-				shell_list[i]->id = id;
+				shell_list[i]->id = i;
 			}
 		}
 		else
@@ -277,6 +282,7 @@ int create_shell()
 
 			current_shell->fdm = fdm;
 			current_shell->fdm_write = fd;
+			current_shell->pid = pid;
 
 			struct epoll_event ev;
 
@@ -291,12 +297,12 @@ int create_shell()
 		return SHELL_ECREATE;
 }
 
-int run_shell()
+void * shell_start(void * data)
 {
 	int rc;
 	int write;
 
-	while(1)
+	while(!shell_exit)
 	{
 		// printf("while\n");
 		struct epoll_event ret_ev;
@@ -331,7 +337,7 @@ int run_shell()
 		          	{
 		            	if (rc < 0)
 		            	{
-		              		return SHELL_READ;
+		              		// TODO log this
 		            	}
 		          	}
 				}
@@ -344,6 +350,16 @@ int run_shell()
 		}
         else perror ("epoll_wait");
 	}
+	return NULL;
+}
+
+int run_shell ()
+{
+	if (pthread_create (&shell_thread, NULL, shell_start, NULL)<0)
+	{
+		return SHELL_THREAD;
+	}
+	return SHELL_OK;
 }
 
 
@@ -400,6 +416,42 @@ void * start_th()
 void set_keys_pressed (keys_pressed keys)
 {
 	function_keys_pressed = keys;
+}
+
+int send_signal_terminal(int pid, int signal, int times)
+{
+	int i;
+	int status;
+	for(i=0; i<times; i++)
+	{
+		kill(pid,signal);
+		if(waitpid(pid,&status,WNOHANG) == pid)
+			return SHELL_OK;
+		usleep(100);
+	}
+	return SHELL_TERM;
+}
+void close_shell(int id)
+{
+	shell * current_shell = find_shell_id(id);
+	if (current_shell == NULL) return;
+	free(current_shell->sent_keys);
+	if(current_shell->in_epoll == 1)
+	{
+		epoll_ctl(efd, EPOLL_CTL_DEL, current_shell->fdm_write, NULL);
+		epoll_events--;
+	}
+	epoll_ctl(efd, EPOLL_CTL_DEL, current_shell->fdm, NULL);
+	if(close(current_shell->fdm_write)<0)
+		//TODO log this
+	if(close(current_shell->fdm)<0)
+		//TODO log this
+	if(send_signal_terminal(current_shell->pid, SIGTERM, 5) != SHELL_OK)
+	{
+		send_signal_terminal(current_shell->pid, SIGKILL, 2);
+	}
+	free(current_shell);
+	shell_list[id] = NULL;
 }
 
 /*int main()

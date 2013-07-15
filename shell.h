@@ -26,6 +26,9 @@
 #define SHELL_READ	-17
 #define SHELL_BUFFER_FULL	-18
 #define SHELL_DUP	-19
+#define SHELL_CLOSE	-20
+#define SHELL_TERM	-21
+#define SHELL_THREAD -22
 	
 
 
@@ -33,6 +36,7 @@ typedef struct s_shell{
 	int id;
 	int fdm;
 	int fdm_write;
+	int pid;
 	char *sent_keys;
 	int no_mem_keys;
 	int in_epoll;
@@ -45,5 +49,5 @@ int create_shell();
 int run_shell();
 int send_keys_to_shell(int id, char * buf, int n);
 void set_keys_pressed (keys_pressed keys);
-	
+void close_shell(int id);	
 #endif

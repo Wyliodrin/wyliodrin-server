@@ -12,6 +12,15 @@ int shellid;
 
 void function_keys_pressed (int id, char *buffer, int n)
 {
+	if (wxmpp_get_context()==NULL)
+	{
+		int i;
+		for (i=0; i<n; i++)
+		{
+			putc (buffer[i], stdout);
+		}
+		return;
+	}
 	size_t nokeys;
 	char *keys = wxmpp_base64_encode (buffer, n, &nokeys);
 	// char *keys = x16_encode (buffer, n);
@@ -58,8 +67,14 @@ int main ()
 {
 	init_shells ();
 	set_keys_pressed (function_keys_pressed);
-	wxmpp_connect ("pi@wyliodrin.com", "123456", "raspberry", NULL, 0);
-	wxmpp_tag_add (SHELLS_TAG, shell_tag);
+	//wxmpp_connect ("pi@wyliodrin.com", "123456", "raspberry", NULL, 0);
+	//wxmpp_tag_add (SHELLS_TAG, shell_tag);
 	run_shell ();
-	wxmpp_wait ();
+
+	int id = create_shell ();
+	sleep (10);
+	close_shell (id);	
+
+	//wxmpp_wait ();
+
 }

@@ -126,6 +126,7 @@ void wxmpp_connection_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t 
 void * wxmpp_start (void *data)
 {
 	xmpp_run (context);
+	return NULL;
 }
 
 int wxmpp_connect (const char *jid, const char *password, const char *resource, const char *domain, int port)
