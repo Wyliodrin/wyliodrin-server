@@ -13,7 +13,7 @@ You need to install the following libraries:
 
 ###Raspbian
 
-    sudo apt-get install libexpat1 libexpat1-dev libresolv
+    sudo apt-get install libexpat1 libexpat1-dev
 
 Download [libstrophe](https://github.com/strophe/libstrophe) and compile it
 
