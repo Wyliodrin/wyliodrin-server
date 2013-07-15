@@ -20,7 +20,7 @@ Download [libstrophe](https://github.com/strophe/libstrophe) and compile it
     ./bootstrap
     ./configure
     make
-    make install
+    sudo make install
 
 
     
