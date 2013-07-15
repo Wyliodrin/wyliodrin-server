@@ -13,8 +13,16 @@ You need to install the following libraries:
 
 ###Raspbian
 
-    sudo apt-get install libexpat1 libexpat1-dev
+    sudo apt-get install libexpat1 libexpat1-dev libssl-dev
 
 Download [libstrophe](https://github.com/strophe/libstrophe) and compile it
+    
+    ./bootstrap
+    ./configure
+    make
+    make all
+
+
+    
 
 
