@@ -11,7 +11,9 @@ You need to install the following libraries:
 * [libexpat](http://expat.sourceforge.net/)
 
 ###Raspbian
-command (sudo apt-get install libexpat1 libexpat1-dev)
+
+    sudo apt-get install libexpat1 libexpat1-dev)
+
 Download [libstrophe](https://github.com/strophe/libstrophe) and compile it
 
 
