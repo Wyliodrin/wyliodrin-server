@@ -1,5 +1,6 @@
 # Object files
 *.o
+a.out
 wyliodrind
 
 # Logs
