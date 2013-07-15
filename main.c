@@ -26,7 +26,7 @@ void function_keys_pressed (int id, char *buffer, int n)
 	// char *keys = x16_encode (buffer, n);
 	printf ("%s\n", keys);
 	xmpp_stanza_t *shells = xmpp_stanza_new (wxmpp_get_context ());
-	xmpp_stanza_set_name (shells, "shells");
+	xmpp_stanza_set_name (shells, SHELLS_TAG);
 	xmpp_stanza_set_ns (shells, "wyliodrin");
 	xmpp_stanza_set_attribute (shells, "action", "keys");
 	xmpp_stanza_t *value = xmpp_stanza_new (wxmpp_get_context());
