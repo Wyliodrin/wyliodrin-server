@@ -67,14 +67,14 @@ int main ()
 {
 	init_shells ();
 	set_keys_pressed (function_keys_pressed);
-	//wxmpp_connect ("pi@wyliodrin.com", "123456", "raspberry", NULL, 0);
-	//wxmpp_tag_add (SHELLS_TAG, shell_tag);
+	wxmpp_connect ("pi@wyliodrin.com", "123456", "raspberry", NULL, 0);
+	wxmpp_tag_add (SHELLS_TAG, shell_tag);
 	run_shell ();
 
-	int id = create_shell ();
-	sleep (10);
-	close_shell (id);	
+	// int id = create_shell ();
+	// sleep (10);
+	// close_shell (id);	
 
-	//wxmpp_wait ();
+	wxmpp_wait ();
 
 }
