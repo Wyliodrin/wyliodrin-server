@@ -13,7 +13,7 @@ You need to install the following libraries:
 
 ###Raspbian
 
-    sudo apt-get install libexpat1 libexpat1-dev libssl-dev
+    sudo apt-get install libexpat1 libexpat1-dev automake libssl-dev
 
 Download [libstrophe](https://github.com/strophe/libstrophe) and compile it
     
