@@ -7,7 +7,7 @@ Wyliodrin Server
 Libaries
 --------
 You need to install the following libraries:
-* [libstrophe](http://strophe.im/libstrophe/)
+* [libstrophe](http://strophe.im/libstrophe/) (fixed for wyliodrin)
 * [libexpat](http://expat.sourceforge.net/)
 * libresolv
 
