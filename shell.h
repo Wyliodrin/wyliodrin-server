@@ -49,5 +49,6 @@ int create_shell();
 int run_shell();
 int send_keys_to_shell(int id, char * buf, int n);
 void set_keys_pressed (keys_pressed keys);
-void close_shell(int id);	
+void close_shell(int id);
+void close_session();	
 #endif

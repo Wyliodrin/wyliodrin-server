@@ -22,6 +22,7 @@ static shell* shell_list[MAX_SHELLS];
 static int efd;
 static char *received_keys;
 static int epoll_events = MAX_SHELLS;
+pthread_mutex_t mutex_id, mutex_write;
 
 static keys_pressed function_keys_pressed = NULL;
 
@@ -84,44 +85,6 @@ shell* find_shell_id(int id)
 			return shell_list[i];
 }
 
-int write_keys(shell * sh)
-{
-	int no_written;
-	no_written = write(sh->fdm, sh->sent_keys, sh->no_mem_keys);
-	if(no_written < 0)
-		return SHELL_WRITE;
-	else
-	{
-		if(no_written == sh->no_mem_keys)
-		{
-			memset(sh->sent_keys, 0, sh->no_mem_keys);
-			sh->no_mem_keys = 0;			
-			if(sh->in_epoll == 1)
-			{
-				epoll_ctl(efd, EPOLL_CTL_DEL, sh->fdm_write, NULL);
-				sh->in_epoll = 0;
-				epoll_events--;	
-			}			
-		}
-		else
-		{
-			sh->no_mem_keys = sh->no_mem_keys - no_written;
-			sh->sent_keys = memmove(sh->sent_keys,sh->sent_keys+no_written, sh->no_mem_keys);
-			if(sh->in_epoll == 0)
-			{
-				struct epoll_event ev;
-				ev.data.fd = sh->fdm_write;
-				ev.events = EPOLLOUT;
-				if(epoll_ctl(efd, EPOLL_CTL_ADD, sh->fdm_write, &ev) != 0)
-					return SHELL_EPOLL_CTL;	
-				epoll_events++;
-				sh->in_epoll = 1;
-			}
-		}
-
-	}
-	return SHELL_OK;
-}
 
 
 int init_shells ()
@@ -135,6 +98,8 @@ int init_shells ()
 	{ 
 		shell_list[i] = NULL;
 	}
+	pthread_mutex_init(&mutex_id, NULL);
+	pthread_mutex_init(&mutex_write, NULL);
 	received_keys = malloc(MAX_KEYS * sizeof(char));
 	if (received_keys == NULL)
 		return SHELL_MALLOC;
@@ -143,6 +108,7 @@ int init_shells ()
 
 shell * create_shell_id()
 {
+	pthread_mutex_lock(&mutex_id);
 	int i = 0;
 	int found = 0;
 	while(i<MAX_SHELLS && found == 0)
@@ -167,6 +133,7 @@ shell * create_shell_id()
 			i++;
 		}
 	}
+	pthread_mutex_unlock(&mutex_id);
 	if(found == 0)
 		return NULL;//SHELL_LIST_FULL;
 	//printf("sh[0] = %p\n",shell_list[0]);
@@ -343,7 +310,7 @@ void * shell_start(void * data)
 				}
 				else
 				{
-					write_keys(current_shell);
+					write_keys(current_shell,"",0);
 				}
 				
 			}
@@ -362,28 +329,71 @@ int run_shell ()
 	return SHELL_OK;
 }
 
+int write_keys(shell * sh, char * buf, int n)
+{
+	pthread_mutex_lock(&mutex_write);
+	int no_written;
+	int full = 0;
+	if((n + sh->no_mem_keys) > MAX_KEYS)
+	{
+		sh->sent_keys = memcpy(sh->sent_keys + sh->no_mem_keys, buf, MAX_KEYS - sh->no_mem_keys);
+		sh->no_mem_keys = MAX_KEYS;
+		full = 1;
+	}
+	else
+	{
+		sh->sent_keys = memcpy(sh->sent_keys + sh->no_mem_keys, buf, n);
+		sh->no_mem_keys = sh->no_mem_keys + n;
+	}
+	no_written = write(sh->fdm, sh->sent_keys, sh->no_mem_keys);
+	if(no_written < 0)
+	{
+		//TODO write error
+	}
+	else
+	{
+		if(no_written == sh->no_mem_keys)
+		{
+			memset(sh->sent_keys, 0, sh->no_mem_keys);
+			sh->no_mem_keys = 0;			
+			if(sh->in_epoll == 1)
+			{
+				epoll_ctl(efd, EPOLL_CTL_DEL, sh->fdm_write, NULL);
+				sh->in_epoll = 0;
+				epoll_events--;	
+			}			
+		}
+		else
+		{
+			sh->no_mem_keys = sh->no_mem_keys - no_written;
+			sh->sent_keys = memmove(sh->sent_keys,sh->sent_keys+no_written, sh->no_mem_keys);
+			if(sh->in_epoll == 0)
+			{
+				struct epoll_event ev;
+				ev.data.fd = sh->fdm_write;
+				ev.events = EPOLLOUT;
+				if(epoll_ctl(efd, EPOLL_CTL_ADD, sh->fdm_write, &ev) != 0)
+					//TODO epoll add	
+				epoll_events++;
+				sh->in_epoll = 1;
+			}
+		}
+	}
+	pthread_mutex_unlock(&mutex_write);
+	if (full == 1)
+		return SHELL_BUFFER_FULL;
+	else
+		return SHELL_OK;
+}
 
 int send_keys_to_shell(int id, char * buf, int n)
 {
 	int rc;
 	shell * current_shell = find_shell_id(id);
+
 	if(current_shell != NULL)
 	{
-		if((n + current_shell->no_mem_keys) > MAX_KEYS)
-		{
-			current_shell->sent_keys = memcpy(current_shell->sent_keys+current_shell->no_mem_keys, buf, MAX_KEYS - current_shell->no_mem_keys);
-			current_shell->no_mem_keys = MAX_KEYS;
-			if(rc = write_keys(current_shell) == 0)
-				return SHELL_BUFFER_FULL;	
-			else
-				return rc;
-		}
-		else
-		{
-			current_shell->sent_keys = memcpy(current_shell->sent_keys+current_shell->no_mem_keys, buf, n);
-			current_shell->no_mem_keys = current_shell->no_mem_keys + n;
-			return write_keys(current_shell);
-		}
+		 return write_keys(current_shell, buf, n);
 	}
 	else
 		return SHELL_NULL;
@@ -452,6 +462,13 @@ void close_shell(int id)
 	}
 	free(current_shell);
 	shell_list[id] = NULL;
+}
+
+void close_session()
+{
+	free(received_keys);
+	pthread_mutex_destroy(&mutex_id);
+	pthread_mutex_destroy(&mutex_write);
 }
 
 /*int main()
