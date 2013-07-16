@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <strophe.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "libds/ds.h"
 
@@ -17,6 +18,25 @@ static xmpp_conn_t *connection;
 static hashmap_p tags = NULL;
 
 static pthread_t xmpp_thread;
+
+static pthread_mutex_t send_mutex;
+
+static int sending = 0;
+
+int xmpp_handler_send (xmpp_conn_t *connection, void *const userdata)
+{
+	xmpp_stanza_t *stanza = (xmpp_stanza_t*)userdata;
+	xmpp_send (connection, stanza);
+	xmpp_stanza_release (stanza);
+	return 0;
+}
+
+void wxmpp_thread_send (xmpp_conn_t *connection, xmpp_stanza_t *stanza)
+{
+	// pthread_mutex_lock (&send_mutex);
+	xmpp_timed_handler_add (connection, xmpp_handler_send, 0, stanza);
+	// pthread_mutex_unlock (&send_mutex);
+}
 
 void wylio (const char *from, const char *to, int error, xmpp_stanza_t *stanza)
 {
@@ -146,8 +166,8 @@ int wxmpp_connect (const char *jid, const char *password, const char *resource, 
     xmpp_log_t *log = xmpp_get_default_logger (XMPP_LEVEL_DEBUG);
 
     /* create a context */
-    context = xmpp_ctx_new(NULL, log);
-    // context = xmpp_ctx_new(NULL, NULL);
+    // context = xmpp_ctx_new(NULL, log);
+    context = xmpp_ctx_new(NULL, NULL);
 
     /* create a connection */
     connection = xmpp_conn_new(context);
@@ -170,6 +190,8 @@ int wxmpp_connect (const char *jid, const char *password, const char *resource, 
     
     wxmpp_tag_add ("wylio", wylio);
     
+    pthread_mutex_init (&send_mutex, NULL);
+
     if (pthread_create (&xmpp_thread, NULL, wxmpp_start, NULL))
     {
     	wxmpp_disconnect ();
@@ -181,16 +203,17 @@ int wxmpp_connect (const char *jid, const char *password, const char *resource, 
 int wxmpp_disconnect ()
 {
 	// TODO MUTEX
-	
+	pthread_mutex_destroy (&send_mutex);
+
 	// TAGS
 	destroy_hashmap (tags);
 	tags = NULL;
 	
 	xmpp_stop (context);
 	/* release our connection and context */
-    xmpp_conn_release(connection);
+    // xmpp_conn_release(connection);
     connection = NULL;
-    xmpp_ctx_free(context);
+    // xmpp_ctx_free(context);
     context = NULL;
 
     /* shutdown lib */

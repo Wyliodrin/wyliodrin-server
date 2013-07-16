@@ -15,7 +15,7 @@ You need to install the following libraries:
 
     sudo apt-get install libexpat1 libexpat1-dev automake libssl-dev
 
-Download [libstrophe](https://github.com/strophe/libstrophe) and compile it
+Download [libstrophe](https://github.com/alexandruradovici/wyliodrin-libstrophe) fixed for wyliodrin and compile it
     
     ./bootstrap
     ./configure
