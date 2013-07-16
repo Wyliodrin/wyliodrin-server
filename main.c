@@ -26,7 +26,7 @@ void function_keys_pressed (int id, char *buffer, int n)
 	// char *keys = x16_encode (buffer, n);
 	printf ("%s\n", keys);
 	xmpp_stanza_t *shells = xmpp_stanza_new (wxmpp_get_context ());
-	xmpp_stanza_set_name (shells, "shells");
+	xmpp_stanza_set_name (shells, SHELLS_TAG);
 	xmpp_stanza_set_ns (shells, "wyliodrin");
 	xmpp_stanza_set_attribute (shells, "action", "keys");
 	xmpp_stanza_t *value = xmpp_stanza_new (wxmpp_get_context());
@@ -67,14 +67,14 @@ int main ()
 {
 	init_shells ();
 	set_keys_pressed (function_keys_pressed);
-	//wxmpp_connect ("pi@wyliodrin.com", "123456", "raspberry", NULL, 0);
-	//wxmpp_tag_add (SHELLS_TAG, shell_tag);
+	wxmpp_connect ("pi@wyliodrin.com", "123456", "raspberry", NULL, 0);
+	wxmpp_tag_add (SHELLS_TAG, shell_tag);
 	run_shell ();
 
-	int id = create_shell ();
-	sleep (10);
-	close_shell (id);	
+	// int id = create_shell ();
+	// sleep (10);
+	// close_shell (id);	
 
-	//wxmpp_wait ();
+	wxmpp_wait ();
 
 }
