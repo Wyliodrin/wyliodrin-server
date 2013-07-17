@@ -1,4 +1,3 @@
-
 #include "xmpp.h"
 
 #include <stdio.h>
