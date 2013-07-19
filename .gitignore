@@ -2,6 +2,7 @@
 *.o
 a.out
 wyliodrind
+files
 
 # Logs
 *.log
