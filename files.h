@@ -45,5 +45,6 @@ int remove_file(char *path);
 int create_folder(char *path, int permission);
 int create_file(char *path);
 int write_to_file(char *path, char *buf, int mode);
+void file_tag(const char *from, const char *to, int error, xmpp_stanza_t *stanza);
 
 #endif
