@@ -13,5 +13,18 @@
 		<shell id="" command=""/>
 	</shells>
 
+--> <files xmlns="wyliodrin" action="list"/>
+<-- <files xmlns="wyliodrin" action="list">
+		<files file=""/>
+	</files>
+
+--> <files xmlns="wyliodrin" action="delete" path=""/>
+<-- <files xmlns="wyliodrin" action="delete" path=""/>
+
+--> <files xmlns="wyliodrin" action="create" type="file/folder" path="" permissions=""/>
+<-- <files xmlns="wyliodrin" action="create" type="file/folder" path="" permissions=""/>
+
+--> <files xmlns="wyliodrin" action="write" mode="a/w" file="">data</files>
+<-- <files xmlns="wyliodrin" action="write" mode="a/w" file="">data</files>
 
 </message>

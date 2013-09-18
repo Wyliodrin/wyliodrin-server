@@ -8,7 +8,8 @@
 
 #include "files.h"
 
-char **list_files(char *path, int *n)
+
+char** list_files(char *path, int *n)
 {
 	if(path_ok)
     {
@@ -29,12 +30,11 @@ char **list_files(char *path, int *n)
                 files[i] = namelist[i]->d_name;
                 free(namelist[i]);
             }
-            free(namelist);
-            return files;
+            free(namelist);   
+            return files;      
         }        
     }
-    else
-        return NULL;	
+    return NULL;
 }
 
 file *get_file_info(char *path)
@@ -105,35 +105,50 @@ file *get_file_info(char *path)
     return NULL;
 }
 
-void create_folder(char *path, int permission)
+int create_folder(char *path, int permission)
 {
     struct stat st = {0};
     if(path_ok)
     {
         if (stat(path, &st) == -1)
             if(permission != 0)
-            mkdir(path, permission);
-        else
-            mkdir(path,IMPLICIT_FOLDER_PERMISSION);
+            {
+                mkdir(path, permission);
+                return FILE_OK;
+            }
+             else
+            {
+                mkdir(path,IMPLICIT_FOLDER_PERMISSION);
+                return FILE_OK;
+            }
+        return FILE_E_CREATE;
     }
+    else
+        return FILE_E_PATH;
 }
 
-void remove_file(char *path)
+int remove_file(char *path)
 {
     if(path_ok)
+    {
         remove(path);
+        return FILE_OK;
+    }
+     return FILE_E_PATH;
 }
 
-void create_file(char *path)
+int create_file(char *path)
 {
     if(path_ok)
     {
         FILE *f = fopen(path, "w");
-        fclose(f);    
-    }    
+        fclose(f);  
+        return FILE_OK;  
+    } 
+    return FILE_E_PATH;   
 }
 
-void write_to_file(char *path, char *buf, int mode)
+int write_to_file(char *path, char *buf, int mode)
 {
     FILE *f;
     if(path_ok)
@@ -144,8 +159,12 @@ void write_to_file(char *path, char *buf, int mode)
             f = fopen(path, "w");
         if(f != NULL)
             fprintf(f,"%s",buf);
+        else
+            return FILE_E_WRITE;
         fclose(f); 
+        return FILE_OK;
     }
+    return FILE_E_PATH;
 }
 
 int main()

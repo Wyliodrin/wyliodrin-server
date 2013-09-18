@@ -18,6 +18,11 @@
 #define SOCKET				6
 #define UNKNOWN				7
 
+#define FILE_OK				0
+#define FILE_E_CREATE		1
+#define FILE_E_WRITE		3
+#define FILE_E_PATH			4
+
 
 typedef struct  s_file
 {
@@ -26,11 +31,11 @@ typedef struct  s_file
 	long size;
 	int permission;
 }file;
-char **list_files(char *path, int *n);
+char** list_files(char *path, int *n);
 file *get_file_info(char *path);
-void remove_file(char *path);
-void create_folder(char *path, int permission);
-void create_file(char *path);
-void write_to_file(char *path, char *buf, int mode);
+int remove_file(char *path);
+int create_folder(char *path, int permission);
+int create_file(char *path);
+int write_to_file(char *path, char *buf, int mode);
 
 #endif
