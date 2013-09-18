@@ -9,7 +9,7 @@
 #include "files.h"
 
 
-char** list_files(char *path, int *n)
+files_list **list_files(char *path, int *n)
 {
 	if(path_ok)
     {
@@ -23,15 +23,29 @@ char** list_files(char *path, int *n)
             }
         else 
         {
-            char **files = malloc((*n) * sizeof(char *));
+            files_list *files = malloc((*n) * sizeof(files_list));
             int i;
             for(i=0; i<*n; i++)
             {
-                files[i] = namelist[i]->d_name;
+                files[i]->name = namelist[i]->d_name;
+                switch (namelist[i]->d_type)
+                {
+                    case DT_FIFO:   files[i]->type = FIFO;                  break;
+                    case DT_CHR :   files[i]->type = CHARACTER_DEVICE;      break;
+                    case DT_DIR :   files[i]->type = DIRECTORY;             break;
+                    case DT_BLK :   files[i]->type = BLOCK_DEVICE;          break;
+                    case DT_REG :   files[i]->type = REGULAR_FILE;          break;
+                    case DT_LNK :   files[i]->type = SYMLINK;               break;
+                    case DT_SOCK:   files[i]->type = SOCKET;                break;
+                    default     :   files[i]->type = UNKNOWN;               break;
+                }
+
                 free(namelist[i]);
+                namelist[i] = NULL;
             }
-            free(namelist);   
-            return files;      
+            free(namelist);
+            namelist = NULL; 
+            return &files;      
         }        
     }
     return NULL;

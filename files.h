@@ -20,18 +20,26 @@
 
 #define FILE_OK				0
 #define FILE_E_CREATE		1
+#define FILE_E_UNKNOWN		2
 #define FILE_E_WRITE		3
 #define FILE_E_PATH			4
 
 
+
 typedef struct  s_file
 {
-	int type;
+	char type;
 	time_t atime,stime,mtime;
 	long size;
 	int permission;
 }file;
-char** list_files(char *path, int *n);
+
+typedef struct s_files_list
+{
+	char type;
+	char *name;
+}files_list;
+files_list** list_files(char *path, int *n);
 file *get_file_info(char *path);
 int remove_file(char *path);
 int create_folder(char *path, int permission);

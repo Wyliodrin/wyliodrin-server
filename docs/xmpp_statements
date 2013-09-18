@@ -13,10 +13,16 @@
 		<shell id="" command=""/>
 	</shells>
 
---> <files xmlns="wyliodrin" action="list"/>
-<-- <files xmlns="wyliodrin" action="list">
-                <folder name=""/>
+--> <files xmlns="wyliodrin" action="list" path="" id=""/>
+<-- <files xmlns="wyliodrin" id="" error="">
+        <directory name=""/>
 		<file name=""/>
+		<pipe name=""/>
+		<character_device name=""/>
+		<block_device name=""/>
+		<link name=""/>
+		<socket name=""/>
+		<unknown name=""/>
 	</files>
 
 --> <files xmlns="wyliodrin" action="delete" path=""/>
@@ -26,6 +32,4 @@
 <-- <files xmlns="wyliodrin" action="create" type="file/folder" path="" permissions=""/>
 
 --> <files xmlns="wyliodrin" action="write" mode="a/w" file="">data</files>
-<-- <files xmlns="wyliodrin" action="write" mode="a/w" file="">data</files>
-
-</message>
+<-- <files xmlns="wyliodrin" action="write" mode="a/w"
