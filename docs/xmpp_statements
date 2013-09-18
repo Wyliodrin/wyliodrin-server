@@ -15,7 +15,8 @@
 
 --> <files xmlns="wyliodrin" action="list"/>
 <-- <files xmlns="wyliodrin" action="list">
-		<files file=""/>
+                <folder name=""/>
+		<file name=""/>
 	</files>
 
 --> <files xmlns="wyliodrin" action="delete" path=""/>
