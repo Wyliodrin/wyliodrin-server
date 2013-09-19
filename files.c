@@ -343,9 +343,9 @@ void file_tag(const char *from, const char *to, int error, xmpp_stanza_t *stanza
                     case SOCKET:            xmpp_stanza_set_attribute(files, "type","socket");                break;
                     default:                xmpp_stanza_set_attribute(files, "type","unknown");               break;
                 }
-                xmpp_stanza_set_attribute(files,"atime", ctime(f->atime));
-                xmpp_stanza_set_attribute(files,"stime", ctime(f->stime));
-                xmpp_stanza_set_attribute(files,"mtime", ctime(f->mtime));
+                xmpp_stanza_set_attribute(files,"atime", ctime(&(f->atime)));
+                xmpp_stanza_set_attribute(files,"stime", ctime(&(f->stime)));
+                xmpp_stanza_set_attribute(files,"mtime", ctime(&(f->mtime)));
                 char *size = malloc(sizeof(char));
                 sprintf(size,"%l", f->size);
                 xmpp_stanza_set_attribute(files,"size", size);
@@ -373,13 +373,13 @@ int main()
     // {
     //     printf("f=%s\n",f[i]);
     // }
-    file *f = get_file_info("home/pi/iiii");
-    if(f != NULL)
-    {
-        printf("type = %d\n",f->type);
-        printf("size = %d\n", f->size);
-        printf("modif = %d\n", f->atime);
-        printf("perm = %d\n", f->permission);
-    }
+    // file *f = get_file_info("home/pi/iiii");
+    // if(f != NULL)
+    // {
+    //     printf("type = %d\n",f->type);
+    //     printf("size = %d\n", f->size);
+    //     printf("modif = %d\n", f->atime);
+    //     printf("perm = %d\n", f->permission);
+    // }
 	return 0;
 }
