@@ -25,11 +25,14 @@
 		<unknown name=""/>
 	</files>
 
---> <files xmlns="wyliodrin" action="delete" path=""/>
-<-- <files xmlns="wyliodrin" action="delete" path=""/>
+--> <files xmlns="wyliodrin" action="delete" path="" id=""/>
+<-- <files xmlns="wyliodrin" id="" error=""/>
 
---> <files xmlns="wyliodrin" action="create" type="file/folder" path="" permissions=""/>
-<-- <files xmlns="wyliodrin" action="create" type="file/folder" path="" permissions=""/>
+--> <files xmlns="wyliodrin" action="create" type="file/folder" path="" permissions="" id=""/>
+<-- <files xmlns="wyliodrin" id="" error=""/>
 
---> <files xmlns="wyliodrin" action="write" mode="a/w" file="">data</files>
-<-- <files xmlns="wyliodrin" action="write" mode="a/w"
+--> <files xmlns="wyliodrin" action="write" mode="a/w" path="" id="">data</files>
+<-- <files xmlns="wyliodrin" id="" error=""/>
+
+--> <files xmlns="wyliodrin" action="details" path="" id=""/>
+<-- <files xmlns="wyliodrin" id="" type="directory/file/character_device/block_device/link/socket/unknown" atime="" stime="" mtime="" size="" permissions=""/>

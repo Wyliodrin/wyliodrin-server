@@ -2,6 +2,15 @@
 #define _FILES_H_
 
 #include <dirent.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <time.h>
+
+#include "xmpp.h"
 
 #define path_ok		(strncmp (path, "/", 1 ) == 0)
 
@@ -18,11 +27,12 @@
 #define SOCKET				6
 #define UNKNOWN				7
 
-#define FILE_OK				0
+#define FILE_E_OK				0
 #define FILE_E_CREATE		1
 #define FILE_E_UNKNOWN		2
 #define FILE_E_WRITE		3
 #define FILE_E_PATH			4
+#define FILE_E_MODE			5
 
 
 
@@ -39,12 +49,7 @@ typedef struct s_files_list
 	char type;
 	char *name;
 }files_list;
-files_list** list_files(char *path, int *n);
-file *get_file_info(char *path);
-int remove_file(char *path);
-int create_folder(char *path, int permission);
-int create_file(char *path);
-int write_to_file(char *path, char *buf, int mode);
+
 void file_tag(const char *from, const char *to, int error, xmpp_stanza_t *stanza);
 
 #endif
