@@ -16,6 +16,8 @@ wyliodrind:main.o shell.o xmpp.o base64.o libds
 #		gcc xmpp.o $(XMPP_LIBS) $(XMPP_LIBS_PATH) -o $@ 
 files: files.o
 	gcc files.o $(XMPP_LIBS) $(XMPP_LIBS_PATH)-o files
+f_make:	make_options.o
+	gcc make_options.o $(XMPP_LIBS) $(XMPP_LIBS_PATH) -o make_options
 libds:
 		cd libds; make
 

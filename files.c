@@ -181,7 +181,6 @@ xmpp_stanza_t *list(xmpp_stanza_t *stanza)
     char *path = xmpp_stanza_get_attribute(stanza,"path");
     if(path == NULL)
     {
-        path = malloc(sizeof(char));
         path = "/";
     }
     files_list *f_list = list_files(path, &n);
