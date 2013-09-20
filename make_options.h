@@ -9,6 +9,7 @@
 #include <sys/epoll.h>
 #include <dirent.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "xmpp.h"
 
