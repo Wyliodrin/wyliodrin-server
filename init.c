@@ -9,17 +9,23 @@
 
 #include "wyliodrin_json/wyliodrin_json.h"
 #include "internals/internals.h"
+#include "xmpp/xmpp.h"
 
 #define SLEEP_NO_CONFIG 10 * 60 /* 10 minutes of sleep in case of no config file */
 
 /**
- * Init wyliodrin client
+ * Init wyliodrin client.
+ *
+ * Read and decode settings file, get location of config file, read and decode config file,
+ * get jid and pass, connect to Wyliodrin XMPP server.
  *
  * RETURN
  *     0 : succes
  * 		-1 : NULL settings JSON
  * 		-2 : config_file value is not a string
  * 		-3 : NULL config JSON
+ *		-4 : No jid in config file
+ *		-5 : jid value is not a string
  */
 int8_t init() {
 	wlog("init()");
@@ -58,8 +64,44 @@ int8_t init() {
 		return -3;
 	}
 
-	/* Do stuff */
-	printf("Owner: %s\n", json_string_value(json_object_get(config, "owner")));
+	/* Get jid */
+	json_t *jid = json_object_get(config, "jid");
+	if(jid == NULL) {
+		json_decref(settings);
+		json_decref(config);
+
+		wlog("Return -4 due to inexistent jid in config file or error");
+		return -4;
+	}
+	if(!json_is_string(jid)) {
+		json_decref(settings);
+		json_decref(config);
+
+		wlog("Return -5 because jid value is not a string");
+		return -5;
+	}
+	const char* jid_str  = json_string_value(jid); /* jid value */
+
+	/* Get pass */
+	json_t *pass = json_object_get(config, "password");
+	if(jid == NULL) {
+		json_decref(settings);
+		json_decref(config);
+
+		wlog("Return -6 due to inexistent password in config file or error");
+		return -6;
+	}
+	if(!json_is_string(pass)) {
+		json_decref(settings);
+		json_decref(config);
+
+		wlog("Return -7 because password value is not a string");
+		return -7;
+	}
+	const char* pass_str  = json_string_value(pass); /* password value */
+
+	/* Connect to Wyliodrin XMPP server */
+	wxmpp_connect(jid_str, pass_str);
 
 	/* Cleaning */
 	json_decref(settings);

@@ -74,9 +74,3 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
   wlog("Retun 0 on success");
   return 0;
 }
-
-int main(int argc, char *argv[]) {
-  wxmpp_connect("mateirm94@wyliodrin.org", "password");
-
-  return 0;
-}
