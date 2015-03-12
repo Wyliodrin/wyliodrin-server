@@ -6,6 +6,7 @@
 #include <jansson.h> /* json_t stuff */
 #include <string.h>  /* strcmp */
 #include <unistd.h>  /* sleep */
+#include <strophe.h> /* Strophe stuff */
 
 #include "internals/internals.h"
 #include "wyliodrin_json/wyliodrin_json.h"
