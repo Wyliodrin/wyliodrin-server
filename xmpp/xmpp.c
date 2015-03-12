@@ -1,12 +1,11 @@
 /**************************************************************************************************
- * XMPP stuff
+ * XMPP stuff: connect to Wyliodrin XMPP server
  *************************************************************************************************/
 
 #include <strophe.h> /* Strophe XMPP stuff */
 
 #include "../internals/internals.h"
 #include "xmpp.h"
-#include "xmpp_handlers.h"
 
 int8_t wxmpp_connect(const char *jid, const char *pass) {
   wlog("wxmpp_connect(%s, %s)", jid, pass);
