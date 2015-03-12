@@ -2,8 +2,8 @@
  * XMPP stuff: api
  *************************************************************************************************/
 
-#ifndef _XMPP_H
-#define _XMPP_H
+#ifndef _WXMPP_H
+#define _WXMPP_H
 
 #define WXMPP_PORT 9091 /* Wyliodrin XMPP server port */
 
@@ -32,4 +32,4 @@ int wxmpp_ping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, voi
 void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
                    xmpp_stream_error_t * const stream_error, void * const userdata);
 
-#endif // _XMPP_H
+#endif // _WXMPP_H
