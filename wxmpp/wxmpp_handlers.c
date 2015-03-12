@@ -5,24 +5,7 @@
 #include <strophe.h> /* Strophe XMPP stuff */
 
 #include "../winternals/winternals.h"
-
-/* Ping handler */
-int wxmpp_ping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
-	wlog("wxmpp_ping_handler(...)");
-
-	xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-
-	xmpp_stanza_t *pong = xmpp_stanza_new(ctx); /* pong response */
-	xmpp_stanza_set_name(pong, "iq");
-	xmpp_stanza_set_attribute(pong, "to", xmpp_stanza_get_attribute(stanza, "from"));
-	xmpp_stanza_set_id(pong, xmpp_stanza_get_id(stanza));
-	xmpp_stanza_set_type(pong, "result");
-	xmpp_send(conn, pong);
-	xmpp_stanza_release(pong);
-
-	wlog("Returning 1 from wxmpp_ping_handler(...)");
-	return 1;
-}
+#include "wxmpp.h"
 
 /* Wyliodrin connection handler */
 void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
@@ -35,7 +18,10 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
     
     /* Add ping handler */
-    xmpp_handler_add(conn, wxmpp_ping_handler, "urn:xmpp:ping", "iq", "get", ctx);
+    xmpp_handler_add(conn, wping_handler, "urn:xmpp:ping", "iq", "get", ctx);
+
+    /* Add wyliodrin namespace */
+    xmpp_handler_add(conn, wyliodrin_handler, WNS, "message", NULL, ctx);
   } else if (status == XMPP_CONN_DISCONNECT) {
     werr("Connection error: status XMPP_CONN_DISCONNECT");
 
@@ -49,4 +35,28 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
   }
 
   wlog("Return from wconn_handler(...)");
+}
+
+/* Ping handler */
+int wping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
+  wlog("wxmpp_ping_handler(...)");
+
+  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+
+  xmpp_stanza_t *pong = xmpp_stanza_new(ctx); /* pong response */
+  xmpp_stanza_set_name(pong, "iq");
+  xmpp_stanza_set_attribute(pong, "to", xmpp_stanza_get_attribute(stanza, "from"));
+  xmpp_stanza_set_id(pong, xmpp_stanza_get_id(stanza));
+  xmpp_stanza_set_type(pong, "result");
+  xmpp_send(conn, pong);
+  xmpp_stanza_release(pong);
+
+  wlog("Returning 1 from wxmpp_ping_handler(...)");
+  return 1;
+}
+
+/* Wyliodrin handler */
+void wyliodrin_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
+                       xmpp_stream_error_t * const stream_error, void * const userdata) {
+  
 }

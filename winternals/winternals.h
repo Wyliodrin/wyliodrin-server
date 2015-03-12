@@ -16,6 +16,9 @@ typedef unsigned int   uint32_t;
 #define LOG_FILE stdout
 #define ERR_FILE stderr
 
+#define TRUE  1
+#define FALSE 0
+
 /* Wylidrin log used when execution enters and leaves a function */
 #ifdef LOG
   #define wlog(msg, ...) fprintf(LOG_FILE, "[wlog in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);

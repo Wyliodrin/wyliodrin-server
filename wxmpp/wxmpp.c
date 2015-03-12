@@ -53,6 +53,10 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
   xmpp_ctx_free(ctx);
   xmpp_shutdown();
 
+  /* Retry to connect */
+  wlog("Retry to connect");
+  wxmpp_connect(jid, pass);
+
   wlog("Retun 0 on success");
   return 0;
 }
