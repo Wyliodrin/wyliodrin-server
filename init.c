@@ -7,8 +7,8 @@
 #include <string.h>  /* strcmp */
 #include <unistd.h>  /* sleep */
 
-#include "wyliodrin_json/wyliodrin_json.h"
 #include "internals/internals.h"
+#include "wyliodrin_json/wyliodrin_json.h"
 #include "xmpp/xmpp.h"
 
 #define SLEEP_NO_CONFIG 10 * 60 /* 10 minutes of sleep in case of no config file */
@@ -26,6 +26,8 @@
  * 		-3 : NULL config JSON
  *		-4 : No jid in config file
  *		-5 : jid value is not a string
+ *		-6 : No password in config file
+ *		-7 : password value is not a string
  */
 int8_t init() {
 	wlog("init()");

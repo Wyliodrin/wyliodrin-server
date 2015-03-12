@@ -4,26 +4,9 @@
 
 #include <strophe.h> /* Strophe XMPP stuff */
 
-#include "../internals/internals.h" /* logs and errs */
-#include "xmpp.h" /* XMPP connection stuff */
-
-/* Wyliodrin connection handler */
-void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
-                   xmpp_stream_error_t * const stream_error, void * const userdata) {
-  wlog("wconn_handler(...)");
-
-  if (status == XMPP_CONN_CONNECT) {
-    wlog("Connection success");
-    xmpp_disconnect(conn);
-  } else {
-    werr("Connection error");
-
-    xmpp_ctx_t *ctx = (xmpp_ctx_t *)userdata;
-    xmpp_stop(ctx);
-  }
-
-  wlog("Return from wconn_handler(...)");
-}
+#include "../internals/internals.h"
+#include "xmpp.h"
+#include "xmpp_handlers.h"
 
 int8_t wxmpp_connect(const char *jid, const char *pass) {
   wlog("wxmpp_connect(%s, %s)", jid, pass);
