@@ -10,7 +10,7 @@
 
 #include "internals/internals.h"
 #include "wyliodrin_json/wyliodrin_json.h"
-#include "xmpp/xmpp.h"
+#include "wxmpp/wxmpp.h"
 
 #define SLEEP_NO_CONFIG 10 * 60 /* 10 minutes of sleep in case of no config file */
 
