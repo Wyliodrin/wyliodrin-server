@@ -5,8 +5,11 @@
 #ifndef _WXMPP_H
 #define _WXMPP_H
 
+#define TAGS_SIZE  100  /* Size of tags hashmap */
 #define WXMPP_PORT 9091 /* Wyliodrin XMPP server port */
 #define WNS "wyliodrin" /* Wyliodrin namespace */
+
+typedef void (*tag_function)(const char *from, const char *to, int error, xmpp_stanza_t *stanza);
 
 /**
  * Connect to Wyliodrin XMPP server
@@ -21,22 +24,5 @@
  *    -3 : Connection error to XMPP server
  */
 int8_t wxmpp_connect(const char *jid, const char *pass);
-
-/**
- * Ping handler
- */
-int wping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
-
-/**
- * Connection handler
- */
-void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
-                   xmpp_stream_error_t * const stream_error, void * const userdata);
-
-/**
- * Wyliodrin handler
- */
-void wyliodrin_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
-                       xmpp_stream_error_t * const stream_error, void * const userdata)
 
 #endif // _WXMPP_H

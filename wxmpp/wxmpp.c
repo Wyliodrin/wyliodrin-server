@@ -5,7 +5,11 @@
 #include <strophe.h> /* Strophe XMPP stuff */
 
 #include "../winternals/winternals.h"
+#include "../libds/ds.h"
 #include "wxmpp.h"
+#include "wxmpp_handlers.h"
+
+hashmap_p tags = NULL; /* tags hashmap */
 
 int8_t wxmpp_connect(const char *jid, const char *pass) {
   wlog("wxmpp_connect(%s, %s)", jid, pass);
@@ -45,6 +49,9 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
     return -3;
   }
 
+  /* Create tags hashmap */
+  tags = create_hashmap();
+
   /* Enter the event loop */
   xmpp_run(ctx);
 
@@ -52,6 +59,8 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
   xmpp_conn_release(conn);
   xmpp_ctx_free(ctx);
   xmpp_shutdown();
+  destroy_hashmap(tags);
+  tags = NULL;
 
   /* Retry to connect */
   wlog("Retry to connect");
