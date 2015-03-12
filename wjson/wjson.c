@@ -6,7 +6,7 @@
 #include <unistd.h>  /* read, close */
 #include <jansson.h> /* json_t stuff */
 
-#include "wyliodrin_json.h"         /* JSON stuff */
+#include "wjson.h"         /* JSON stuff */
 #include "../internals/internals.h" /* logs and errs */
 
 json_t* decode_json_text(const char *filename) {
