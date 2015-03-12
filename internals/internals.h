@@ -2,8 +2,8 @@
  * Internals of Wyliodrin: typedefs, logs, errors, etc.
  *************************************************************************************************/
 
-#ifndef _INTERNALS
-#define _INTERNALS
+#ifndef _INTERNALS_H
+#define _INTERNALS_H
 
 /* Data types */
 typedef signed char    int8_t;
@@ -30,4 +30,4 @@ typedef unsigned int   uint32_t;
   #define werr(msg, ...) /* Do nothing */
 #endif
 
-#endif // _INTERNALS 
+#endif // _INTERNALS_H 
