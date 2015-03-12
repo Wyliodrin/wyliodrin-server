@@ -8,7 +8,7 @@
 #include <unistd.h>  /* sleep */
 #include <strophe.h> /* Strophe stuff */
 
-#include "internals/internals.h"
+#include "winternals/winternals.h"
 #include "wjson/wjson.h"
 #include "wxmpp/wxmpp.h"
 

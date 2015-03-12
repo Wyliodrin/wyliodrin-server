@@ -4,7 +4,7 @@
 
 #include <strophe.h> /* Strophe XMPP stuff */
 
-#include "../internals/internals.h"
+#include "../winternals/winternals.h"
 #include "wxmpp.h"
 
 int8_t wxmpp_connect(const char *jid, const char *pass) {

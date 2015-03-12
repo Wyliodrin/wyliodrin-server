@@ -4,7 +4,7 @@
 
 #include <strophe.h> /* Strophe XMPP stuff */
 
-#include "../internals/internals.h"
+#include "../winternals/winternals.h"
 
 /* Ping handler */
 int wxmpp_ping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {

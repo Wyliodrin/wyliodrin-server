@@ -7,7 +7,7 @@
 #include <jansson.h> /* json_t stuff */
 
 #include "wjson.h"         /* JSON stuff */
-#include "../internals/internals.h" /* logs and errs */
+#include "../winternals/winternals.h" /* logs and errs */
 
 json_t* decode_json_text(const char *filename) {
 	wlog("decode_json_text(%s)", filename);

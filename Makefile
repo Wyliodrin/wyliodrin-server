@@ -6,16 +6,16 @@ CFLAGS = -DERR -DLOG
 init: init.o wjson.o wxmpp.o wxmpp_handlers.o
 	$(CC) init.o wjson.o wxmpp.o wxmpp_handlers.o -o init -ljansson -lstrophe
 
-init.o: init.c internals/internals.h wjson/wjson.h wxmpp/wxmpp.h
+init.o: init.c winternals/winternals.h wjson/wjson.h wxmpp/wxmpp.h
 	$(CC) $(CFLAGS) -c init.c
 
-wjson.o: wjson/wjson.c wjson/wjson.h internals/internals.h
+wjson.o: wjson/wjson.c wjson/wjson.h winternals/winternals.h
 	$(CC) $(CFLAGS) -c wjson/wjson.c
 
-wxmpp.o: wxmpp/wxmpp.c wxmpp/wxmpp.h internals/internals.h
+wxmpp.o: wxmpp/wxmpp.c wxmpp/wxmpp.h winternals/winternals.h
 	$(CC) $(CFLAGS) -c wxmpp/wxmpp.c
 
-wxmpp_handlers.o: wxmpp/wxmpp_handlers.c wxmpp/wxmpp.h internals/internals.h
+wxmpp_handlers.o: wxmpp/wxmpp_handlers.c wxmpp/wxmpp.h winternals/winternals.h
 	$(CC) $(CFLAGS) -c wxmpp/wxmpp_handlers.c
 
 clean:

@@ -2,8 +2,8 @@
  * Working with JSONs
  *************************************************************************************************/
 
-#ifndef _WYLIODRIN_JSON
-#define _WYLIODRIN_JSON
+#ifndef _WJSON_H
+#define _WJSON_H
 
 #define BUFFER_SIZE (1 * 1024) /* 1 KB */
 
@@ -20,4 +20,4 @@
  */
 json_t* decode_json_text(const char *filename);
 
-#endif // _WYLIODRIN_JSON 
+#endif // _WJSON_H 
