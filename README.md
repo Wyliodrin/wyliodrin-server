@@ -1,9 +1,9 @@
-WConnect - Connect board to server
+WTalk - Communication between boards and clients
 =========
 
-WConnect is a minimalist C client that allows different kinds of boards to connect to Wyliodrin server.
+WTalk is a light memory-safe C client that allows boards to communicate with clients.
 
-Further details will be available as soon as I find the motivation to write them down.
+Further details will be available as soon as I find the right motivation to write them down.
 
 Dependencies
 =========
