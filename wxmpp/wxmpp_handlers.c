@@ -24,14 +24,33 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
     /* Add ping handler */
     xmpp_handler_add(conn, wping_handler, "urn:xmpp:ping", "iq", "get", ctx);
 
-    /* Add wyliodrin namespace */
+    /* Add subscribe handler */
+    xmpp_handler_add(conn, wsubscribe_handler, NULL, "presence", "subscribe", ctx);
+
+    /* Add wyliodrin handler */
     xmpp_handler_add(conn, wyliodrin_handler, WNS, "message", NULL, ctx);
 
     /* Send presence */
     xmpp_stanza_t *pres = xmpp_stanza_new(ctx); /* Presence stanza */
     xmpp_stanza_set_name(pres, "presence");
+    xmpp_stanza_t *priority = xmpp_stanza_new (ctx); /* Priority */
+    xmpp_stanza_set_name(priority, "priority");
+    xmpp_stanza_add_child(pres, priority);
+    xmpp_stanza_t *value = xmpp_stanza_new(ctx);
+    xmpp_stanza_set_text(value, "50");
+    xmpp_stanza_add_child(priority, value);
+    xmpp_stanza_release(value);
+    xmpp_stanza_release(priority);
     xmpp_send(conn, pres);
     xmpp_stanza_release(pres);
+
+    /* Send subscribe */
+    xmpp_stanza_t *subscribe = xmpp_stanza_new(ctx); /* pong response */
+    xmpp_stanza_set_name(subscribe, "presence");
+    xmpp_stanza_set_attribute(subscribe, "to", "Matei94587@wyliodrin.org");
+    xmpp_stanza_set_type(subscribe, "subscribe");
+    xmpp_send(conn, subscribe);
+    xmpp_stanza_release(subscribe);
   } else if (status == XMPP_CONN_DISCONNECT) {
     werr("Connection error: status XMPP_CONN_DISCONNECT");
 
@@ -49,7 +68,7 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
 
 /* Ping handler */
 int wping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
-  wlog("wxmpp_ping_handler(...)");
+  wlog("w_ping_handler(...)");
 
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
 
@@ -61,7 +80,7 @@ int wping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *co
   xmpp_send(conn, pong);
   xmpp_stanza_release(pong);
 
-  wlog("Returning TRUE from wxmpp_ping_handler(...)");
+  wlog("Returning TRUE from w_ping_handler(...)");
   return TRUE;
 }
 
@@ -79,21 +98,39 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
   }
   
   /* Get every function and put the  */
-  char *ns;   /* namespace */
+  char *ns; /* namespace */
   char *name; /* name */
+  tag_function *function; /* tag function */
   xmpp_stanza_t *tag = xmpp_stanza_get_children(stanza); /* Stanza children */
   while(tag != NULL) {
     ns = xmpp_stanza_get_ns(tag);
-    if(ns!=NULL && strncasecmp(ns, WNS, strlen(WNS)) == 0) {
+    if(ns != NULL && strncasecmp(ns, WNS, strlen(WNS)) == 0) {
       name = xmpp_stanza_get_name(tag);
-      tag_function *function = hashmap_get(tags, name);
+      function = hashmap_get(tags, name);
       if(function != NULL && *function != NULL) { 
-        (*function)(xmpp_stanza_get_attribute(stanza, "from"), xmpp_stanza_get_attribute(stanza, "to"), error, tag);
+        (*function)(xmpp_stanza_get_attribute(stanza, "from"), 
+          xmpp_stanza_get_attribute(stanza, "to"), error, tag);
       }
       tag = xmpp_stanza_get_next(tag);
     }
   }
 
   wlog("Returning TRUE from wyliodrin_handler(...)");
+  return TRUE;
+}
+
+int wsubscribe_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
+  wlog("wsubscribe_handler(...)");
+
+  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+
+  xmpp_stanza_t *subscribed = xmpp_stanza_new(ctx); /* pong response */
+  xmpp_stanza_set_name(subscribed, "presence");
+  xmpp_stanza_set_attribute(subscribed, "to", "Matei94587@wyliodrin.org");
+  xmpp_stanza_set_type(subscribed, "subscribed");
+  xmpp_send(conn, subscribed);
+  xmpp_stanza_release(subscribed);
+
+  wlog("Returning TRUE from wsubscribe_handler(...)");
   return TRUE;
 }

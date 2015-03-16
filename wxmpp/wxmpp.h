@@ -25,4 +25,13 @@ typedef void (*tag_function)(const char *from, const char *to, int error, xmpp_s
  */
 int8_t wxmpp_connect(const char *jid, const char *pass);
 
+/**
+ * Add tag function
+ *
+ * PARAMETERS:
+ * 		tag - tag name 
+ * 		f   - tag function
+ */
+void wadd_tag(char *tag, tag_function f);
+
 #endif // _WXMPP_H
