@@ -11,8 +11,8 @@
 
 hashmap_p tags = NULL; /* tags hashmap */
 
-void wylio(const char *from, const char *to, int error, xmpp_stanza_t *stanza) {
-  wlog("wylio(%s, %s, %d, stanza", from, to, error);
+void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza) {
+  wlog("shells(%s, %s, %d, stanza)", from, to, error);
 }
 
 int8_t wxmpp_connect(const char *jid, const char *pass) {
@@ -56,8 +56,8 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
   /* Create tags hashmap */
   tags = create_hashmap();
 
-  /* Add wylio tag */
-  wadd_tag("wylio", wylio);
+  /* Add shells tag */
+  wadd_tag("shells", shells);
 
   /* Enter the event loop */
   xmpp_run(ctx);
@@ -78,5 +78,5 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
 }
 
 void wadd_tag(char *tag, tag_function f) {
-  hashmap_put(tags, tag, (void *)f, sizeof(void *));
+  hashmap_put(tags, tag, &f, sizeof(void *));
 }
