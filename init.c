@@ -7,12 +7,15 @@
 #include <string.h>  /* strcmp */
 #include <unistd.h>  /* sleep */
 #include <strophe.h> /* Strophe stuff */
+#include <ctype.h>   /* tolower */
 
 #include "winternals/winternals.h"
 #include "wjson/wjson.h"
 #include "wxmpp/wxmpp.h"
 
 #define SLEEP_NO_CONFIG 10 * 60 /* 10 minutes of sleep in case of no config file */
+
+const char *owner_str; /* owner */
 
 /**
  * Init wyliodrin client.
@@ -29,6 +32,8 @@
  *		-5 : jid value is not a string
  *		-6 : No password in config file
  *		-7 : password value is not a string
+ *    -8 : No owner in config file
+ *    -9 : onwer value is not a string
  */
 int8_t init() {
 	wlog("init()");
@@ -68,7 +73,7 @@ int8_t init() {
 	}
 
 	/* Get jid */
-	json_t *jid = json_object_get(config, "jid");
+	json_t *jid = json_object_get(config, "jid"); /* jid json */
 	if(jid == NULL) {
 		json_decref(settings);
 		json_decref(config);
@@ -86,8 +91,8 @@ int8_t init() {
 	const char* jid_str  = json_string_value(jid); /* jid value */
 
 	/* Get pass */
-	json_t *pass = json_object_get(config, "password");
-	if(jid == NULL) {
+	json_t *pass = json_object_get(config, "password"); /* pass json */
+	if(pass == NULL) {
 		json_decref(settings);
 		json_decref(config);
 
@@ -102,6 +107,31 @@ int8_t init() {
 		return -7;
 	}
 	const char* pass_str  = json_string_value(pass); /* password value */
+
+	/* Get owner*/
+	json_t *owner = json_object_get(config, "owner"); /* owner json */
+	if(owner == NULL) {
+		json_decref(settings);
+		json_decref(config);
+
+		wlog("Return -8 due to inexistent owner in config file or error");
+		return -8;
+	}
+	if(!json_is_string(owner)) {
+		json_decref(settings);
+		json_decref(config);
+
+		wlog("Return -9 because password value is not a string");
+		return -9;
+	}
+	owner_str = json_string_value(owner);
+
+	/* Convert owner to lowercase */
+	uint32_t i; /* browser */
+	char *p = (char *)owner_str; /* remove const-ness of owner_str */
+	for(i = 0; i < strlen(p); i++) {
+		p[i] = tolower(p[i]);
+	}
 
 	/* Connect to Wyliodrin XMPP server */
 	wxmpp_connect(jid_str, pass_str);

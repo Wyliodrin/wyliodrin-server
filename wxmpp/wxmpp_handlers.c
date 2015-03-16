@@ -11,6 +11,8 @@
 #include "wxmpp.h"
 #include "wxmpp_handlers.h"
 
+extern const char *owner_str; /* owner_str from init.c */
+
 /* Wyliodrin connection handler */
 void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
                    xmpp_stream_error_t * const stream_error, void * const userdata) {
@@ -45,9 +47,9 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
     xmpp_stanza_release(pres);
 
     /* Send subscribe */
-    xmpp_stanza_t *subscribe = xmpp_stanza_new(ctx); /* pong response */
+    xmpp_stanza_t *subscribe = xmpp_stanza_new(ctx); /* Subscribe stanza */
     xmpp_stanza_set_name(subscribe, "presence");
-    xmpp_stanza_set_attribute(subscribe, "to", "Matei94587@wyliodrin.org");
+    xmpp_stanza_set_attribute(subscribe, "to", owner_str);
     xmpp_stanza_set_type(subscribe, "subscribe");
     xmpp_send(conn, subscribe);
     xmpp_stanza_release(subscribe);
@@ -72,7 +74,7 @@ int wping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *co
 
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
 
-  xmpp_stanza_t *pong = xmpp_stanza_new(ctx); /* pong response */
+  xmpp_stanza_t *pong = xmpp_stanza_new(ctx); /* pong stanza */
   xmpp_stanza_set_name(pong, "iq");
   xmpp_stanza_set_attribute(pong, "to", xmpp_stanza_get_attribute(stanza, "from"));
   xmpp_stanza_set_id(pong, xmpp_stanza_get_id(stanza));
@@ -124,9 +126,9 @@ int wsubscribe_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, voi
 
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
 
-  xmpp_stanza_t *subscribed = xmpp_stanza_new(ctx); /* pong response */
+  xmpp_stanza_t *subscribed = xmpp_stanza_new(ctx); /* Subscribe stanza */
   xmpp_stanza_set_name(subscribed, "presence");
-  xmpp_stanza_set_attribute(subscribed, "to", "Matei94587@wyliodrin.org");
+  xmpp_stanza_set_attribute(subscribed, "to", owner_str);
   xmpp_stanza_set_type(subscribed, "subscribed");
   xmpp_send(conn, subscribed);
   xmpp_stanza_release(subscribed);
