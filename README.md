@@ -17,7 +17,7 @@ You need to install the following libraries:
 
 Download [libstrophe](https://github.com/alexandruradovici/wyliodrin-libstrophe) fixed for wyliodrin and compile it
     
-    ./bootstrap
+    ./bootstrap.sh
     ./configure
     make
     sudo make install
