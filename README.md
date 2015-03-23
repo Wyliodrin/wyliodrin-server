@@ -4,7 +4,7 @@ wyliodrin-server
 Wyliodrin Server
 
 
-Libaries
+Libraries
 --------
 You need to install the following libraries:
 * [libstrophe](http://strophe.im/libstrophe/) (fixed for wyliodrin)
