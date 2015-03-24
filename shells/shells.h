@@ -23,12 +23,17 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 /**
  * Close shell
  */
-void shells_close();
+void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 
 /**
  * Keys from shell
  */
 void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
+
+/**
+ * List
+ */
+void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 
 #endif /* SHELLS */
 

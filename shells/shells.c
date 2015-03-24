@@ -20,9 +20,11 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   if(strncasecmp(action, "open", 4) == 0) {
     shells_open(stanza, conn, userdata);
   } else if(strncasecmp(action, "close", 5) == 0) {
-    shells_close();
+    shells_close(stanza, conn, userdata);
   } else if(strncasecmp(action, "keys", 4) == 0) {
     shells_keys(stanza, conn, userdata);
+  } else if(strncasecmp(action, "list", 4) == 0) {
+    shells_list(stanza, conn, userdata);
   }
 
   wlog("Return from shells");
@@ -52,8 +54,26 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   wlog("Return from shells_open");
 }
 
-void shells_close() {
-  wlog("shells_close()");
+void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
+  wlog("shells_close(...)");
+
+  /* Send close */
+  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+
+  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with close */
+  xmpp_stanza_set_name(message, "message");
+  xmpp_stanza_set_attribute(message, "to", owner_str);
+  xmpp_stanza_t *close = xmpp_stanza_new(ctx); /* close stanza */
+  xmpp_stanza_set_name(close, "shells");
+  xmpp_stanza_set_ns(close, WNS);
+  xmpp_stanza_set_attribute(close, "shellid", "0");
+  xmpp_stanza_set_attribute(close, "action", "close");
+  xmpp_stanza_set_attribute(close, "request",
+    (const char *)xmpp_stanza_get_attribute(stanza, "request"));
+  xmpp_stanza_set_attribute(close, "code", "0");
+  xmpp_stanza_add_child(message, close);
+  xmpp_send(conn, message);
+  xmpp_stanza_release(message);
 
   wlog("Return from shells_close");
 }
@@ -80,15 +100,38 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     (const char *)xmpp_stanza_get_attribute(stanza, "shellid"));
   xmpp_stanza_set_attribute(keys, "action", "keys");
   xmpp_stanza_t *data = xmpp_stanza_new(ctx); /* data */
-  wlog("data_str = %s\n\n\n", data_str);
   xmpp_stanza_set_text(data, data_str);
-  wlog("data get text = %s\n\n\n", xmpp_stanza_get_text(data));
   xmpp_stanza_add_child(keys, data);
   xmpp_stanza_add_child(message, keys);
   xmpp_send(conn, message);
   xmpp_stanza_release(message);
 
   wlog("Return from shells_keys");
+}
+
+void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
+  wlog("shells_list(...)");
+
+  /* Send list */
+  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+
+  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with close */
+  xmpp_stanza_set_name(message, "message");
+  xmpp_stanza_set_attribute(message, "to", owner_str);
+  xmpp_stanza_t *list = xmpp_stanza_new(ctx); /* close stanza */
+  xmpp_stanza_set_name(list, "shells");
+  xmpp_stanza_set_ns(list, WNS);
+  xmpp_stanza_set_attribute(list, "action", "list");
+  xmpp_stanza_set_attribute(list, "request",
+    (const char *)xmpp_stanza_get_attribute(stanza, "request"));
+  xmpp_stanza_t *project = xmpp_stanza_new(ctx); /* project stanza */
+  xmpp_stanza_set_attribute(project, "projectid", "0");
+  xmpp_stanza_add_child(list, project);
+  xmpp_stanza_add_child(message, list);
+  xmpp_send(conn, message);
+  xmpp_stanza_release(message);
+
+  wlog("Return from shell_list");
 }
 
 #endif /* SHELLS */
