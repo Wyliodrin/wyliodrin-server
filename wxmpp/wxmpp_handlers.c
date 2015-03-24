@@ -8,7 +8,7 @@
 
 #include "../winternals/winternals.h" /* logs and errs*/
 #include "../libds/ds.h"              /* hashmap */
-#include "wxmpp.h"                    /* tag_function */
+#include "wxmpp.h"                    /* tag_function and WNS */
 #include "wxmpp_handlers.h"           /* handlers api */
 
 /* Wyliodrin connection handler */
@@ -80,7 +80,7 @@ int wping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *co
   xmpp_send(conn, pong);
   xmpp_stanza_release(pong);
 
-  wlog("Returning TRUE from w_ping_handler(...)");
+  wlog("Return TRUE from w_ping_handler(...)");
   return TRUE;
 }
 
@@ -110,7 +110,7 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
       if(function != NULL && *function != NULL) { 
         werr("Function available");
         (*function)(xmpp_stanza_get_attribute(stanza, "from"), 
-          xmpp_stanza_get_attribute(stanza, "to"), error, tag);
+          xmpp_stanza_get_attribute(stanza, "to"), error, tag, conn, userdata);
       } else {
         werr("Function not available");
       }
@@ -118,7 +118,7 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
     }
   }
 
-  wlog("Returning TRUE from wyliodrin_handler(...)");
+  wlog("Return TRUE from wyliodrin_handler(...)");
   return TRUE;
 }
 
@@ -134,6 +134,6 @@ int wsubscribe_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, voi
   xmpp_send(conn, subscribed);
   xmpp_stanza_release(subscribed);
 
-  wlog("Returning TRUE from wsubscribe_handler(...)");
+  wlog("Return TRUE from wsubscribe_handler(...)");
   return TRUE;
 }

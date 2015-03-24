@@ -5,8 +5,6 @@
 #ifndef _WXMPP_HANDLERS_H
 #define _WXMPP_HANDLERS_H
 
-#define WNS "wyliodrin" /* Wyliodrin namespace */
-
 extern hashmap_p tags;        /* tags from wxmpp.c */
 extern const char *owner_str; /* owner_str from init.c */
 
