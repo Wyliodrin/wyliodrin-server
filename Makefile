@@ -1,11 +1,11 @@
 CC = gcc
-CFLAGS = -g -Wall -DERR -DLOG
+CFLAGS = -g -Wall -DERR -DLOG -DSHELLS
 
 .PHONY: init clean
 
-init: init.o wjson.o wxmpp.o wxmpp_handlers.o libds
+init: init.o wjson.o wxmpp.o wxmpp_handlers.o shells.o libds
 	make -C libds
-	$(CC) init.o wjson.o wxmpp.o wxmpp_handlers.o libds/*.o -o init -ljansson -lstrophe
+	$(CC) init.o wjson.o wxmpp.o wxmpp_handlers.o shells.o libds/*.o -o init -ljansson -lstrophe
 
 init.o: init.c winternals/winternals.h wjson/wjson.h wxmpp/wxmpp.h
 	$(CC) $(CFLAGS) -c init.c
@@ -18,6 +18,9 @@ wxmpp.o: wxmpp/wxmpp.c wxmpp/wxmpp.h wxmpp/wxmpp_handlers.h winternals/winternal
 
 wxmpp_handlers.o: wxmpp/wxmpp_handlers.c wxmpp/wxmpp.h wxmpp/wxmpp_handlers.h winternals/winternals.h
 	$(CC) $(CFLAGS) -c wxmpp/wxmpp_handlers.c
+
+shells.o: shells/shells.c winternals/winternals.h shells/shells.h
+	$(CC) $(CFLAGS) -c shells/shells.c
 
 clean:
 	rm -f *.o init
