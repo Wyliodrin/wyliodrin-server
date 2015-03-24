@@ -7,7 +7,6 @@
 
 #define TAGS_SIZE  100  /* Size of tags hashmap */
 #define WXMPP_PORT 9091 /* Wyliodrin XMPP server port */
-#define WNS "wyliodrin" /* Wyliodrin namespace */
 
 typedef void (*tag_function)(const char *from, const char *to, int error, xmpp_stanza_t *stanza);
 

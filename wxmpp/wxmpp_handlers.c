@@ -6,12 +6,10 @@
 #include <strings.h> /* strncasecmp */
 #include <string.h>  /* strlen */
 
-#include "../winternals/winternals.h"
-#include "../libds/ds.h"
-#include "wxmpp.h"
-#include "wxmpp_handlers.h"
-
-extern const char *owner_str; /* owner_str from init.c */
+#include "../winternals/winternals.h" /* logs and errs*/
+#include "../libds/ds.h"              /* hashmap */
+#include "wxmpp.h"                    /* tag_function */
+#include "wxmpp_handlers.h"           /* handlers api */
 
 /* Wyliodrin connection handler */
 void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
@@ -99,7 +97,7 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
     error = 1;
   }
   
-  /* Get every function and put the  */
+  /* Get every function from stanza and execute it */
   char *ns; /* namespace */
   char *name; /* name */
   tag_function *function; /* tag function */

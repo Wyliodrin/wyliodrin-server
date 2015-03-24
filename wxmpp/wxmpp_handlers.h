@@ -5,7 +5,10 @@
 #ifndef _WXMPP_HANDLERS_H
 #define _WXMPP_HANDLERS_H
 
-extern hashmap_p tags;
+#define WNS "wyliodrin" /* Wyliodrin namespace */
+
+extern hashmap_p tags;        /* tags from wxmpp.c */
+extern const char *owner_str; /* owner_str from init.c */
 
 /**
  * Connection handler
@@ -25,6 +28,8 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
 
 /**
  * Subscribe handler
+ *
+ * Needed to set roster between owner and board.
  */
 int wsubscribe_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
 

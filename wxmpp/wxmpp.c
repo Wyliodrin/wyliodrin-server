@@ -4,16 +4,13 @@
 
 #include <strophe.h> /* Strophe XMPP stuff */
 
-#include "../winternals/winternals.h"
-#include "../libds/ds.h"
-#include "wxmpp.h"
-#include "wxmpp_handlers.h"
+#include "../winternals/winternals.h" /* logs and errs*/
+#include "../libds/ds.h"              /* hashmap */
+#include "wxmpp.h"                    /* wxmpp api */
+#include "wxmpp_handlers.h"           /* handlers */
+#include "../shells/shells.h"         /* shells module */
 
 hashmap_p tags = NULL; /* tags hashmap */
-
-void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza) {
-  wlog("shells(%s, %s, %d, stanza)", from, to, error);
-}
 
 int8_t wxmpp_connect(const char *jid, const char *pass) {
   wlog("wxmpp_connect(%s, %s)", jid, pass);
@@ -56,8 +53,10 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
   /* Create tags hashmap */
   tags = create_hashmap();
 
-  /* Add shells tag */
-  wadd_tag("shells", shells);
+  /* Add modules */
+  #ifdef SHELLS
+    wadd_tag("shells", shells);
+  #endif
 
   /* Enter the event loop */
   xmpp_run(ctx);
