@@ -1,4 +1,4 @@
-WTalk - Communication between boards and clients
+WTalk - Communication between boards and clients via XMPP server
 =========
 
 WTalk is a light memory-safe C client that allows boards to communicate with clients.
