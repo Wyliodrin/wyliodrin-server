@@ -4,10 +4,12 @@
 
 #include <strophe.h> /* Strophe XMPP stuff */
 #include <strings.h> /* strncasecmp */
-#include <string.h>
+#include <string.h>  /* strlen */
+#include <stdlib.h>  /* malloc */
 
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../wxmpp/wxmpp.h"           /* WNS */
+#include "../base64/base64.h"         /* encode decode */
 #include "shells.h"                   /* shells module api */
 
 #ifdef SHELLS
@@ -86,6 +88,12 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     wlog("Return from shells_keys due to NULL data");
     return;
   }
+
+  /* Decode */
+  int dec_size = strlen(data_str) * 3 / 4 + 1; /* decoded data length */
+  uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
+  base64_decode(decoded, data_str, dec_size); /* decode */
+  werr("decoded data = %s\n\n\n", decoded);
 
   /* Send back keys */
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
