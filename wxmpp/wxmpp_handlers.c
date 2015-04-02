@@ -10,6 +10,7 @@
 #include "../libds/ds.h"              /* hashmap */
 #include "wxmpp.h"                    /* tag_function and WNS */
 #include "wxmpp_handlers.h"           /* handlers api */
+#include "../shells/shells.h"
 
 /* Wyliodrin connection handler */
 void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
@@ -18,6 +19,11 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
 
   if (status == XMPP_CONN_CONNECT) {
     wlog("Connection success");
+
+    /* Init shells module */
+#   ifdef SHELLS
+    init_shells();
+#   endif
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
     

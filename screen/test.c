@@ -10,89 +10,90 @@
 #include <sys/ioctl.h>
 #include <string.h>
 
-int main(int argc, char *argv[]) {
-  int fdm, fds;
+#include <pthread.h>
+
+#define BUFSIZE (1 * 1024) /* 1 KB */
+
+void *parent_thread(void *args) {
   int rc;
   char input[150];
+  int fdm = *((int *)args);
 
-  // Check arguments
-  if (argc <= 1) {
-    fprintf(stderr, "Usage: %s program_name [parameters]\n", argv[0]);
+  write(fdm, "whoami\n", 7);
+  write(fdm, "whoami\n", 7);
+
+  while (1) {
+    rc = read(fdm, input, sizeof(input));
+    if (rc > 0) {
+      // Send data on standard output
+      write(1, "from screen: ", 14);
+      write(1, input, rc);
+    } else {
+      if (rc < 0) {
+        fprintf(stderr, "Error %d on read master PTY\n", errno);
+        exit(1);
+      }
+    }
+  }
+}
+
+int openpty(int *fdm, int *fds) {
+  int rc;
+
+  *fdm = posix_openpt(O_RDWR);
+  if (*fdm < 0) {
+    fprintf(stderr, "Error %d on posix_openpt()\n", errno);
     return -1;
   }
 
-  fdm = posix_openpt(O_RDWR);
-  if (fdm < 0) {
-    fprintf(stderr, "Error %d on posix_openpt()\n", errno);
-    return -2;
-  }
-
-  rc = grantpt(fdm);
+  rc = grantpt(*fdm);
   if (rc != 0) {
     fprintf(stderr, "Error %d on grantpt()\n", errno);
-    return -3;
+    return -1;
   }
 
-  rc = unlockpt(fdm);
+  rc = unlockpt(*fdm);
   if (rc != 0) {
     fprintf(stderr, "Error %d on unlockpt()\n", errno);
-    return -4;
+    return -1;
   }
 
   // Open the slave side ot the PTY
-  fds = open(ptsname(fdm), O_RDWR);
+  *fds = open(ptsname(*fdm), O_RDWR);
+
+  return 0;
+}
+
+int main(int argc, char *argv[]) {
+  int fdm, fds;
+  int rc;
+  int pid;
+  pthread_t t;
+
+  rc = openpty(&fdm, &fds);
+  if (rc < 0) {
+    fprintf(stderr, "Could not openpty\n");
+    return -1;
+  }
 
   // Create the child process
-  if (fork() != 0) { /* Parent */
-    fd_set fd_in;
+  pid = fork();
+  if (pid < 0) {
+    fprintf(stderr, "Could not fork\n");
+    return -1;
+  }
 
-    // Close the slave side of the PTY
+  if (pid != 0) { /* Parent */
     close(fds);
 
-    while (1) {
-      // Wait for data from standard input and master side of PTY
-      FD_ZERO(&fd_in);
-      FD_SET(0, &fd_in);
-      FD_SET(fdm, &fd_in);
+    rc = pthread_create(&t, NULL, &(parent_thread), (void *)&fdm);
+    if (rc < 0) {
+      fprintf(stderr, "Could not create thread\n");
+      return -1;
+    }
+  }
 
-      rc = select(fdm + 1, &fd_in, NULL, NULL, NULL);
-      switch(rc) {
-      case -1 :
-        fprintf(stderr, "Error %d on select()\n", errno);
-        return -5;
-
-        default : {
-          // If data on standard input
-          if (FD_ISSET(0, &fd_in)) {
-            rc = read(0, input, sizeof(input));
-            if (rc > 0) {
-              // Send data on the master side of PTY
-              write(fdm, input, rc);
-            } else {
-              if (rc < 0) {
-                fprintf(stderr, "Error %d on read standard input\n", errno);
-                exit(1);
-              }
-            }
-          }
-
-          // If data on master side of PTY
-          if (FD_ISSET(fdm, &fd_in)) {
-            rc = read(fdm, input, sizeof(input));
-            if (rc > 0) {
-              // Send data on standard output
-              write(1, input, rc);
-            } else {
-              if (rc < 0) {
-                fprintf(stderr, "Error %d on read master PTY\n", errno);
-                exit(1);
-              }
-            }
-          }
-        }
-      } // End switch
-    } // End while
-  } else { /* Child */
+  else { /* Child */
     struct termios slave_orig_term_settings; // Saved terminal settings
     struct termios new_term_settings; // Current terminal settings
 
@@ -107,14 +108,9 @@ int main(int argc, char *argv[]) {
     cfmakeraw (&new_term_settings);
     tcsetattr (fds, TCSANOW, &new_term_settings);
 
-    // The slave side of the PTY becomes the standard input and outputs of the child process
-    close(0); // Close standard input (current terminal)
-    close(1); // Close standard output (current terminal)
-    close(2); // Close standard error (current terminal)
-
-    dup(fds); // PTY becomes standard input (0)
-    dup(fds); // PTY becomes standard output (1)
-    dup(fds); // PTY becomes standard error (2)
+    dup2(fds, 0);
+    dup2(fds, 1);
+    dup2(fds, 2);
 
     // Now the original file descriptor is useless
     close(fds);
@@ -127,22 +123,18 @@ int main(int argc, char *argv[]) {
     ioctl(0, TIOCSCTTY, 1);
 
     // Execution of the program
-    {
-      char **child_av;
-      int i;
+    char *args[] = {"screen", "-r", "ses", NULL};
+    rc = execvp(args[0], args);
+    
+    /* Error */
+    fprintf(stderr, "Could not execvp\n");
+    return -1;
+  }
 
-      // Build the command line
-      child_av = (char **)malloc(argc * sizeof(char *));
-      for (i = 1; i < argc; i ++) {
-        child_av[i - 1] = strdup(argv[i]);
-      }
-      child_av[i - 1] = NULL;
-      rc = execvp(child_av[0], child_av);
-    }
-
-    // if Error...
-    return -7;
+  if (pthread_join(t, NULL)) {
+    fprintf(stderr, "Could not join\n");
+    return -1;
   }
 
   return 0;
-} // main
+}
