@@ -1,5 +1,0 @@
-whoami
-ls
-]0;matei@matrix: ~/Dropbox/Wyliodrin/Work/wyliodrin-server/pty_tutorialmatei@matrix:~/Dropbox/Wyliodrin/Work/wyliodrin-server/pty_tutorial$ matei
-]0;matei@matrix: ~/Dropbox/Wyliodrin/Work/wyliodrin-server/pty_tutorialmatei@matrix:~/Dropbox/Wyliodrin/Work/wyliodrin-server/pty_tutorial$ output.txt  [0m[01;32mtest[0m  test.c
-]0;matei@matrix: ~/Dropbox/Wyliodrin/Work/wyliodrin-server/pty_tutorialmatei@matrix:~/Dropbox/Wyliodrin/Work/wyliodrin-server/pty_tutorial$ 

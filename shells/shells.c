@@ -87,27 +87,19 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     return;
   }
 
-  int fdm, fds; /* Master and slave part of pty */
-  struct winsize ws = {w, h, 0, 0}; /* Window size */
-  if (openpty(&fdm, &fds, NULL, NULL, &ws) < 0) {
-    werr("SYSERR openpty");
-    perror("openpty");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-    return;
-  }
+  int fdm; /* Master part of pty */
+  struct winsize ws = {h, w, 0, 0}; /* Window size */
 
   /* Fork */
-  int pid = fork();
+  int pid = forkpty(&fdm, NULL, NULL, &ws);
   if (pid == -1) {
-    werr("SYSERR fork");
-    perror("fork");
+    werr("SYSERR forkpty");
+    perror("forkpty");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
   }
 
   if (pid != 0) { /* Parent */
-    close(fds);
-
     uint8_t i;
     for (i = 0; i < MAX_SHELLS; i++) {
       if (shells_vector[i] == NULL) {
@@ -141,36 +133,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   }
 
   else { /* Child */
-    struct termios slave_orig_term_settings; // Saved 1terminal settings
-    struct termios new_term_settings; // Current terminal settings
-
-    // Close the master side of the PTY
-    close(fdm);
-
-    // Save the defaults parameters of the slave side of the PTY
-    rc = tcgetattr(fds, &slave_orig_term_settings);
-
-    // Set RAW mode on slave side of PTY
-    new_term_settings = slave_orig_term_settings;
-    cfmakeraw (&new_term_settings);
-    tcsetattr (fds, TCSANOW, &new_term_settings);
-
-    dup2(fds, 0);
-    dup2(fds, 1);
-    dup2(fds, 2);
-
-    // Now the original file descriptor is useless
-    close(fds);
-
-    // Make the current process a new session leader
-    //setsid();
-
-    // As the child is a session leader, set the controlling terminal to be the slave side of the
-    // PTY (Mandatory for programs like the shell to make them manage correctly their outputs)
-    ioctl(0, TIOCSCTTY, 1);
-
-    // Execution of the program
-    char *args[] = {"screen", "-dRR", "ses", NULL};
+    char *args[] = {"bash", NULL};
     execvp(args[0], args);
     
     /* Error */
@@ -246,7 +209,7 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   /* Decode */
   int dec_size = strlen(data_str) * 3 / 4 + 1; /* decoded data length */
   uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
-  base64_decode(decoded, data_str, dec_size); /* decode */
+  int rc = base64_decode(decoded, data_str, dec_size); /* decode */
 
   char *shellid_str = xmpp_stanza_get_attribute(stanza, "shellid");
   if (shellid_str == NULL) {
@@ -262,13 +225,14 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
   /* Send decoded data to screen */
   werr("Writing to screen: *%s*", decoded);
-  write(shells_vector[shellid]->fdm, decoded, strlen((const char *)decoded));
+  write(shells_vector[shellid]->fdm, decoded, rc);
+
 
   wlog("Return from shells_keys");
 }
 
 void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
-    char *data_str, int shell_id) {
+    char *data_str, int data_len, int shell_id) {
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
 
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
@@ -283,9 +247,9 @@ void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
   xmpp_stanza_set_attribute(keys, "action", "keys");
   xmpp_stanza_t *data = xmpp_stanza_new(ctx); /* data */
 
-  char *encoded_data = (char *)malloc(BASE64_SIZE(strlen(data_str)) + 1);
-  encoded_data = base64_encode(encoded_data, BASE64_SIZE(strlen(data_str)), 
-    (const unsigned char *)data_str, strlen(data_str));
+  char *encoded_data = (char *)malloc(BASE64_SIZE(data_len));
+  encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len), 
+    (const unsigned char *)data_str, data_len);
 
   if (encoded_data == NULL) {
     werr("Could not encode\n");

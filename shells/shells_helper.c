@@ -21,11 +21,11 @@
 #include "shells.h"
 #include "shells_helper.h"
 
-#define BUFSIZE = (1 * 1024) /* 1 KB */
+#define BUFSIZE (1 * 1024) /* 1 KB */
 
 void *read_thread(void *args) {
   int rc;
-  char buf[150];
+  char buf[BUFSIZE];
   shell_t *shell = (shell_t *)args;
   int fdm = shell->fdm;
 
@@ -39,8 +39,8 @@ void *read_thread(void *args) {
     rc = read(fdm, buf, sizeof(buf));
     if (rc > 0) {
       // Send data with keys
-      write(fd_out, buf, strlen(buf));
-      send_shells_keys_response(shell->conn, (void *)shell->ctx, buf, shell->id);
+      write(fd_out, buf, rc);
+      send_shells_keys_response(shell->conn, (void *)shell->ctx, buf, rc, shell->id);
     } else if (rc < 0) {
       wlog("SYSERR read");
       perror("read");
