@@ -6,11 +6,6 @@
 #define _SHELLS_HELPER_H
 
 /**
- * Open new pty
- */
-int openpty(int *fdm, int *fds);
-
-/**
  * Read routine
  */
 void *read_thread(void *args);

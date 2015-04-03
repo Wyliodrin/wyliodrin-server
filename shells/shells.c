@@ -15,16 +15,15 @@
 #include <sys/select.h>
 #include <sys/ioctl.h>
 #include <string.h>
-
 #include <pthread.h>
-
 #include <sys/wait.h>
+#include <pty.h>
 
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../wxmpp/wxmpp.h"           /* WNS */
 #include "../base64/base64.h"         /* encode decode */
 #include "shells.h"                   /* shells module api */
-#include "shells_helper.h"            /* openpty, thread, etc */
+#include "shells_helper.h"            /* read thread */
 
 #ifdef SHELLS
 
@@ -59,13 +58,40 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
   wlog("shells_open(...)");
 
-  int fdm, fds; /* Master and slave part of pty */
   int rc; /* Return code */
   pthread_t rt; /* Read thread */
 
-  rc = openpty(&fdm, &fds); /* Open pty */
-  if (rc < 0) {
-    werr("Can't open pty");
+  char *w_str = xmpp_stanza_get_attribute(stanza, "width");
+  if (w_str == NULL) {
+    werr("No width in shells_open");
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return;
+  }
+  char *h_str = xmpp_stanza_get_attribute(stanza, "height");
+  if (h_str == NULL) {
+    werr("No height in shells_open");
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return;
+  }
+
+  long int w = strtol(w_str, NULL, 10);
+  if (w == 0) {
+    werr("Wrong width: %s", w_str);
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return;
+  }
+  long int h = strtol(h_str, NULL, 10);
+  if (h == 0) {
+    werr("Wrong height: %s", h_str);
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return;
+  }
+
+  int fdm, fds; /* Master and slave part of pty */
+  struct winsize ws = {w, h, 0, 0}; /* Window size */
+  if (openpty(&fdm, &fds, NULL, NULL, &ws) < 0) {
+    werr("SYSERR openpty");
+    perror("openpty");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
   }
@@ -137,7 +163,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     close(fds);
 
     // Make the current process a new session leader
-    setsid();
+    //setsid();
 
     // As the child is a session leader, set the controlling terminal to be the slave side of the
     // PTY (Mandatory for programs like the shell to make them manage correctly their outputs)
@@ -221,16 +247,28 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   int dec_size = strlen(data_str) * 3 / 4 + 1; /* decoded data length */
   uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
   base64_decode(decoded, data_str, dec_size); /* decode */
-  werr("decoded data = %s\n\n\n", decoded);
 
-  /* Send back keys */
-  send_shells_keys_response(stanza, conn, userdata, data_str);
+  char *shellid_str = xmpp_stanza_get_attribute(stanza, "shellid");
+  if (shellid_str == NULL) {
+    werr("No shellid id keys");
+    return;
+  }
+
+  int shellid = atoi(shellid_str);
+  if (shells_vector[shellid] == NULL) {
+    werr("Got keys from not existent shell");
+    return;
+  }
+
+  /* Send decoded data to screen */
+  werr("Writing to screen: *%s*", decoded);
+  write(shells_vector[shellid]->fdm, decoded, strlen((const char *)decoded));
 
   wlog("Return from shells_keys");
 }
 
-void send_shells_keys_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
-    void *const userdata, char *data_str) {
+void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
+    char *data_str, int shell_id) {
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
 
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
@@ -239,11 +277,22 @@ void send_shells_keys_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
   xmpp_stanza_t *keys = xmpp_stanza_new(ctx); /* shells action done stanza */
   xmpp_stanza_set_name(keys, "shells");
   xmpp_stanza_set_ns(keys, WNS);
-  xmpp_stanza_set_attribute(keys, "shellid", 
-    (const char *)xmpp_stanza_get_attribute(stanza, "shellid"));
+  char shell_id_str[4];
+  sprintf(shell_id_str, "%d", shell_id);
+  xmpp_stanza_set_attribute(keys, "shellid", shell_id_str);
   xmpp_stanza_set_attribute(keys, "action", "keys");
   xmpp_stanza_t *data = xmpp_stanza_new(ctx); /* data */
-  xmpp_stanza_set_text(data, data_str);
+
+  char *encoded_data = (char *)malloc(BASE64_SIZE(strlen(data_str)) + 1);
+  encoded_data = base64_encode(encoded_data, BASE64_SIZE(strlen(data_str)), 
+    (const unsigned char *)data_str, strlen(data_str));
+
+  if (encoded_data == NULL) {
+    werr("Could not encode\n");
+    return;
+  }
+
+  xmpp_stanza_set_text(data, encoded_data);
   xmpp_stanza_add_child(keys, data);
   xmpp_stanza_add_child(message, keys);
   xmpp_send(conn, message);

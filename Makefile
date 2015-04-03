@@ -1,11 +1,12 @@
 CC = gcc
-CFLAGS = -Wall -DERR -DLOG -DSHELLS -pthread
+CFLAGS = -Wall -DERR -DLOG -DSHELLS -pthread -lutil
 
 .PHONY: init clean
 
 init: init.o wjson.o wxmpp.o wxmpp_handlers.o shells.o shells_helper.o base64.o libds
 	make -C libds
-	$(CC) init.o wjson.o wxmpp.o wxmpp_handlers.o shells.o shells_helper.o base64.o libds/*.o -o init -ljansson -lstrophe -pthread
+	$(CC) init.o wjson.o wxmpp.o wxmpp_handlers.o shells.o shells_helper.o base64.o libds/*.o -o init \
+	-ljansson -lstrophe -pthread -lutil
 
 init.o: init.c winternals/winternals.h wjson/wjson.h wxmpp/wxmpp.h
 	$(CC) $(CFLAGS) -c init.c

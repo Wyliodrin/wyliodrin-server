@@ -23,51 +23,24 @@
 
 #define BUFSIZE = (1 * 1024) /* 1 KB */
 
-int openpty(int *fdm, int *fds) {
-  int rc;
-
-  *fdm = posix_openpt(O_RDWR);
-  if (*fdm < 0) {
-    werr("SYSERR posix_openpt");
-    perror("posix_openpt");
-    return -1;
-  }
-
-  rc = grantpt(*fdm);
-  if (rc != 0) {
-    werr("SYSERR grantpt");
-    perror("grantpt");
-    return -1;
-  }
-
-  rc = unlockpt(*fdm);
-  if (rc != 0) {
-    werr("SYSERR unlockpt");
-    perror("unlockpt");
-    return -1;
-  }
-
-  *fds = open(ptsname(*fdm), O_RDWR);
-  if (*fds < 0) {
-    werr("SYSERR open");
-    perror("open");
-    return -1;    
-  }
-
-  return 0;
-}
-
 void *read_thread(void *args) {
   int rc;
   char buf[150];
   shell_t *shell = (shell_t *)args;
   int fdm = shell->fdm;
 
+  int fd_out = open("outputlog.txt", O_WRONLY | O_TRUNC | O_CREAT, 0664);
+  if (fd_out < 0) {
+    perror("open");
+    return NULL;
+  }
+
   while (1) {
     rc = read(fdm, buf, sizeof(buf));
     if (rc > 0) {
       // Send data with keys
-      wlog("Send data via keys: %s", buf);
+      write(fd_out, buf, strlen(buf));
+      send_shells_keys_response(shell->conn, (void *)shell->ctx, buf, shell->id);
     } else if (rc < 0) {
       wlog("SYSERR read");
       perror("read");

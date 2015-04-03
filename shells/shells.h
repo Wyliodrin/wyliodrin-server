@@ -51,8 +51,8 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 /**
  * Keys response
  */
-void send_shells_keys_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
-    void *const userdata, char *data_str);
+void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
+    char *data_str, int shell_id);
 
 /**
  * List

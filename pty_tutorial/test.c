@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include <pthread.h>
+#include <pty.h>
 
 #define BUFSIZE (1 * 1024) /* 1 KB */
 
@@ -19,15 +20,17 @@ void *parent_thread(void *args) {
   char input[150];
   int fdm = *((int *)args);
 
-  write(fdm, "whoami\n", 7);
-  write(fdm, "whoami\n", 7);
+  int fd_out = open("output.txt", O_WRONLY | O_TRUNC | O_CREAT, 0664);
+  if (fd_out < 0) {
+    perror("open");
+    return NULL;
+  }
 
   while (1) {
     rc = read(fdm, input, sizeof(input));
     if (rc > 0) {
-      // Send data on standard output
-      write(1, "from screen: ", 14);
-      write(1, input, rc);
+      // Send data on output file
+      write(fd_out, input, rc);
     } else {
       if (rc < 0) {
         fprintf(stderr, "Error %d on read master PTY\n", errno);
@@ -37,32 +40,32 @@ void *parent_thread(void *args) {
   }
 }
 
-int openpty(int *fdm, int *fds) {
-  int rc;
+// int openpty(int *fdm, int *fds) {
+//   int rc;
 
-  *fdm = posix_openpt(O_RDWR);
-  if (*fdm < 0) {
-    fprintf(stderr, "Error %d on posix_openpt()\n", errno);
-    return -1;
-  }
+//   *fdm = posix_openpt(O_RDWR);
+//   if (*fdm < 0) {
+//     fprintf(stderr, "Error %d on posix_openpt()\n", errno);
+//     return -1;
+//   }
 
-  rc = grantpt(*fdm);
-  if (rc != 0) {
-    fprintf(stderr, "Error %d on grantpt()\n", errno);
-    return -1;
-  }
+//   rc = grantpt(*fdm);
+//   if (rc != 0) {
+//     fprintf(stderr, "Error %d on grantpt()\n", errno);
+//     return -1;
+//   }
 
-  rc = unlockpt(*fdm);
-  if (rc != 0) {
-    fprintf(stderr, "Error %d on unlockpt()\n", errno);
-    return -1;
-  }
+//   rc = unlockpt(*fdm);
+//   if (rc != 0) {
+//     fprintf(stderr, "Error %d on unlockpt()\n", errno);
+//     return -1;
+//   }
 
-  // Open the slave side ot the PTY
-  *fds = open(ptsname(*fdm), O_RDWR);
+//   // Open the slave side ot the PTY
+//   *fds = open(ptsname(*fdm), O_RDWR);
 
-  return 0;
-}
+//   return 0;
+// }
 
 int main(int argc, char *argv[]) {
   int fdm, fds;
@@ -70,9 +73,15 @@ int main(int argc, char *argv[]) {
   int pid;
   pthread_t t;
 
-  rc = openpty(&fdm, &fds);
-  if (rc < 0) {
-    fprintf(stderr, "Could not openpty\n");
+  // rc = openpty(&fdm, &fds);
+  // if (rc < 0) {
+  //   fprintf(stderr, "Could not openpty\n");
+  //   return -1;
+  // }
+
+  struct winsize w = {24, 80, 0, 0};
+  if(openpty(&fdm, &fds, NULL, NULL, &w) < 0)
+  {
     return -1;
   }
 
@@ -91,6 +100,9 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "Could not create thread\n");
       return -1;
     }
+
+    write(fdm, "whoami\n", 7);
+    write(fdm, "ls\n", 3);
   }
 
   else { /* Child */
@@ -123,7 +135,7 @@ int main(int argc, char *argv[]) {
     ioctl(0, TIOCSCTTY, 1);
 
     // Execution of the program
-    char *args[] = {"screen", "-r", "ses", NULL};
+    char *args[] = {"bash", NULL};
     rc = execvp(args[0], args);
     
     /* Error */
