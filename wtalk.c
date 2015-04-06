@@ -1,5 +1,8 @@
 /**************************************************************************************************
- * Initialization stuff
+ * WTalk
+ *
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
+ * Date last modified: April 2015
  *************************************************************************************************/
 
 #include <stdio.h>   /* printf */
@@ -9,17 +12,15 @@
 #include <strophe.h> /* Strophe stuff */
 #include <ctype.h>   /* tolower */
 
-#include "winternals/winternals.h"
-#include "wjson/wjson.h"
-#include "wxmpp/wxmpp.h"
+#include "winternals/winternals.h" /* logs and errs */
+#include "wjson/wjson.h"           /* json handling */
+#include "wxmpp/wxmpp.h"           /* xmpp handling */
 
 #define SLEEP_NO_CONFIG (1 * 60) /* 1 minute of sleep in case of no config file */
 
 const char *owner_str; /* owner */
 
 /**
- * Init wyliodrin client.
- *
  * Read and decode settings file, get location of config file, read and decode config file,
  * get jid and pass, connect to Wyliodrin XMPP server.
  *
@@ -35,18 +36,22 @@ const char *owner_str; /* owner */
  *    -8 : No owner in config file
  *    -9 : onwer value is not a string
  */
-int8_t init() {
-  wlog("init()");
+int8_t wtalk() {
+  wlog("wtalk()");
 
-  /* Decode settings JSON */
-  json_t *settings = decode_json_text(SETTINGS_PATH); /* Settings JSON */
+  /* Get settings JSON */
+  json_t *settings = file_to_json_t(SETTINGS_PATH); /* Settings JSON */
   if (settings == NULL) {
     wlog("Return -1 due to NULL decoded settings JSON");
     return -1;
   }
 
-  /* Check whether config_file exists or not */
+  /* Check whether config_file key exists or not */
   json_t *config_file = json_object_get(settings, "config_file"); /* config_file object */
+  if (config_file == NULL) {
+    wlog("Return -1 due to not existing config_file key");
+    return -1;
+  }
   if (!json_is_string(config_file)) {
     json_decref(settings);
 
@@ -60,11 +65,11 @@ int8_t init() {
     /* Sleep and try again */
     wlog("Config file value is an empty string. Sleep and retry.");
     sleep(SLEEP_NO_CONFIG);
-    return init();
+    return wtalk();
   }
 
   /* Decode config JSON */
-  json_t *config = decode_json_text(config_file_txt); /* config_file JSON */
+  json_t *config = file_to_json_t(config_file_txt); /* config_file JSON */
   if (config == NULL) {
     json_decref(settings);
 
@@ -140,12 +145,12 @@ int8_t init() {
   json_decref(settings);
   json_decref(config);
 
-  wlog("Return 0 successful initialization");
+  wlog("Return 0 successful wtalk initializatioN");
   return 0;
 }
 
 int main(int argc, char *argv[]) {
-  init();
+  wtalk();
 
   return 0;
 }

@@ -1,15 +1,15 @@
 CC = gcc
 CFLAGS = -Wall -DERR -DLOG -DSHELLS -pthread -lutil
 
-.PHONY: init clean
+.PHONY: wtalk clean
 
-init: init.o wjson.o wxmpp.o wxmpp_handlers.o shells.o shells_helper.o base64.o libds
+wtalk: wtalk.o wjson.o wxmpp.o wxmpp_handlers.o shells.o shells_helper.o base64.o libds
 	make -C libds
-	$(CC) init.o wjson.o wxmpp.o wxmpp_handlers.o shells.o shells_helper.o base64.o libds/*.o -o init \
+	$(CC) wtalk.o wjson.o wxmpp.o wxmpp_handlers.o shells.o shells_helper.o base64.o libds/*.o -o wtalk \
 	-ljansson -lstrophe -pthread -lutil
 
-init.o: init.c winternals/winternals.h wjson/wjson.h wxmpp/wxmpp.h
-	$(CC) $(CFLAGS) -c init.c
+wtalk.o: wtalk.c winternals/winternals.h wjson/wjson.h wxmpp/wxmpp.h
+	$(CC) $(CFLAGS) -c wtalk.c
 
 wjson.o: wjson/wjson.c wjson/wjson.h winternals/winternals.h
 	$(CC) $(CFLAGS) -c wjson/wjson.c
@@ -30,4 +30,4 @@ base64.o: base64/base64.c base64/base64.h
 	$(CC) $(CFLAGS) -c base64/base64.c
 
 clean:
-	rm -f *.o init
+	rm -f *.o wtalk

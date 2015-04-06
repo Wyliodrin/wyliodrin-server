@@ -1,5 +1,8 @@
 /**************************************************************************************************
  * Internals of Wyliodrin: typedefs, logs, errors, etc.
+ *
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
+ * Date last modified: April 2015
  *************************************************************************************************/
 
 #ifndef _INTERNALS_H

@@ -1,5 +1,8 @@
 /**************************************************************************************************
- * XMPP stuff: connect to Wyliodrin XMPP server
+ * XMPP connection
+ *
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
+ * Date last modified: April 2015
  *************************************************************************************************/
 
 #include <strophe.h> /* Strophe XMPP stuff */

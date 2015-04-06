@@ -1,5 +1,8 @@
 /**************************************************************************************************
  * Working with JSONs
+ *
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
+ * Date last modified: April 2015
  *************************************************************************************************/
 
 #include <fcntl.h>   /* open */
@@ -9,8 +12,8 @@
 #include "wjson.h"                    /* JSON stuff */
 #include "../winternals/winternals.h" /* logs and errs */
 
-json_t* decode_json_text(const char *filename) {
-	wlog("decode_json_text(%s)", filename);
+json_t* file_to_json_t(const char *filename) {
+	wlog("file_to_json_t(%s)", filename);
 
 	char *buffer;       /* JSON text */
 	json_t *root;       /* Main json_t object */ 

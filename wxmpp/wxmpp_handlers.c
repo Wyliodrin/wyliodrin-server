@@ -1,5 +1,8 @@
 /**************************************************************************************************
- * XMPP handlers: connection, ping
+ * XMPP handlers
+ *
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
+ * Date last modified: April 2015
  *************************************************************************************************/
 
 #include <strophe.h> /* Strophe XMPP stuff */
@@ -22,7 +25,7 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
 
     /* Init shells module */
 #   ifdef SHELLS
-    init_shells();
+      init_shells();
 #   endif
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */

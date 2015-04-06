@@ -1,5 +1,8 @@
 /**************************************************************************************************
  * Shells module
+ *
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
+ * Date last modified: April 2015
  *************************************************************************************************/
 
 #include <strophe.h> /* Strophe XMPP stuff */
@@ -205,22 +208,81 @@ void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
 void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
   wlog("shells_close(...)");
 
-  /* Send close */
+  /* Get request attribute */
+  char *request_attr = xmpp_stanza_get_attribute(stanza, "request"); /* request attribute */
+  if(request_attr == NULL) {
+    werr("Error while getting request attribute");
+    return;
+  }
+  long int request = strtol(request_attr, NULL, 10); /* request value */
+  if (errno != 0) {
+    werr("SYSERR strtol request_attr");
+    perror("strtol request_attr");
+    return;
+  }
+
+  /* Detach from screen session */
+  int pid = fork();
+
+  /* Return if fork failed */
+  if (pid == -1) {
+    werr("SYSERR fork");
+    perror("fork");
+    return;
+  }
+
+  /* Child from fork */
+  if (pid == 0) {
+    /* Set name of screen session */
+    char shell_name[9] = "shell";
+    char shell_id_str[3];
+    sprintf(shell_id_str, "%ld", request);
+    strcat(shell_name, shell_id_str);
+
+    /* Detach from screen session */
+    char *args[] = {"screen", "-d", shell_name, NULL};
+    execvp(args[0], args);
+
+    /* If screen detach fail */
+    werr("SYSERR execvp");
+    perror("execvp");
+  } 
+
+  /* Wait for detach to finish */
+  int status; /* Status of child process */
+  waitpid(pid, &status, 0);
+
+  /* Convert int to char array */
+  char status_str[3];
+  int rc = sprintf(status_str, "%d", status);
+
+  /* Return if sprintf fails */
+  if (rc < 0) {
+    werr("SYSERR sprintf");
+    perror("sprintf");
+    return;
+  }
+
+  /* Send close stanza */
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with close */
-  xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner_str);
-  xmpp_stanza_t *close = xmpp_stanza_new(ctx); /* close stanza */
-  xmpp_stanza_set_name(close, "shells");
-  xmpp_stanza_set_ns(close, WNS);
-  xmpp_stanza_set_attribute(close, "shellid", "0");
-  xmpp_stanza_set_attribute(close, "action", "close");
-  xmpp_stanza_set_attribute(close, "request",
-    (const char *)xmpp_stanza_get_attribute(stanza, "request"));
-  xmpp_stanza_set_attribute(close, "code", "0");
-  xmpp_stanza_add_child(message, close);
-  xmpp_send(conn, message);
-  xmpp_stanza_release(message);
+
+  xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza */
+  xmpp_stanza_set_name(message_stz, "message");
+  xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+
+  xmpp_stanza_t *close_stz = xmpp_stanza_new(ctx); /* close stanza */
+  xmpp_stanza_set_name(close_stz, "shells");
+  xmpp_stanza_set_ns(close_stz, WNS);
+  xmpp_stanza_set_attribute(close_stz, "shellid", "0");
+  xmpp_stanza_set_attribute(close_stz, "action", "close");
+  xmpp_stanza_set_attribute(close_stz, "request", request_attr);
+  xmpp_stanza_set_attribute(close_stz, "code", status_str);
+
+  xmpp_stanza_add_child(message_stz, close_stz);
+
+  xmpp_send(conn, message_stz);
+
+  xmpp_stanza_release(message_stz);
 
   wlog("Return from shells_close");
 }

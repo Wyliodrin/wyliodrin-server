@@ -1,5 +1,8 @@
 /**************************************************************************************************
- * XMPP stuff: api
+ * XMPP connection
+ *
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
+ * Date last modified: April 2015
  *************************************************************************************************/
 
 #ifndef _WXMPP_H
@@ -17,8 +20,8 @@ typedef void (*tag_function)(const char *from, const char *to, int error, xmpp_s
  * Connect to Wyliodrin XMPP server
  *
  * PARAMETERS
- *    jid  -
- *    pass -
+ *    jid  - user
+ *    pass - password
  *
  * RETURN
  *    -1 : NULL Strophe context
