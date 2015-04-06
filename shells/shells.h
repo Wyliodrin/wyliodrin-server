@@ -9,7 +9,7 @@
 
 extern const char *owner_str; /* owner_str from init.c */
 
-#define MAX_SHELLS 255
+#define MAX_SHELLS 256 /* Maximum number of shells allowed */
 
 typedef struct {
   uint8_t id;          /* Shell id */
@@ -19,6 +19,9 @@ typedef struct {
   xmpp_ctx_t *ctx;     /* XMPP Context */
 } shell_t;
 
+/**
+ * Initialize with NULL shells_vector
+ */
 void init_shells();
 
 /**

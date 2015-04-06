@@ -29,9 +29,8 @@
 
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
-/* Init shells */
 void init_shells() {
-  uint8_t i;
+  uint32_t i;
 
   for(i = 0; i < MAX_SHELLS; i++) {
     shells_vector[i] = NULL;
@@ -42,15 +41,22 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
             xmpp_conn_t *const conn, void *const userdata) {
   wlog("shells(%s, %s, %d, stanza)", from, to, error);
 
-  const char *action = xmpp_stanza_get_attribute(stanza, "action");
-  if(strncasecmp(action, "open", 4) == 0) {
+  char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
+  if (action_attr == NULL) {
+    werr("Error while getting action attribute");
+    return;
+  }
+
+  if(strncasecmp(action_attr, "open", 4) == 0) {
     shells_open(stanza, conn, userdata);
-  } else if(strncasecmp(action, "close", 5) == 0) {
+  } else if(strncasecmp(action_attr, "close", 5) == 0) {
     shells_close(stanza, conn, userdata);
-  } else if(strncasecmp(action, "keys", 4) == 0) {
+  } else if(strncasecmp(action_attr, "keys", 4) == 0) {
     shells_keys(stanza, conn, userdata);
-  } else if(strncasecmp(action, "list", 4) == 0) {
+  } else if(strncasecmp(action_attr, "list", 4) == 0) {
     shells_list(stanza, conn, userdata);
+  } else {
+    werr("Unknown action attribute: %s", action_attr);
   }
 
   wlog("Return from shells");
@@ -59,68 +65,87 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
   wlog("shells_open(...)");
 
-  int rc; /* Return code */
-  pthread_t rt; /* Read thread */
-
-  char *w_str = xmpp_stanza_get_attribute(stanza, "width");
-  if (w_str == NULL) {
-    werr("No width in shells_open");
+  /* Get request attribute */
+  char *request_attr = xmpp_stanza_get_attribute(stanza, "request"); /* request attribute */
+  if(request_attr == NULL) {
+    werr("Error while getting request attribute");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
   }
-  char *h_str = xmpp_stanza_get_attribute(stanza, "height");
-  if (h_str == NULL) {
-    werr("No height in shells_open");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-    return;
-  }
-
-  long int w = strtol(w_str, NULL, 10);
-  if (w == 0) {
-    werr("Wrong width: %s", w_str);
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-    return;
-  }
-  long int h = strtol(h_str, NULL, 10);
-  if (h == 0) {
-    werr("Wrong height: %s", h_str);
+  long int request = strtol(request_attr, NULL, 10); /* request value */
+  if (errno != 0) {
+    werr("SYSERR strtol request_attr");
+    perror("strtol request_attr");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
   }
 
-  int fdm; /* Master part of pty */
-  struct winsize ws = {h, w, 0, 0}; /* Window size */
+  /* Get width attribute */
+  char *w_attr = xmpp_stanza_get_attribute(stanza, "width"); /* width attribute */
+  if (w_attr == NULL) {
+    werr("Error while getting width attribute");
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return;
+  }
+  long int w = strtol(w_attr, NULL, 10); /* width value */
+  if (errno != 0) {
+    werr("SYSERR strtol w_attr");
+    perror("strtol w_attr");
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return;
+  }
 
-  /* Fork */
-  int pid = forkpty(&fdm, NULL, NULL, &ws);
-  if (pid == -1) {
+  /* Get height attribute */
+  char *h_attr = xmpp_stanza_get_attribute(stanza, "height"); /* height attribute */
+  if (h_attr == NULL) {
+    werr("Error while getting height attribute");
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return;
+  }
+  long int h = strtol(h_attr, NULL, 10); /* height value */
+  if (errno != 0) {
+    werr("SYSERR strtol h_attr");
+    perror("strtol h_attr");
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return;
+  }
+
+  /* Get an entry in shells_vector */
+  uint32_t shell_index; /* shell_t index in shells_vector */
+  for (shell_index = 0; shell_index < MAX_SHELLS; shell_index++) {
+    if (shells_vector[shell_index] == NULL) {
+      break;
+    }
+  }
+  if (shell_index == MAX_SHELLS) {
+    werr("No shells left");
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return;
+  }
+
+  /* Open screen in new pseudoterminal */
+  int fdm;                                  /* Master part of PTY */
+  struct winsize ws = {h, w, 0, 0};         /* Window size */
+  int pid = forkpty(&fdm, NULL, NULL, &ws); /* pid of parent from forkpty */
+
+  if (pid == -1) { /* Error in forkpty */
     werr("SYSERR forkpty");
     perror("forkpty");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
   }
 
-  if (pid != 0) { /* Parent */
-    uint8_t i;
-    for (i = 0; i < MAX_SHELLS; i++) {
-      if (shells_vector[i] == NULL) {
-        shells_vector[i] = (shell_t *)malloc(sizeof(shell_t));
-        shells_vector[i]->id = i;
-        shells_vector[i]->request_id = atoi(xmpp_stanza_get_attribute(stanza, "request"));
-        shells_vector[i]->fdm = fdm;
-        shells_vector[i]->conn = conn;
-        shells_vector[i]->ctx = (xmpp_ctx_t *)userdata;
-        break;
-      }
-    }
+  if (pid != 0) { /* Parent in forkpty */
+    shells_vector[shell_index]             = (shell_t *)malloc(sizeof(shell_t));
+    shells_vector[shell_index]->id         = shell_index;
+    shells_vector[shell_index]->request_id = request;
+    shells_vector[shell_index]->fdm        = fdm;
+    shells_vector[shell_index]->conn       = conn;
+    shells_vector[shell_index]->ctx        = (xmpp_ctx_t *)userdata;  
 
-    if(i == MAX_SHELLS) {
-      werr("No shells left");
-      send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-      return;
-    }
-
-    rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[i]);
+    /* Create new thread for read routine */
+    pthread_t rt; /* Read thread */
+    int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]); /* Read rc */
     if (rc < 0) {
       wlog("SYSERR pthread_create");
       perror("pthread_create");
@@ -128,29 +153,32 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       return;
     }
 
-    send_shells_open_response(stanza, conn, userdata, TRUE, i);
+    send_shells_open_response(stanza, conn, userdata, TRUE, shell_index);
+
     wlog("Return success from shells_open");    
     return;
   }
 
   else { /* Child */
-    char *args[] = {"screen", "-dRR", "ses", NULL};
+    /* Set name of screen session */
+    char shell_name[9] = "shell";
+    char shell_id_str[3];
+    sprintf(shell_id_str, "%d", shell_index);
+    strcat(shell_name, shell_id_str);
+
+    char *args[] = {"screen", "-dRR", shell_name, NULL};
     execvp(args[0], args);
     
     /* Error */
-    fprintf(stderr, "Could not execvp\n");
     wlog("SYSERR execvp");
     perror("execvp");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
   }
-
-  send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-  wlog("Return error from shells_open");
 }
 
 void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
-    void *const userdata, int8_t success, int8_t id){
+    void *const userdata, int8_t success, int8_t id) {
+
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
@@ -179,7 +207,6 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
 
   /* Send close */
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with close */
   xmpp_stanza_set_name(message, "message");
   xmpp_stanza_set_attribute(message, "to", owner_str);
@@ -218,7 +245,12 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     return;
   }
 
-  int shellid = atoi(shellid_str);
+  int shellid = strtol(shellid_str, NULL, 10);
+  if (shellid == 0 && errno != 0) {
+    werr("Unconvertable shell id: %s", shellid_str);
+    return;
+  }
+
   if (shells_vector[shellid] == NULL) {
     werr("Got keys from not existent shell");
     return;
@@ -226,7 +258,6 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
   /* Send decoded data to screen */
   write(shells_vector[shellid]->fdm, decoded, rc);
-
 
   wlog("Return from shells_keys");
 }
