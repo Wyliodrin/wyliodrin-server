@@ -12,11 +12,11 @@ extern const char *owner_str; /* owner_str from init.c */
 #define MAX_SHELLS 255
 
 typedef struct {
-  uint8_t id;
-  uint32_t request_id;
-  uint32_t fdm;
-  xmpp_conn_t *conn;
-  xmpp_ctx_t *ctx;
+  uint8_t id;          /* Shell id */
+  uint32_t request_id; /* Request id */
+  uint32_t fdm;        /* PTY file descriptor */
+  xmpp_conn_t *conn;   /* XMPP Connection */
+  xmpp_ctx_t *ctx;     /* XMPP Context */
 } shell_t;
 
 void init_shells();

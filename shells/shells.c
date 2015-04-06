@@ -23,12 +23,13 @@
 #include "../wxmpp/wxmpp.h"           /* WNS */
 #include "../base64/base64.h"         /* encode decode */
 #include "shells.h"                   /* shells module api */
-#include "shells_helper.h"            /* read thread */
+#include "shells_helper.h"            /* read routine */
 
 #ifdef SHELLS
 
-shell_t *shells_vector[MAX_SHELLS];
+shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
+/* Init shells */
 void init_shells() {
   uint8_t i;
 
@@ -133,7 +134,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   }
 
   else { /* Child */
-    char *args[] = {"bash", NULL};
+    char *args[] = {"screen", "-dRR", "ses", NULL};
     execvp(args[0], args);
     
     /* Error */
@@ -224,7 +225,6 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   }
 
   /* Send decoded data to screen */
-  werr("Writing to screen: *%s*", decoded);
   write(shells_vector[shellid]->fdm, decoded, rc);
 
 
@@ -245,8 +245,8 @@ void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
   sprintf(shell_id_str, "%d", shell_id);
   xmpp_stanza_set_attribute(keys, "shellid", shell_id_str);
   xmpp_stanza_set_attribute(keys, "action", "keys");
-  xmpp_stanza_t *data = xmpp_stanza_new(ctx); /* data */
 
+  xmpp_stanza_t *data = xmpp_stanza_new(ctx); /* data */
   char *encoded_data = (char *)malloc(BASE64_SIZE(data_len));
   encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len), 
     (const unsigned char *)data_str, data_len);
@@ -261,6 +261,8 @@ void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
   xmpp_stanza_add_child(message, keys);
   xmpp_send(conn, message);
   xmpp_stanza_release(message);
+
+  free(encoded_data);
 }
 
 void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {

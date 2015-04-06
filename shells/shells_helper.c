@@ -29,17 +29,10 @@ void *read_thread(void *args) {
   shell_t *shell = (shell_t *)args;
   int fdm = shell->fdm;
 
-  int fd_out = open("outputlog.txt", O_WRONLY | O_TRUNC | O_CREAT, 0664);
-  if (fd_out < 0) {
-    perror("open");
-    return NULL;
-  }
-
+  /* Get data from PTY and send it to server */
   while (1) {
     rc = read(fdm, buf, sizeof(buf));
     if (rc > 0) {
-      // Send data with keys
-      write(fd_out, buf, rc);
       send_shells_keys_response(shell->conn, (void *)shell->ctx, buf, rc, shell->id);
     } else if (rc < 0) {
       wlog("SYSERR read");
