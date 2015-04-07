@@ -38,8 +38,9 @@ void *read_thread(void *args) {
     if (rc > 0) {
       send_shells_keys_response(shell->conn, (void *)shell->ctx, buf, rc, shell->id);
     } else if (rc < 0) {
-      wlog("SYSERR read");
-      perror("read");
+      wlog("SYSERR read screen PTY");
+      perror("read screen PTY");
+      return NULL;
     }
   }
 }

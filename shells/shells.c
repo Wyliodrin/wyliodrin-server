@@ -214,10 +214,17 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     werr("Error while getting request attribute");
     return;
   }
-  long int request = strtol(request_attr, NULL, 10); /* request value */
+
+  /* Get shellid attribute */
+  char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid"); /* shellid attribute */
+  if(shellid_attr == NULL) {
+    werr("Error while getting shellid attribute");
+    return;
+  }
+  long int shellid = strtol(shellid_attr, NULL, 10); /* shellid value */
   if (errno != 0) {
-    werr("SYSERR strtol request_attr");
-    perror("strtol request_attr");
+    werr("SYSERR strtol shellid_attr");
+    perror("strtol shellid_attr");
     return;
   }
 
@@ -236,7 +243,7 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     /* Set name of screen session */
     char shell_name[9] = "shell";
     char shell_id_str[3];
-    sprintf(shell_id_str, "%ld", request);
+    sprintf(shell_id_str, "%ld", shellid);
     strcat(shell_name, shell_id_str);
 
     /* Detach from screen session */
@@ -246,17 +253,22 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     /* If screen detach fail */
     werr("SYSERR execvp");
     perror("execvp");
-  } 
+  }
 
   /* Wait for detach to finish */
   int status; /* Status of child process */
   waitpid(pid, &status, 0);
+  if (WIFEXITED(status) != 0) {
+    free(shells_vector[shellid]);
+    shells_vector[shellid] = NULL;
+  } else {
+    werr("Unsuccessful screen detachment");
+    return;
+  }
 
-  /* Convert int to char array */
+  /* Get status as char array */
   char status_str[3];
   int rc = sprintf(status_str, "%d", status);
-
-  /* Return if sprintf fails */
   if (rc < 0) {
     werr("SYSERR sprintf");
     perror("sprintf");
@@ -273,9 +285,9 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
   xmpp_stanza_t *close_stz = xmpp_stanza_new(ctx); /* close stanza */
   xmpp_stanza_set_name(close_stz, "shells");
   xmpp_stanza_set_ns(close_stz, WNS);
-  xmpp_stanza_set_attribute(close_stz, "shellid", "0");
-  xmpp_stanza_set_attribute(close_stz, "action", "close");
   xmpp_stanza_set_attribute(close_stz, "request", request_attr);
+  xmpp_stanza_set_attribute(close_stz, "action", "close");
+  xmpp_stanza_set_attribute(close_stz, "shellid", shellid_attr);
   xmpp_stanza_set_attribute(close_stz, "code", status_str);
 
   xmpp_stanza_add_child(message_stz, close_stz);
