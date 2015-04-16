@@ -5,13 +5,19 @@
  * Date last modified: April 2015
  *************************************************************************************************/
 
-#include <strophe.h> /* Strophe XMPP stuff */
+#include <strophe.h>                  /* Strophe XMPP stuff */
 
 #include "../winternals/winternals.h" /* logs and errs*/
 #include "../libds/ds.h"              /* hashmap */
 #include "wxmpp.h"                    /* wxmpp api */
 #include "wxmpp_handlers.h"           /* handlers */
 #include "../shells/shells.h"         /* shells module */
+
+#ifdef FILES
+  #define FUSE_USE_VERSION 30
+  #include <fuse.h>                     /* fuse */
+  #include "../files/files.h"           /* files module */
+#endif
 
 hashmap_p tags = NULL; /* tags hashmap */
 
@@ -59,6 +65,21 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
   /* Add modules */
   #ifdef SHELLS
     wadd_tag("shells", shells);
+  #endif
+
+  #ifdef FILES
+    struct fuse_operations wfiles_oper = {
+      .getattr = wfiles_getattr,
+      .readdir = wfiles_readdir,
+    };
+    char *argv[] = {"", "mnt"};
+
+    int rc = fuse_main(2, argv, &wfiles_oper, NULL);
+    if (rc != 0) {
+      werr("Error initializing fuse");
+    } else {
+      wadd_tag("files", files);
+    }
   #endif
 
   /* Enter the event loop */
