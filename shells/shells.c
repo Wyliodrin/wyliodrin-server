@@ -5,6 +5,8 @@
  * Date last modified: April 2015
  *************************************************************************************************/
 
+#ifdef SHELLS
+
 #include <strophe.h> /* Strophe XMPP stuff */
 #include <strings.h> /* strncasecmp */
 
@@ -27,8 +29,6 @@
 #include "../base64/base64.h"         /* encode decode */
 #include "shells.h"                   /* shells module api */
 #include "shells_helper.h"            /* read routine */
-
-#ifdef SHELLS
 
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
@@ -68,6 +68,8 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
   wlog("shells_open(...)");
 
+  char *endptr; /* strtol endptr */
+
   /* Get request attribute */
   char *request_attr = xmpp_stanza_get_attribute(stanza, "request"); /* request attribute */
   if(request_attr == NULL) {
@@ -75,9 +77,9 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
   }
-  long int request = strtol(request_attr, NULL, 10); /* request value */
-  if (request == 0) {
-    werr("request is 0");
+  long int request = strtol(request_attr, &endptr, 10); /* request value */
+  if (*endptr != '\0') {
+    werr("strtol error: str = %s, val = %ld", request_attr, request);
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
   }
@@ -89,12 +91,16 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
   }
-  long int w = strtol(w_attr, NULL, 10); /* width value */
-  if (w == 0) {
-    werr("SYSERR strtol w_attr");
-    perror("strtol w_attr");
+  long int w = strtol(w_attr, &endptr, 10); /* width value */
+  if (*endptr != '\0') {
+    werr("strtol error: str = %s, val = %ld", w_attr, w);
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
+  }
+  if (w == 0) {
+    werr("width is 0");
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return; 
   }
 
   /* Get height attribute */
@@ -104,12 +110,16 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
   }
-  long int h = strtol(h_attr, NULL, 10); /* height value */
-  if (h == 0) {
-    werr("SYSERR strtol h_attr");
-    perror("strtol h_attr");
+  long int h = strtol(h_attr, &endptr, 10); /* height value */
+  if (*endptr != '\0') {
+    werr("strtol error: str = %s, val = %ld", h_attr, h);
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
+  }
+  if (h == 0) {
+    werr("height is 0");
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return; 
   }
 
   /* Get an entry in shells_vector */
@@ -207,6 +217,8 @@ void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
 void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
   wlog("shells_close(...)");
 
+  char *endptr; /* strtol endptr */
+
   /* Get request attribute */
   char *request_attr = xmpp_stanza_get_attribute(stanza, "request"); /* request attribute */
   if(request_attr == NULL) {
@@ -220,10 +232,9 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     werr("Error while getting shellid attribute");
     return;
   }
-  long int shellid = strtol(shellid_attr, NULL, 10); /* shellid value */
-  if (errno != 0) {
-    werr("SYSERR strtol shellid_attr");
-    perror("strtol shellid_attr");
+  long int shellid = strtol(shellid_attr, &endptr, 10); /* shellid value */
+  if (*endptr != '\0') {
+    werr("strtol error: str = %s, val = %ld", shellid_attr, shellid);
     return;
   }
 
@@ -301,6 +312,8 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
 void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
   wlog("shells_keys(...)");
 
+  char *endptr; /* strtol endptr */
+
   char *data_str = xmpp_stanza_get_text(stanza); /* data string */
   if(data_str == NULL) {
     wlog("Return from shells_keys due to NULL data");
@@ -312,15 +325,15 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
   int rc = base64_decode(decoded, data_str, dec_size); /* decode */
 
-  char *shellid_str = xmpp_stanza_get_attribute(stanza, "shellid");
-  if (shellid_str == NULL) {
-    werr("No shellid id keys");
+  char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid");
+  if (shellid_attr == NULL) {
+    werr("No shellid attribute in shells keys");
     return;
   }
 
-  int shellid = strtol(shellid_str, NULL, 10);
-  if (shellid == 0 && errno != 0) {
-    werr("Unconvertable shell id: %s", shellid_str);
+  long int shellid = strtol(shellid_attr, &endptr, 10);
+  if (*endptr != '\0') {
+    werr("strtol error: str = %s, val = %ld", shellid_attr, shellid);
     return;
   }
 
