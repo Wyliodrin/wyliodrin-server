@@ -76,9 +76,8 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     return;
   }
   long int request = strtol(request_attr, NULL, 10); /* request value */
-  if (errno != 0) {
-    werr("SYSERR strtol request_attr");
-    perror("strtol request_attr");
+  if (request == 0) {
+    werr("request is 0");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
     return;
   }
@@ -91,7 +90,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     return;
   }
   long int w = strtol(w_attr, NULL, 10); /* width value */
-  if (errno != 0) {
+  if (w == 0) {
     werr("SYSERR strtol w_attr");
     perror("strtol w_attr");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
@@ -106,7 +105,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     return;
   }
   long int h = strtol(h_attr, NULL, 10); /* height value */
-  if (errno != 0) {
+  if (h == 0) {
     werr("SYSERR strtol h_attr");
     perror("strtol h_attr");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);

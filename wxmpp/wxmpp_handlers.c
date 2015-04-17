@@ -100,6 +100,15 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
   /* Get stanza type */
   char *type = xmpp_stanza_get_type(stanza); /* Stanza type */
 
+  int size = 1024;
+  char *buffer;
+  int rc = xmpp_stanza_to_text(stanza, &buffer, &size);
+  if (rc == 0) {
+    wlog("text = %s\n", buffer);
+  } else {
+    werr("error rc");
+  }
+
   /* Check for error type */
   int error = 0; /* error in type */
   if(type != NULL && strncasecmp(type, "error", 5) == 0) {
@@ -123,8 +132,8 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
       } else {
         werr("Function not available");
       }
-      tag = xmpp_stanza_get_next(tag);
     }
+    tag = xmpp_stanza_get_next(tag);
   }
 
   wlog("Return TRUE from wyliodrin_handler(...)");
