@@ -10,22 +10,10 @@
 
 #ifdef FILES
 
-/**
- * Parse files command
- */
+void init_files();
+
 void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
            xmpp_conn_t *const conn, void *const userdata);
-
-int wfiles_getattr(const char *path, struct stat *stbuf);
-
-int wfiles_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-                   off_t offset, struct fuse_file_info *fi);
-
-int wfiles_open(const char *path, struct fuse_file_info *fi);
-
-int wfiles_read(const char *path, char *buf, size_t size, off_t offset,
-                struct fuse_file_info *fi);
-
 
 #endif /* FILES */
 

@@ -28,6 +28,11 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
       init_shells();
 #   endif
 
+    /* Init files module */
+#   ifdef SHELLS
+      init_files();
+#   endif
+
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
     
     /* Add ping handler */

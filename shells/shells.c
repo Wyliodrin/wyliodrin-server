@@ -128,6 +128,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
   /* Get an entry in shells_vector */
   uint32_t shell_index; /* shell_t index in shells_vector */
+
   pthread_mutex_lock(&shells_lock);
   for (shell_index = 0; shell_index < MAX_SHELLS; shell_index++) {
     if (shells_vector[shell_index] == NULL) {
@@ -135,6 +136,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     }
   }
   pthread_mutex_unlock(&shells_lock);
+
   if (shell_index == MAX_SHELLS) {
     werr("No shells left");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
@@ -168,7 +170,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     pthread_t rt; /* Read thread */
     int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]); /* Read rc */
     if (rc < 0) {
-      wlog("SYSERR pthread_create");
+      werr("SYSERR pthread_create");
       perror("pthread_create");
       send_shells_open_response(stanza, conn, userdata, FALSE, -1);
       return;

@@ -68,20 +68,7 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
   #endif
 
   #ifdef FILES
-    static struct fuse_operations wfiles_oper = {
-      .getattr = wfiles_getattr,
-      .readdir = wfiles_readdir,
-      .open    = wfiles_open,
-      .read    = wfiles_read,
-    };
-    char *argv[] = {"", "mnt"};
-
-    int rc = fuse_main(2, argv, &wfiles_oper, NULL);
-    if (rc != 0) {
-      werr("Error initializing fuse");
-    } else {
-      wadd_tag("files", files);
-    }
+    wadd_tag("files", files);
   #endif
 
   /* Enter the event loop */
