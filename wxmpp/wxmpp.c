@@ -68,9 +68,11 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
   #endif
 
   #ifdef FILES
-    struct fuse_operations wfiles_oper = {
+    static struct fuse_operations wfiles_oper = {
       .getattr = wfiles_getattr,
       .readdir = wfiles_readdir,
+      .open    = wfiles_open,
+      .read    = wfiles_read,
     };
     char *argv[] = {"", "mnt"};
 
