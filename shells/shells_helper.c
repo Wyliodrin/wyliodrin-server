@@ -39,8 +39,6 @@ void *read_thread(void *args) {
     if (rc > 0) {
       send_shells_keys_response(shell->conn, (void *)shell->ctx, buf, rc, shell->id);
     } else if (rc < 0) {
-      char close_request_str[4];
-      sprintf(close_request_str, "%d", shell->close_request);
 
       char shellid_str[4];
       sprintf(shellid_str, "%d", shell->id);
@@ -53,7 +51,11 @@ void *read_thread(void *args) {
       xmpp_stanza_t *close_stz = xmpp_stanza_new(shell->ctx); /* close stanza */
       xmpp_stanza_set_name(close_stz, "shells");
       xmpp_stanza_set_ns(close_stz, WNS);
-      xmpp_stanza_set_attribute(close_stz, "request", close_request_str);
+      if (shell->close_request != -1) {  
+        char close_request_str[4];
+        sprintf(close_request_str, "%d", shell->close_request);
+        xmpp_stanza_set_attribute(close_stz, "request", close_request_str);
+      }
       xmpp_stanza_set_attribute(close_stz, "action", "close");
       xmpp_stanza_set_attribute(close_stz, "shellid", shellid_str);
       xmpp_stanza_set_attribute(close_stz, "code", "0");

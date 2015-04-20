@@ -161,7 +161,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     shells_vector[shell_index]->fdm           = fdm;
     shells_vector[shell_index]->conn          = conn;
     shells_vector[shell_index]->ctx           = (xmpp_ctx_t *)userdata;
-    shells_vector[shell_index]->close_request = 0;
+    shells_vector[shell_index]->close_request = -1;
     pthread_mutex_unlock(&shells_lock);
 
     /* Create new thread for read routine */
@@ -240,7 +240,6 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     return;
   }
 
-
   /* Get shellid attribute */
   char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid"); /* shellid attribute */
   if(shellid_attr == NULL) {
@@ -253,9 +252,14 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     return;
   }
 
-  /* Set close request */
+  /* Set close request or ignore it if it comes from unopened shell */
   pthread_mutex_lock(&shells_lock);
-  shells_vector[shellid]->close_request = request;
+  if (shells_vector[shellid] != NULL) {
+    shells_vector[shellid]->close_request = request;
+  } else {
+    pthread_mutex_unlock(&shells_lock);
+    return;  
+  }
   pthread_mutex_unlock(&shells_lock);
 
   /* Detach from screen session */
