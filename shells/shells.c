@@ -32,12 +32,16 @@
 
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
+pthread_mutex_t shells_lock; /* shells mutex */
+
 void init_shells() {
   uint32_t i;
 
+  pthread_mutex_lock(&shells_lock);
   for(i = 0; i < MAX_SHELLS; i++) {
     shells_vector[i] = NULL;
   }
+  pthread_mutex_unlock(&shells_lock);
 }
 
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
@@ -119,16 +123,18 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   if (h == 0) {
     werr("height is 0");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-    return; 
+    return;
   }
 
   /* Get an entry in shells_vector */
   uint32_t shell_index; /* shell_t index in shells_vector */
+  pthread_mutex_lock(&shells_lock);
   for (shell_index = 0; shell_index < MAX_SHELLS; shell_index++) {
     if (shells_vector[shell_index] == NULL) {
       break;
     }
   }
+  pthread_mutex_unlock(&shells_lock);
   if (shell_index == MAX_SHELLS) {
     werr("No shells left");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
@@ -148,12 +154,15 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   }
 
   if (pid != 0) { /* Parent in forkpty */
-    shells_vector[shell_index]             = (shell_t *)malloc(sizeof(shell_t));
-    shells_vector[shell_index]->id         = shell_index;
-    shells_vector[shell_index]->request_id = request;
-    shells_vector[shell_index]->fdm        = fdm;
-    shells_vector[shell_index]->conn       = conn;
-    shells_vector[shell_index]->ctx        = (xmpp_ctx_t *)userdata;  
+    pthread_mutex_lock(&shells_lock);
+    shells_vector[shell_index]                = (shell_t *)malloc(sizeof(shell_t));
+    shells_vector[shell_index]->id            = shell_index;
+    shells_vector[shell_index]->request_id    = request;
+    shells_vector[shell_index]->fdm           = fdm;
+    shells_vector[shell_index]->conn          = conn;
+    shells_vector[shell_index]->ctx           = (xmpp_ctx_t *)userdata;
+    shells_vector[shell_index]->close_request = 0;
+    pthread_mutex_unlock(&shells_lock);
 
     /* Create new thread for read routine */
     pthread_t rt; /* Read thread */
@@ -225,6 +234,12 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     werr("Error while getting request attribute");
     return;
   }
+  long int request = strtol(request_attr, &endptr, 10);
+  if (*endptr != '\0') {
+    werr("strtol error: str = %s, val = %ld", request_attr, request);
+    return;
+  }
+
 
   /* Get shellid attribute */
   char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid"); /* shellid attribute */
@@ -237,6 +252,11 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     werr("strtol error: str = %s, val = %ld", shellid_attr, shellid);
     return;
   }
+
+  /* Set close request */
+  pthread_mutex_lock(&shells_lock);
+  shells_vector[shellid]->close_request = request;
+  pthread_mutex_unlock(&shells_lock);
 
   /* Detach from screen session */
   int pid = fork();
@@ -252,7 +272,7 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
   if (pid == 0) {
     /* Set name of screen session */
     char shell_name[9] = "shell";
-    char shell_id_str[3];
+    char shell_id_str[4];
     sprintf(shell_id_str, "%ld", shellid);
     strcat(shell_name, shell_id_str);
 
@@ -264,47 +284,6 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     werr("SYSERR execvp");
     perror("execvp");
   }
-
-  /* Wait for detach to finish */
-  int status; /* Status of child process */
-  waitpid(pid, &status, 0);
-  if (WIFEXITED(status) != 0) {
-    free(shells_vector[shellid]);
-    shells_vector[shellid] = NULL;
-  } else {
-    werr("Unsuccessful screen detachment");
-    return;
-  }
-
-  /* Get status as char array */
-  char status_str[3];
-  int rc = sprintf(status_str, "%d", status);
-  if (rc < 0) {
-    werr("SYSERR sprintf");
-    perror("sprintf");
-    return;
-  }
-
-  /* Send close stanza */
-  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-
-  xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza */
-  xmpp_stanza_set_name(message_stz, "message");
-  xmpp_stanza_set_attribute(message_stz, "to", owner_str);
-
-  xmpp_stanza_t *close_stz = xmpp_stanza_new(ctx); /* close stanza */
-  xmpp_stanza_set_name(close_stz, "shells");
-  xmpp_stanza_set_ns(close_stz, WNS);
-  xmpp_stanza_set_attribute(close_stz, "request", request_attr);
-  xmpp_stanza_set_attribute(close_stz, "action", "close");
-  xmpp_stanza_set_attribute(close_stz, "shellid", shellid_attr);
-  xmpp_stanza_set_attribute(close_stz, "code", status_str);
-
-  xmpp_stanza_add_child(message_stz, close_stz);
-
-  xmpp_send(conn, message_stz);
-
-  xmpp_stanza_release(message_stz);
 
   wlog("Return from shells_close");
 }

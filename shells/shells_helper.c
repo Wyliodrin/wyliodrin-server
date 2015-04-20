@@ -23,6 +23,7 @@
 #include "../winternals/winternals.h" /* logs and errs */
 #include "shells.h"
 #include "shells_helper.h"
+#include "../wxmpp/wxmpp.h"
 
 #define BUFSIZE (1 * 1024) /* 1 KB */
 
@@ -38,8 +39,31 @@ void *read_thread(void *args) {
     if (rc > 0) {
       send_shells_keys_response(shell->conn, (void *)shell->ctx, buf, rc, shell->id);
     } else if (rc < 0) {
-      wlog("SYSERR read screen PTY");
-      perror("read screen PTY");
+      char close_request_str[4];
+      sprintf(close_request_str, "%d", shell->close_request);
+
+      char shellid_str[4];
+      sprintf(shellid_str, "%d", shell->id);
+
+      /* Send close stanza */
+      xmpp_stanza_t *message_stz = xmpp_stanza_new(shell->ctx); /* message stanza */
+      xmpp_stanza_set_name(message_stz, "message");
+      xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+
+      xmpp_stanza_t *close_stz = xmpp_stanza_new(shell->ctx); /* close stanza */
+      xmpp_stanza_set_name(close_stz, "shells");
+      xmpp_stanza_set_ns(close_stz, WNS);
+      xmpp_stanza_set_attribute(close_stz, "request", close_request_str);
+      xmpp_stanza_set_attribute(close_stz, "action", "close");
+      xmpp_stanza_set_attribute(close_stz, "shellid", shellid_str);
+      xmpp_stanza_set_attribute(close_stz, "code", "0");
+
+      xmpp_stanza_add_child(message_stz, close_stz);
+
+      xmpp_send(shell->conn, message_stz);
+
+      xmpp_stanza_release(message_stz);
+
       return NULL;
     }
   }
