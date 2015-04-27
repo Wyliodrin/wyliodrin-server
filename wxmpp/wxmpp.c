@@ -21,6 +21,9 @@
 
 hashmap_p tags = NULL; /* tags hashmap */
 
+xmpp_ctx_t *ctx;   /* Context    */
+xmpp_conn_t *conn; /* Connection */
+
 int8_t wxmpp_connect(const char *jid, const char *pass) {
   wlog("wxmpp_connect(%s, %s)", jid, pass);
 
@@ -29,14 +32,14 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
 
   /* Get Strophe logger, context and connection */
   xmpp_log_t *log  = xmpp_get_default_logger(XMPP_LEVEL_DEBUG); /* Strophe logger */
-  xmpp_ctx_t *ctx  = xmpp_ctx_new(NULL, log); /* Strophe context */
+  ctx  = xmpp_ctx_new(NULL, log); /* Strophe context */
   if(ctx == NULL) {
     xmpp_shutdown();
 
     wlog("Return -1 due to NULL Strophe context");
     return -1;
   }
-  xmpp_conn_t *conn = xmpp_conn_new(ctx); /* Strophe connection */
+  conn = xmpp_conn_new(ctx); /* Strophe connection */
   if(conn == NULL) {
     xmpp_ctx_free(ctx);
     xmpp_shutdown();
