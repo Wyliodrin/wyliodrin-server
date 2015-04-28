@@ -11,12 +11,19 @@
 #include "../libds/ds.h"              /* hashmap */
 #include "wxmpp.h"                    /* wxmpp api */
 #include "wxmpp_handlers.h"           /* handlers */
-#include "../shells/shells.h"         /* shells module */
+
+#ifdef SHELLS
+  #include "../shells/shells.h"         /* shells module */
+#endif
 
 #ifdef FILES
   #define FUSE_USE_VERSION 30
   #include <fuse.h>                     /* fuse */
   #include "../files/files.h"           /* files module */
+#endif
+
+#ifdef PS
+  #include "../ps/ps.h"                 /* ps module */
 #endif
 
 hashmap_p tags = NULL; /* tags hashmap */
@@ -72,6 +79,10 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
 
   #ifdef FILES
     wadd_tag("files", files);
+  #endif
+
+  #ifdef PS
+    wadd_tag("ps", ps);
   #endif
 
   /* Enter the event loop */
