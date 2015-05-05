@@ -109,7 +109,7 @@ static int hello_getattr(const char *path, struct stat *stbuf) {
       } else if (attributes.type == REG) {
         stbuf->st_mode = S_IFREG | 0444;
         stbuf->st_nlink = 1;
-        stbuf->st_size = 0;
+        stbuf->st_size = attributes.size;
       } else {
         werr("Unknown type");
         res = -ENOENT;
@@ -171,10 +171,6 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
   filler(buf, ".", NULL, 0);
   filler(buf, "..", NULL, 0);
-
-  if (strcmp(path, "/") != 0) {
-//    return -ENOENT;
-  }
 
   if (root == NULL) {
     werr("root is NULL");
@@ -315,6 +311,22 @@ void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
       } else if (strncasecmp(type_attr, "file", 4) == 0) {
         attributes.valid = 1;
         attributes.type = REG;
+
+        /* Get size attributes */
+        char *size_attr = xmpp_stanza_get_attribute(stanza, "size");
+        if (size_attr == NULL) {
+          werr("xmpp_stanza_get_attribute attribute = size");
+          attributes.size = 0;          
+        } else {
+          char *endptr; /* strtol endptr */
+          long int size = strtol(size_attr, &endptr, 10);
+          if (*endptr != '\0') {
+            werr("strtol error: str = %s, val = %ld", size_attr, size);
+            attributes.size = 0; 
+          }
+
+          attributes.size = size;
+        }
       } else {
         werr("Unknown type: %s", type_attr);
         attributes.valid = -1;
