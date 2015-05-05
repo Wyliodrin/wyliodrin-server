@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -DERR -DLOG -DSHELLS -DFILES -DPS -D_FILE_OFFSET_BITS=64 -pthread -lutil -lfuse
+CFLAGS = -g -Wall -DERR -DLOG -DSHELLS -DFILES -DPS -D_FILE_OFFSET_BITS=64 -pthread -lutil -lfuse
 
 .PHONY: wtalk clean
 

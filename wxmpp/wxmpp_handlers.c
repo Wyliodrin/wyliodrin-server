@@ -95,16 +95,6 @@ int wping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *co
   xmpp_send(conn, pong);
   xmpp_stanza_release(pong);
 
-  // /* Send test files stanza */
-  // xmpp_stanza_t *files = xmpp_stanza_new(ctx); /* message with done */
-  // xmpp_stanza_set_name(files, "files");
-  // xmpp_stanza_set_ns(files, WNS);
-  // xmpp_stanza_set_attribute(files, "to", owner_str);
-  // xmpp_stanza_set_attribute(files, "action", "attributes");
-  // xmpp_stanza_set_attribute(files, "path", "/");
-  // xmpp_send(conn, files);
-  // xmpp_stanza_release(files);
-
   wlog("Return TRUE from w_ping_handler(...)");
   return TRUE;
 }
