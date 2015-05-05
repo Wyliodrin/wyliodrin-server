@@ -321,6 +321,7 @@ void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 
     if (strncasecmp(error_attr, "0", 1) != 0) {
       wlog("Error in attributes: %s", error_attr);
+      attributes.valid = -1;
     } else {
       /* Get type attributes */
       char *type_attr = xmpp_stanza_get_attribute(stanza, "type");
