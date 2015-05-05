@@ -24,6 +24,7 @@
 
 #include "../winternals/winternals.h"
 #include "../wxmpp/wxmpp.h"
+#include "../base64/base64.h"
 #include "files.h"
 
 extern xmpp_ctx_t *ctx;   /* Context    */
@@ -36,6 +37,7 @@ pthread_cond_t  cond  = PTHREAD_COND_INITIALIZER;
 
 unsigned char gotattr = 0;
 unsigned char gotlist = 0;
+unsigned char gotread = 0;
 
 typedef enum {
   DIR, /* Directory    */
@@ -57,6 +59,8 @@ typedef struct elem_t {
 } elem_t;
 elem_t *root = NULL;
 elem_t *last = NULL;
+
+char *read_data = NULL;
 
 static const char *hello_str = "Hello World!\n";
 static const char *hello_path = "/hello";
@@ -96,14 +100,14 @@ static int hello_getattr(const char *path, struct stat *stbuf) {
 
   memset(stbuf, 0, sizeof(struct stat));
   if (strcmp(path, "/") == 0) {
-    stbuf->st_mode = S_IFDIR | 0755;
+    stbuf->st_mode = S_IFDIR | 0444;
     stbuf->st_nlink = 2;
   }
 
   else {
     if (attributes.valid == 1) {
       if (attributes.type == DIR) {
-        stbuf->st_mode = S_IFDIR | 0755;
+        stbuf->st_mode = S_IFDIR | 0444;
         stbuf->st_nlink = 2;
         stbuf->st_size = attributes.size;
       } else if (attributes.type == REG) {
@@ -197,34 +201,69 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 }
 
 static int hello_open(const char *path, struct fuse_file_info *fi) {
-  fprintf(stderr, "hello_open path = %s\n", path);
+  wlog("hello_open path = %s\n", path);
 
-  if (strcmp(path, hello_path) != 0)
-    return -ENOENT;
   if ((fi->flags & 3) != O_RDONLY)
     return -EACCES;
+
   return 0;
 }
 
 static int hello_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
 {
-  fprintf(stderr, "hello_read path = %s\n", path);
+  wlog("hello_read path = %s\n", path);
+
+  int rc; /* Return code */
+
+  rc = pthread_mutex_lock(&mutex);
+  if (rc != 0) {
+    werr("pthread_mutex_lock");
+    perror("pthread_mutex_lock");
+  }
+
+  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
+  xmpp_stanza_set_name(message, "message");
+  xmpp_stanza_set_attribute(message, "to", owner_str);
+
+  xmpp_stanza_t *files = xmpp_stanza_new(ctx); /* message with done */
+  xmpp_stanza_set_name(files, "files");
+  xmpp_stanza_set_ns(files, WNS);
+  xmpp_stanza_set_attribute(files, "action", "read");
+  xmpp_stanza_set_attribute(files, "path", path);
+
+  xmpp_stanza_add_child(message, files);
+  xmpp_send(conn, message);
+  xmpp_stanza_release(message);
+
+  /* Wait until attributes is set */
+  while (gotread == 0) {
+    pthread_cond_wait(&cond, &mutex);
+  }
+
+  /* Do your job */
 
   size_t len;
   (void) fi;
-  if(strcmp(path, hello_path) != 0) {
-    return -ENOENT;
-  }
-  len = strlen(hello_str);
+  len = strlen(read_data);
 
   if (offset < len) {
     if (offset + size > len) {
       size = len - offset;
     }
-    memcpy(buf, hello_str + offset, size);
+    memcpy(buf, read_data + offset, size);
   } else {
     size = 0;
+  }
+
+  /* Job done */
+
+  gotread = 0;
+
+  rc = pthread_mutex_unlock(&mutex);
+  if (rc != 0) {
+    werr("pthread_unmutex_lock");
+    perror("pthread_unmutex_lock");
   }
 
   return size;
@@ -429,6 +468,48 @@ void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
       werr("pthread_mutex_unlock");
       perror("pthread_mutex_unlock");
     }
+  }
+
+  /* read action */
+  else if (strncasecmp(action_attr, "read", 4) == 0) {
+    rc = pthread_mutex_lock(&mutex);
+    if (rc != 0) {
+      werr("pthread_mutex_lock");
+      perror("pthread_mutex_lock");
+    }
+
+    /* Set data */
+
+    char *data_str = xmpp_stanza_get_text(stanza); /* data string */
+    if(data_str == NULL) {
+      wlog("NULL data");
+    }
+
+    /* Decode */
+    int dec_size = strlen(data_str) * 3 / 4 + 1; /* decoded data length */
+    uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
+    int rc = base64_decode(decoded, data_str, dec_size); /* decode */
+
+    read_data = strdup((char *)decoded);
+    if (read_data == NULL) {
+      werr("strdup");
+      perror("strdup");
+    } 
+
+    /* Data set */
+
+    gotread = 1;
+    rc = pthread_cond_signal(&cond);
+    if (rc != 0) {
+      werr("pthread_cond_signal");
+      perror("pthread_cond_signal");
+    }
+
+    rc = pthread_mutex_unlock(&mutex);
+    if (rc != 0) {
+      werr("pthread_mutex_unlock");
+      perror("pthread_mutex_unlock");
+    }     
   }
 }
 
