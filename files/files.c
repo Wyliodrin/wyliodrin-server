@@ -15,7 +15,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -25,6 +24,7 @@
 #include "../winternals/winternals.h"
 #include "../wxmpp/wxmpp.h"
 #include "../base64/base64.h"
+
 #include "files.h"
 
 extern xmpp_ctx_t *ctx;   /* Context    */
@@ -35,47 +35,48 @@ extern const char *owner_str; /* owner_str from init.c */
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  cond  = PTHREAD_COND_INITIALIZER;
 
-unsigned char gotattr = 0;
-unsigned char gotlist = 0;
-unsigned char gotread = 0;
+/* Condition signals */
+bool_t signal_attr = false;
+bool_t signal_list = false;
+bool_t signal_read = false;
 
 typedef enum {
-  DIR, /* Directory    */
-  REG  /* Regular file */
-} TYPE;
+  DIR,          /* Directory    */
+  REG           /* Regular file */
+} filetype_t;
 
 typedef struct {
   unsigned int size;
-  TYPE type;
-  char valid;
+  filetype_t type;
+  char is_valid;
 } attr_t;
 
 attr_t attributes = {0, DIR, -1};
 
 typedef struct elem_t {
-  TYPE type;
+  filetype_t type;
   char *filename;
   struct elem_t *next;
 } elem_t;
+
 elem_t *root = NULL;
 elem_t *last = NULL;
 
 char *read_data = NULL;
 
-static const char *hello_str = "Hello World!\n";
-static const char *hello_path = "/hello";
+void files_attr(xmpp_stanza_t *stanza);
+void files_list(xmpp_stanza_t *stanza);
+void files_read(xmpp_stanza_t *stanza);
 
-static int hello_getattr(const char *path, struct stat *stbuf) {
-  wlog("hello_getattr path = %s\n", path);
+static int wfuse_getattr(const char *path, struct stat *stbuf) {
+  wlog("wfuse_getattr path = %s\n", path);
 
   int rc; /* Return code */
 
   rc = pthread_mutex_lock(&mutex);
-  if (rc != 0) {
-    werr("pthread_mutex_lock");
-    perror("pthread_mutex_lock");
-  }
+  wsyserr(rc != 0, "pthread_mutex_lock");
 
+  /* Send attributes stanza */
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
   xmpp_stanza_set_attribute(message, "to", owner_str);
@@ -91,7 +92,7 @@ static int hello_getattr(const char *path, struct stat *stbuf) {
   xmpp_stanza_release(message);
 
   /* Wait until attributes is set */
-  while (gotattr == 0) {
+  while (signal_attr == 0) {
     pthread_cond_wait(&cond, &mutex);
   }
 
@@ -105,7 +106,7 @@ static int hello_getattr(const char *path, struct stat *stbuf) {
   }
 
   else {
-    if (attributes.valid == 1) {
+    if (attributes.is_valid == 1) {
       if (attributes.type == DIR) {
         stbuf->st_mode = S_IFDIR | 0444;
         stbuf->st_nlink = 2;
@@ -125,29 +126,23 @@ static int hello_getattr(const char *path, struct stat *stbuf) {
 
   /* Job done */
 
-  gotattr = 0;
+  signal_attr = false;
 
   rc = pthread_mutex_unlock(&mutex);
-  if (rc != 0) {
-    werr("pthread_unmutex_lock");
-    perror("pthread_unmutex_lock");
-  }
+  wsyserr(rc != 0, "pthread_mutex_unlock");
 
   return res;
 }
 
-static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                          off_t offset, struct fuse_file_info *fi)
 {
-  wlog("hello_readdir path = %s\n", path);
+  wlog("wfuse_readdir path = %s\n", path);
 
   int rc; /* Return code */
 
   rc = pthread_mutex_lock(&mutex);
-  if (rc != 0) {
-    werr("pthread_mutex_lock");
-    perror("pthread_mutex_lock");
-  }
+  wsyserr(rc != 0, "pthread_mutex_lock");
 
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
@@ -164,7 +159,7 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
   xmpp_stanza_release(message);
 
   /* Wait until attributes is set */
-  while (gotlist == 0) {
+  while (signal_list == false) {
     pthread_cond_wait(&cond, &mutex);
   }
 
@@ -189,19 +184,16 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
   /* Job done */
 
-  gotlist = 0;
+  signal_list = false;
 
   rc = pthread_mutex_unlock(&mutex);
-  if (rc != 0) {
-    werr("pthread_unmutex_lock");
-    perror("pthread_unmutex_lock");
-  }
+  wsyserr(rc != 0, "pthread_mutex_unlock");
 
   return 0;
 }
 
-static int hello_open(const char *path, struct fuse_file_info *fi) {
-  wlog("hello_open path = %s\n", path);
+static int wfuse_open(const char *path, struct fuse_file_info *fi) {
+  wlog("wfuse_open path = %s\n", path);
 
   if ((fi->flags & 3) != O_RDONLY)
     return -EACCES;
@@ -209,18 +201,15 @@ static int hello_open(const char *path, struct fuse_file_info *fi) {
   return 0;
 }
 
-static int hello_read(const char *path, char *buf, size_t size, off_t offset,
+static int wfuse_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
 {
-  wlog("hello_read path = %s\n", path);
+  wlog("wfuse_read path = %s\n", path);
 
   int rc; /* Return code */
 
   rc = pthread_mutex_lock(&mutex);
-  if (rc != 0) {
-    werr("pthread_mutex_lock");
-    perror("pthread_mutex_lock");
-  }
+  wsyserr(rc != 0, "pthread_mutex_lock");
 
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
@@ -237,7 +226,7 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
   xmpp_stanza_release(message);
 
   /* Wait until attributes is set */
-  while (gotread == 0) {
+  while (signal_read == false) {
     pthread_cond_wait(&cond, &mutex);
   }
 
@@ -258,260 +247,191 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
 
   /* Job done */
 
-  gotread = 0;
+  signal_read = false;
 
   rc = pthread_mutex_unlock(&mutex);
-  if (rc != 0) {
-    werr("pthread_unmutex_lock");
-    perror("pthread_unmutex_lock");
-  }
+  wsyserr(rc != 0, "pthread_mutex_unlock");
 
   return size;
 }
 
-static struct fuse_operations hello_oper = {
-  .getattr        = hello_getattr,
-  .readdir        = hello_readdir,
-  .open           = hello_open,
-  .read           = hello_read,
+static struct fuse_operations wfuse_oper = {
+  .getattr = wfuse_getattr,
+  .readdir = wfuse_readdir,
+  .open    = wfuse_open,
+  .read    = wfuse_read
 };
 
 void *init_files_thread(void *a) {
   char *argv[] = {"dummy", "-s", "-f", "mnt"};
-  fuse_main(4, argv, &hello_oper, NULL);
+  fuse_main(4, argv, &wfuse_oper, NULL);
   return NULL;
 }
 
 void init_files() {
   pthread_t ift; /* Init files thread */
   int rc = pthread_create(&ift, NULL, init_files_thread, NULL);
-  if (rc < 0) {
-    werr("SYSERR pthread_create");
-    perror("pthread_create");
-    return;
-  }
+  wsyserr(rc < 0, "pthread_create");
 }
 
 void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-           xmpp_conn_t *const conn, void *const userdata) {
+           xmpp_conn_t *const conn, void *const userdata)
+{
   wlog("files()");
 
-  int rc; /* Return code */
-
-  /* Get action attribute */
   char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
   if (action_attr == NULL) {
     werr("xmpp_stanza_get_attribute attribute = action");
   }
+  wfatal(action_attr == NULL, "xmpp_stanza_get_attribute [attribute = action]");
 
-  /* attributes action */
-  if (strncasecmp(action_attr, "attributes", 10) == 0) {
-    rc = pthread_mutex_lock(&mutex);
-    if (rc != 0) {
-      werr("pthread_mutex_lock");
-      perror("pthread_mutex_lock");
-    }
+  if (strcmp(action_attr, "attributes") == 0) {
+    files_attr(stanza);
+  } else if (strcmp(action_attr, "list") == 0) {
+    files_list(stanza);
+  } else if (strncasecmp(action_attr, "read", 4) == 0) {
+    files_read(stanza);
+  } else {
+    werr("Unknown action: %s", action_attr);
+  }
 
-    /* Get error attribute */
-    char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* action attribute */
-    if (error_attr == NULL) {
-      werr("xmpp_stanza_get_attribute attribute = error");
-      return;
-    }
+  wlog("Return from files()");
+}
 
-    if (strncasecmp(error_attr, "0", 1) != 0) {
-      wlog("Error in attributes: %s", error_attr);
-      attributes.valid = -1;
+void files_attr(xmpp_stanza_t *stanza) {
+  int rc; /* Return code */
+
+  rc = pthread_mutex_lock(&mutex);
+  wsyserr(rc != 0, "pthread_mutex_lock");
+
+  char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* error attribute */
+  wfatal(error_attr == NULL, "no error attribute in files stanza");
+
+  if (strcmp(error_attr, "0") != 0) {
+    wlog("Error in attributes: %s", error_attr);
+    attributes.is_valid = -1;
+  } else {
+    char *type_attr = xmpp_stanza_get_attribute(stanza, "type"); /* type attribute */
+    wfatal(type_attr == NULL, "no type attribute in files stanza");
+
+    if (strcmp(type_attr, "directory") == 0) {
+      attributes.is_valid = 1;
+      attributes.type = DIR;
+    } else if (strcmp(type_attr, "file") == 0) {
+      attributes.is_valid = 1;
+      attributes.type = REG;
     } else {
-      /* Get type attributes */
-      char *type_attr = xmpp_stanza_get_attribute(stanza, "type");
-      if (type_attr == NULL) {
-        werr("xmpp_stanza_get_attribute attribute = type");
+      werr("Unknown type: %s", type_attr);
+      attributes.is_valid = -1;
+    }
+
+    char *size_attr = xmpp_stanza_get_attribute(stanza, "size"); /* size */
+    if (size_attr == NULL) {
+      werr("xmpp_stanza_get_attribute attribute = size");
+      attributes.size = 0;
+    } else {
+      char *endptr; /* strtol endptr */
+      long int size = strtol(size_attr, &endptr, 10);
+      if (*endptr != '\0') {
+        werr("strtol error: str = %s, val = %ld", size_attr, size);
+        attributes.size = 0; 
       }
+      attributes.size = size;
+    }
+  }
 
-      if (strncasecmp(type_attr, "directory", 9) == 0) {
-        attributes.valid = 1;
-        attributes.type = DIR;
-        
-        /* Get size attributes */
-        char *size_attr = xmpp_stanza_get_attribute(stanza, "size");
-        if (size_attr == NULL) {
-          werr("xmpp_stanza_get_attribute attribute = size");
-          attributes.size = 0;          
-        } else {
-          char *endptr; /* strtol endptr */
-          long int size = strtol(size_attr, &endptr, 10);
-          if (*endptr != '\0') {
-            werr("strtol error: str = %s, val = %ld", size_attr, size);
-            attributes.size = 0; 
-          }
+  signal_attr = true;
 
-          attributes.size = size;
-        }
-      } else if (strncasecmp(type_attr, "file", 4) == 0) {
-        attributes.valid = 1;
-        attributes.type = REG;
+  rc = pthread_cond_signal(&cond);
+  wsyserr(rc != 0, "pthread_cond_signal");
 
-        /* Get size attributes */
-        char *size_attr = xmpp_stanza_get_attribute(stanza, "size");
-        if (size_attr == NULL) {
-          werr("xmpp_stanza_get_attribute attribute = size");
-          attributes.size = 0;          
-        } else {
-          char *endptr; /* strtol endptr */
-          long int size = strtol(size_attr, &endptr, 10);
-          if (*endptr != '\0') {
-            werr("strtol error: str = %s, val = %ld", size_attr, size);
-            attributes.size = 0; 
-          }
+  rc = pthread_mutex_unlock(&mutex);
+  wsyserr(rc != 0, "pthread_mutex_unlock");
+}
 
-          attributes.size = size;
-        }
+void files_list(xmpp_stanza_t *stanza) {
+  int rc; /* Return code */
+
+  rc = pthread_mutex_lock(&mutex);
+  wsyserr(rc != 0, "pthread_mutex_lock");
+
+  char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* error attribute */
+  wfatal(error_attr == NULL, "no error attribute in files stanza");
+
+  if (strcmp(error_attr, "0") != 0) {
+    wlog("Error in attributes: %s", error_attr);
+  } else {
+    xmpp_stanza_t *child = xmpp_stanza_get_children(stanza);
+    while (child != NULL) {
+      elem_t *elem = (elem_t *)malloc(sizeof(elem_t));
+      wsyserr(elem == NULL, "malloc");
+
+      elem->next = NULL;
+
+      char *name = xmpp_stanza_get_name(child);
+      wfatal(name == NULL, "xmpp_stanza_get_name");
+
+      if (strcmp(name, "directory") == 0) {
+        elem->type = DIR;
+      } else if (strcmp(name, "file") == 0) {
+        elem->type = REG;
       } else {
-        werr("Unknown type: %s", type_attr);
-        attributes.valid = -1;
+        werr("Unknown name: %s", name);
       }
 
-    }
+      char *filename_attr = xmpp_stanza_get_attribute(child, "filename");
+      wfatal(filename_attr == NULL, "xmpp_stanza_get_attribute [attribute = filename]");
 
-    gotattr = 1;
-    rc = pthread_cond_signal(&cond);
-    if (rc != 0) {
-      werr("pthread_mutex_unlock");
-      perror("pthread_mutex_unlock");
-    }
+      elem->filename = strdup(filename_attr);
+      wsyserr(elem->filename == NULL, "strdup");
 
-    rc = pthread_mutex_unlock(&mutex);
-    if (rc != 0) {
-      werr("pthread_mutex_unlock");
-      perror("pthread_mutex_unlock");
-    }
-  }
-
-  /* list action */
-  else if (strncasecmp(action_attr, "list", 4) == 0) {
-    rc = pthread_mutex_lock(&mutex);
-    if (rc != 0) {
-      werr("pthread_mutex_lock");
-      perror("pthread_mutex_lock");
-    }
-
-    /* Set data */
-
-    /* Get error attribute */
-    char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* action attribute */
-    if (error_attr == NULL) {
-      werr("xmpp_stanza_get_attribute attribute = error");
-      return;
-    }
-
-    if (strncasecmp(error_attr, "0", 1) != 0) {
-      wlog("Error in attributes: %s", error_attr);
-    } else {
-      xmpp_stanza_t *child = xmpp_stanza_get_children(stanza); /* Stanza children */
-      while (child != NULL) {
-        elem_t *elem = (elem_t *)malloc(sizeof(elem_t));
-        if (elem == NULL) {
-          werr("malloc");
-          perror("malloc");
-          return;
-        }
-        elem->next = NULL;
-
-        char *name = xmpp_stanza_get_name(child);
-        if (name == NULL) {
-          werr("xmpp_stanza_get_name");
-          return;
-        }
-
-        if (strcmp(name, "directory") == 0) {
-          elem->type = DIR;
-        } else if (strcmp(name, "file") == 0) {
-          elem->type = REG;
-        } else {
-          werr("Unknown name: %s", name);
-        }
-
-        char *filename_attr = xmpp_stanza_get_attribute(child, "filename");
-        if (filename_attr == NULL) {
-          werr("xmpp_stanza_get_attribute filename");
-          return;
-        }
-
-        elem->filename = strdup(filename_attr);
-        if (elem->filename == NULL) {
-          werr("strdup");
-          perror("strdup");
-        } 
-
-        /* Add elem in list */
-        if (root == NULL) {
-          root = elem;
-        } else {
-          last->next = elem;
-        }
-        last = elem;
-
-        child = xmpp_stanza_get_next(child);
+      /* Add elem in list */
+      if (root == NULL) {
+        root = elem;
+      } else {
+        last->next = elem;
       }
-    }
+      last = elem;
 
-    /* Data set */
-    gotlist = 1;
-    rc = pthread_cond_signal(&cond);
-    if (rc != 0) {
-      werr("pthread_cond_signal");
-      perror("pthread_cond_signal");
-    }
-
-    rc = pthread_mutex_unlock(&mutex);
-    if (rc != 0) {
-      werr("pthread_mutex_unlock");
-      perror("pthread_mutex_unlock");
+      child = xmpp_stanza_get_next(child);
     }
   }
 
-  /* read action */
-  else if (strncasecmp(action_attr, "read", 4) == 0) {
-    rc = pthread_mutex_lock(&mutex);
-    if (rc != 0) {
-      werr("pthread_mutex_lock");
-      perror("pthread_mutex_lock");
-    }
+  /* Data set */
+  signal_list = true;
+  rc = pthread_cond_signal(&cond);
+  wsyserr(rc != 0, "pthread_cond_signal");
 
-    /* Set data */
+  rc = pthread_mutex_unlock(&mutex);
+  wsyserr(rc != 0, "pthread_mutex_unlock");
+}
 
-    char *data_str = xmpp_stanza_get_text(stanza); /* data string */
-    if(data_str == NULL) {
-      wlog("NULL data");
-    }
+void files_read(xmpp_stanza_t *stanza) {
+  int rc;
 
-    /* Decode */
-    int dec_size = strlen(data_str) * 3 / 4 + 1; /* decoded data length */
-    uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
-    int rc = base64_decode(decoded, data_str, dec_size); /* decode */
+  rc = pthread_mutex_lock(&mutex);
+  wsyserr(rc != 0, "pthread_mutex_lock");
 
-    read_data = strdup((char *)decoded);
-    if (read_data == NULL) {
-      werr("strdup");
-      perror("strdup");
-    } 
-
-    /* Data set */
-
-    gotread = 1;
-    rc = pthread_cond_signal(&cond);
-    if (rc != 0) {
-      werr("pthread_cond_signal");
-      perror("pthread_cond_signal");
-    }
-
-    rc = pthread_mutex_unlock(&mutex);
-    if (rc != 0) {
-      werr("pthread_mutex_unlock");
-      perror("pthread_mutex_unlock");
-    }     
+  char *text = xmpp_stanza_get_text(stanza);
+  if(text == NULL) {
+    werr("xmpp_stanza_get_text returned NULL");
   }
+
+  /* Decode */
+  int dec_size = strlen(text) * 3 / 4 + 1;
+  uint8_t *dec_text = (uint8_t *)calloc(dec_size, sizeof(uint8_t));
+  rc = base64_decode(dec_text, text, dec_size);
+  wfatal(rc < 0, "base64_decode");
+
+  read_data = strdup((char *)dec_text);
+  wsyserr(read_data == NULL, "strdup");
+
+  signal_read = true;
+  rc = pthread_cond_signal(&cond);
+  wsyserr(rc != 0, "pthread_cond_signal");
+
+  rc = pthread_mutex_unlock(&mutex);
+  wsyserr(rc != 0, "pthread_mutex_unlock");  
 }
 
 #endif /* FILES */
