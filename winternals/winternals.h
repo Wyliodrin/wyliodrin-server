@@ -16,6 +16,11 @@ typedef unsigned char  uint8_t;
 typedef unsigned short int uint16_t;
 typedef unsigned int   uint32_t;
 
+typedef enum {
+  false = 0,
+  true  = 1
+} bool_t;
+
 #define LOG_FILE stdout
 #define ERR_FILE stderr
 
@@ -35,5 +40,22 @@ typedef unsigned int   uint32_t;
 #else
   #define werr(msg, ...) /* Do nothing */
 #endif
+
+#define wfatal(assertion, msg, ...)                                                          \
+  do {                                                                                       \
+    if (assertion) {                                                                         \
+      fprintf(ERR_FILE, "[wfatal in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);   \
+      exit(EXIT_FAILURE);                                                                    \
+    }                                                                                        \
+  } while (0)
+
+#define wsyserr(assertion, msg)                                     \
+  do {                                                              \
+    if (assertion) {                                                \
+      fprintf(stderr, "[wsyserr in %s:%d] ", __FILE__, __LINE__);   \
+      perror(msg);                                                  \
+      exit(EXIT_FAILURE);                                           \
+    }                                                               \
+  } while (0)
 
 #endif // _INTERNALS_H 
