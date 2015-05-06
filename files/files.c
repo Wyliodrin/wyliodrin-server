@@ -21,9 +21,10 @@
 
 #include <strophe.h>
 
-#include "../winternals/winternals.h"
-#include "../wxmpp/wxmpp.h"
-#include "../base64/base64.h"
+#include "../winternals/winternals.h" /* logs and errs */
+#include "../wxmpp/wxmpp.h"           /* stanzas       */
+#include "../base64/base64.h"         /* decoe         */
+#include "../libds/ds.h"              /* hashmap       */
 
 #include "files.h"
 
@@ -32,19 +33,21 @@ extern xmpp_conn_t *conn; /* Connection */
 
 extern const char *owner_str; /* owner_str from init.c */
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t  cond  = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; /* mutex      */
+pthread_cond_t  cond  = PTHREAD_COND_INITIALIZER;  /* condition  */
 
 /* Condition signals */
 bool_t signal_attr = false;
 bool_t signal_list = false;
 bool_t signal_read = false;
 
+/* Filetype */
 typedef enum {
   DIR,          /* Directory    */
   REG           /* Regular file */
 } filetype_t;
 
+/* File attributes */
 typedef struct {
   unsigned int size;
   filetype_t type;
@@ -53,20 +56,22 @@ typedef struct {
 
 attr_t attributes = {0, DIR, -1};
 
+/* List of files */
 typedef struct elem_t {
   filetype_t type;
   char *filename;
   struct elem_t *next;
 } elem_t;
 
+/* root and last element of list of files */
 elem_t *root = NULL;
 elem_t *last = NULL;
 
 char *read_data = NULL;
 
-void files_attr(xmpp_stanza_t *stanza);
-void files_list(xmpp_stanza_t *stanza);
-void files_read(xmpp_stanza_t *stanza);
+static void files_attr(xmpp_stanza_t *stanza);
+static void files_list(xmpp_stanza_t *stanza);
+static void files_read(xmpp_stanza_t *stanza);
 
 static int wfuse_getattr(const char *path, struct stat *stbuf) {
   wlog("wfuse_getattr path = %s\n", path);
@@ -77,11 +82,11 @@ static int wfuse_getattr(const char *path, struct stat *stbuf) {
   wsyserr(rc != 0, "pthread_mutex_lock");
 
   /* Send attributes stanza */
-  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
+  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with files */
   xmpp_stanza_set_name(message, "message");
   xmpp_stanza_set_attribute(message, "to", owner_str);
 
-  xmpp_stanza_t *files = xmpp_stanza_new(ctx); /* message with done */
+  xmpp_stanza_t *files = xmpp_stanza_new(ctx); /* files */
   xmpp_stanza_set_name(files, "files");
   xmpp_stanza_set_ns(files, WNS);
   xmpp_stanza_set_attribute(files, "action", "attributes");
@@ -123,11 +128,9 @@ static int wfuse_getattr(const char *path, struct stat *stbuf) {
       res = -ENOENT;
     }
   }
-
   /* Job done */
 
   signal_attr = false;
-
   rc = pthread_mutex_unlock(&mutex);
   wsyserr(rc != 0, "pthread_mutex_unlock");
 
@@ -158,34 +161,39 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
   xmpp_send(conn, message);
   xmpp_stanza_release(message);
 
-  /* Wait until attributes is set */
   while (signal_list == false) {
     pthread_cond_wait(&cond, &mutex);
   }
 
-  /* Do your job */
+  wfatal(root == NULL, "root is NULL");
 
+  /* Do your job */
   (void) offset;
   (void) fi;
 
   filler(buf, ".", NULL, 0);
   filler(buf, "..", NULL, 0);
 
-  if (root == NULL) {
-    werr("root is NULL");
-  } else {
-    elem_t *aux = root;
-    while (aux != NULL) {
-      filler(buf, aux->filename, NULL, 0);
-      aux = aux->next;
-    }
-    root = NULL;
+  elem_t *aux = root;
+  while (aux != NULL) {
+    filler(buf, aux->filename, NULL, 0);
+    aux = aux->next;
   }
 
+  /* Free list */
+  aux = root;
+  elem_t *aux2;
+  while (aux != NULL) {
+    free(aux->filename);
+    aux2 = aux;
+    aux = aux->next;
+    free(aux2);
+  }
+
+  root = NULL;
   /* Job done */
 
   signal_list = false;
-
   rc = pthread_mutex_unlock(&mutex);
   wsyserr(rc != 0, "pthread_mutex_unlock");
 
@@ -298,7 +306,7 @@ void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   wlog("Return from files()");
 }
 
-void files_attr(xmpp_stanza_t *stanza) {
+static void files_attr(xmpp_stanza_t *stanza) {
   int rc; /* Return code */
 
   rc = pthread_mutex_lock(&mutex);
@@ -349,7 +357,7 @@ void files_attr(xmpp_stanza_t *stanza) {
   wsyserr(rc != 0, "pthread_mutex_unlock");
 }
 
-void files_list(xmpp_stanza_t *stanza) {
+static void files_list(xmpp_stanza_t *stanza) {
   int rc; /* Return code */
 
   rc = pthread_mutex_lock(&mutex);
@@ -361,6 +369,9 @@ void files_list(xmpp_stanza_t *stanza) {
   if (strcmp(error_attr, "0") != 0) {
     wlog("Error in attributes: %s", error_attr);
   } else {
+    char *path_attr = xmpp_stanza_get_attribute(stanza, "path"); /* path attribute */
+    wfatal(path_attr == NULL, "xmpp_stanza_get_attribute [attribute = path]");
+
     xmpp_stanza_t *child = xmpp_stanza_get_children(stanza);
     while (child != NULL) {
       elem_t *elem = (elem_t *)malloc(sizeof(elem_t));
@@ -406,7 +417,7 @@ void files_list(xmpp_stanza_t *stanza) {
   wsyserr(rc != 0, "pthread_mutex_unlock");
 }
 
-void files_read(xmpp_stanza_t *stanza) {
+static void files_read(xmpp_stanza_t *stanza) {
   int rc;
 
   rc = pthread_mutex_lock(&mutex);
@@ -417,12 +428,14 @@ void files_read(xmpp_stanza_t *stanza) {
     werr("xmpp_stanza_get_text returned NULL");
   }
 
-  /* Decode */
   int dec_size = strlen(text) * 3 / 4 + 1;
   uint8_t *dec_text = (uint8_t *)calloc(dec_size, sizeof(uint8_t));
   rc = base64_decode(dec_text, text, dec_size);
   wfatal(rc < 0, "base64_decode");
 
+  if (read_data != NULL) {
+    free(read_data);
+  }
   read_data = strdup((char *)dec_text);
   wsyserr(read_data == NULL, "strdup");
 
