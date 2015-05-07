@@ -7,7 +7,7 @@
 
 #include <strophe.h>                  /* Strophe XMPP stuff */
 
-#include "../winternals/winternals.h" /* logs and errs*/
+#include "../winternals/winternals.h" /* logs and errs */
 #include "../libds/ds.h"              /* hashmap */
 #include "wxmpp.h"                    /* wxmpp api */
 #include "wxmpp_handlers.h"           /* handlers */

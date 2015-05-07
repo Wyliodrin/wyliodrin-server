@@ -16,6 +16,17 @@
 #include "../shells/shells.h"
 #include "../files/files.h"
 
+bool_t is_user_online = false;
+
+extern pthread_mutex_t mutex; /* mutex      */
+extern pthread_cond_t  cond;  /* condition  */
+
+/* Condition signals */
+extern bool_t signal_attr;
+extern bool_t signal_list;
+extern bool_t signal_read;
+extern bool_t signal_fail;
+
 /* Wyliodrin connection handler */
 void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
                    xmpp_stream_error_t * const stream_error, void * const userdata) {
@@ -25,22 +36,12 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
     wlog("Connection success");
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-
-    /* Init shells module */
-#   ifdef SHELLS
-      init_shells();
-#   endif
-
-    /* Init files module */
-#   ifdef SHELLS
-      init_files();
-#   endif
     
     /* Add ping handler */
     xmpp_handler_add(conn, wping_handler, "urn:xmpp:ping", "iq", "get", ctx);
 
-    /* Add subscribe handler */
-    xmpp_handler_add(conn, wsubscribe_handler, NULL, "presence", "subscribe", ctx);
+    /* Add presence handler */
+    xmpp_handler_add(conn, wpresence_handler, NULL, "presence", NULL, ctx);
 
     /* Add wyliodrin handler */
     xmpp_handler_add(conn, wyliodrin_handler, WNS, "message", NULL, ctx);
@@ -69,10 +70,14 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
   } else if (status == XMPP_CONN_DISCONNECT) {
     werr("Connection error: status XMPP_CONN_DISCONNECT");
 
+    is_user_online = false;
+
     xmpp_ctx_t *ctx = (xmpp_ctx_t *)userdata;
     xmpp_stop(ctx);
   } else if (status == XMPP_CONN_FAIL) {
     werr("Connection error: status XMPP_CONN_FAIL");
+
+    is_user_online = false;
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t *)userdata;
     xmpp_stop(ctx);
@@ -137,18 +142,47 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
   return TRUE;
 }
 
-int wsubscribe_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
-  wlog("wsubscribe_handler(...)");
+int wpresence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
+  wlog("wpresence_handler(...)");
 
-  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+  /* Presence type */
+  char *type = xmpp_stanza_get_type(stanza); /* Stanza type */
+  if (type == NULL) {
+    xmpp_stanza_t *children = xmpp_stanza_get_child_by_name(stanza, "status");
 
-  xmpp_stanza_t *subscribed = xmpp_stanza_new(ctx); /* Subscribe stanza */
-  xmpp_stanza_set_name(subscribed, "presence");
-  xmpp_stanza_set_attribute(subscribed, "to", owner_str);
-  xmpp_stanza_set_type(subscribed, "subscribed");
-  xmpp_send(conn, subscribed);
-  xmpp_stanza_release(subscribed);
+    /* User is online */
+    if (children != NULL) {
+      is_user_online = true;
 
-  wlog("Return TRUE from wsubscribe_handler(...)");
+      /* Init shells module */
+#     ifdef SHELLS
+        init_shells();
+#     endif
+
+      /* Init files module */
+#     ifdef SHELLS
+        init_files();
+#     endif
+    }
+
+    return TRUE;
+  }
+
+  if (strcmp(type, "subscribe") == 0) {
+    xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+
+    xmpp_stanza_t *subscribed = xmpp_stanza_new(ctx); /* Subscribe stanza */
+    xmpp_stanza_set_name(subscribed, "presence");
+    xmpp_stanza_set_attribute(subscribed, "to", owner_str);
+    xmpp_stanza_set_type(subscribed, "subscribed");
+    xmpp_send(conn, subscribed);
+    xmpp_stanza_release(subscribed);
+  }
+
+  else if (strcmp(type, "unavailable") == 0) {
+    is_user_online = false;
+  }
+
+  wlog("Return TRUE from wpresence_handler(...)");
   return TRUE;
 }

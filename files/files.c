@@ -33,6 +33,8 @@ extern xmpp_conn_t *conn; /* Connection */
 
 extern const char *owner_str; /* owner_str from init.c */
 
+extern bool_t is_user_online; /* connection checker from wxmpp_handlers.c */
+
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; /* mutex      */
 pthread_cond_t  cond  = PTHREAD_COND_INITIALIZER;  /* condition  */
 
@@ -40,6 +42,7 @@ pthread_cond_t  cond  = PTHREAD_COND_INITIALIZER;  /* condition  */
 bool_t signal_attr = false;
 bool_t signal_list = false;
 bool_t signal_read = false;
+bool_t signal_fail = false;
 
 /* Filetype */
 typedef enum {
@@ -76,6 +79,10 @@ static void files_read(xmpp_stanza_t *stanza);
 static int wfuse_getattr(const char *path, struct stat *stbuf) {
   wlog("wfuse_getattr path = %s\n", path);
 
+  if (!is_user_online) {
+    return -ENOENT;
+  }
+
   int rc; /* Return code */
 
   rc = pthread_mutex_lock(&mutex);
@@ -97,35 +104,44 @@ static int wfuse_getattr(const char *path, struct stat *stbuf) {
   xmpp_stanza_release(message);
 
   /* Wait until attributes is set */
-  while (signal_attr == 0) {
+  while (signal_attr == false) {
     pthread_cond_wait(&cond, &mutex);
   }
 
-  /* Do your job */
   int res = 0;
 
-  memset(stbuf, 0, sizeof(struct stat));
-  if (strcmp(path, "/") == 0) {
-    stbuf->st_mode = S_IFDIR | 0444;
-    stbuf->st_nlink = 2;
-  }
+  /* Do your job */
+  if (signal_fail == true) {
+    res = -ENOENT;
 
-  else {
-    if (attributes.is_valid == 1) {
-      if (attributes.type == DIR) {
-        stbuf->st_mode = S_IFDIR | 0444;
-        stbuf->st_nlink = 2;
-        stbuf->st_size = attributes.size;
-      } else if (attributes.type == REG) {
-        stbuf->st_mode = S_IFREG | 0444;
-        stbuf->st_nlink = 1;
-        stbuf->st_size = attributes.size;
+    signal_attr = false;
+    signal_list = false;
+    signal_read = false;
+    signal_fail = false;
+  } else {
+    memset(stbuf, 0, sizeof(struct stat));
+    if (strcmp(path, "/") == 0) {
+      stbuf->st_mode = S_IFDIR | 0444;
+      stbuf->st_nlink = 2;
+    }
+
+    else {
+      if (attributes.is_valid == 1) {
+        if (attributes.type == DIR) {
+          stbuf->st_mode = S_IFDIR | 0444;
+          stbuf->st_nlink = 2;
+          stbuf->st_size = attributes.size;
+        } else if (attributes.type == REG) {
+          stbuf->st_mode = S_IFREG | 0444;
+          stbuf->st_nlink = 1;
+          stbuf->st_size = attributes.size;
+        } else {
+          werr("Unknown type");
+          res = -ENOENT;
+        }
       } else {
-        werr("Unknown type");
         res = -ENOENT;
       }
-    } else {
-      res = -ENOENT;
     }
   }
   /* Job done */
@@ -141,6 +157,10 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                          off_t offset, struct fuse_file_info *fi)
 {
   wlog("wfuse_readdir path = %s\n", path);
+
+  if (!is_user_online) {
+    return -ENOENT;
+  }
 
   int rc; /* Return code */
 
@@ -165,43 +185,57 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     pthread_cond_wait(&cond, &mutex);
   }
 
-  wfatal(root == NULL, "root is NULL");
+  int res = 0;
 
   /* Do your job */
-  (void) offset;
-  (void) fi;
+  if (signal_fail == true) {
+    res = -ENOENT;
+    signal_attr = false;
+    signal_list = false;
+    signal_read = false;
+    signal_fail = false;
+  } else {
+    wfatal(root == NULL, "root is NULL");
 
-  filler(buf, ".", NULL, 0);
-  filler(buf, "..", NULL, 0);
+    (void) offset;
+    (void) fi;
 
-  elem_t *aux = root;
-  while (aux != NULL) {
-    filler(buf, aux->filename, NULL, 0);
-    aux = aux->next;
+    filler(buf, ".", NULL, 0);
+    filler(buf, "..", NULL, 0);
+
+    elem_t *aux = root;
+    while (aux != NULL) {
+      filler(buf, aux->filename, NULL, 0);
+      aux = aux->next;
+    }
+
+    /* Free list */
+    aux = root;
+    elem_t *aux2;
+    while (aux != NULL) {
+      free(aux->filename);
+      aux2 = aux;
+      aux = aux->next;
+      free(aux2);
+    }
+
+    root = NULL;
   }
-
-  /* Free list */
-  aux = root;
-  elem_t *aux2;
-  while (aux != NULL) {
-    free(aux->filename);
-    aux2 = aux;
-    aux = aux->next;
-    free(aux2);
-  }
-
-  root = NULL;
   /* Job done */
 
   signal_list = false;
   rc = pthread_mutex_unlock(&mutex);
   wsyserr(rc != 0, "pthread_mutex_unlock");
 
-  return 0;
+  return res;
 }
 
 static int wfuse_open(const char *path, struct fuse_file_info *fi) {
   wlog("wfuse_open path = %s\n", path);
+
+  if (!is_user_online) {
+    return -ENOENT;
+  }
 
   if ((fi->flags & 3) != O_RDONLY)
     return -EACCES;
@@ -213,6 +247,10 @@ static int wfuse_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
 {
   wlog("wfuse_read path = %s\n", path);
+
+  if (!is_user_online) {
+    return -ENOENT;
+  }
 
   int rc; /* Return code */
 
@@ -238,21 +276,29 @@ static int wfuse_read(const char *path, char *buf, size_t size, off_t offset,
     pthread_cond_wait(&cond, &mutex);
   }
 
+  int res = size;
+
   /* Do your job */
-
-  size_t len;
-  (void) fi;
-  len = strlen(read_data);
-
-  if (offset < len) {
-    if (offset + size > len) {
-      size = len - offset;
-    }
-    memcpy(buf, read_data + offset, size);
+  if (signal_fail == true) {
+    res = -ENOENT;
+    signal_attr = false;
+    signal_list = false;
+    signal_read = false;
+    signal_fail = false;
   } else {
-    size = 0;
-  }
+    size_t len;
+    (void) fi;
+    len = strlen(read_data);
 
+    if (offset < len) {
+      if (offset + size > len) {
+        size = len - offset;
+      }
+      memcpy(buf, read_data + offset, size);
+    } else {
+      size = 0;
+    }
+  }
   /* Job done */
 
   signal_read = false;
@@ -260,7 +306,7 @@ static int wfuse_read(const char *path, char *buf, size_t size, off_t offset,
   rc = pthread_mutex_unlock(&mutex);
   wsyserr(rc != 0, "pthread_mutex_unlock");
 
-  return size;
+  return res;
 }
 
 static struct fuse_operations wfuse_oper = {
@@ -276,10 +322,16 @@ void *init_files_thread(void *a) {
   return NULL;
 }
 
+bool_t files_initialized = false;
+
 void init_files() {
-  pthread_t ift; /* Init files thread */
-  int rc = pthread_create(&ift, NULL, init_files_thread, NULL);
-  wsyserr(rc < 0, "pthread_create");
+  if (!files_initialized) {
+    pthread_t ift; /* Init files thread */
+    int rc = pthread_create(&ift, NULL, init_files_thread, NULL);
+    wsyserr(rc < 0, "pthread_create");
+
+    files_initialized = true;
+  }
 }
 
 void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,

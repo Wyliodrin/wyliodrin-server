@@ -8,6 +8,8 @@
 #ifndef _WXMPP_H
 #define _WXMPP_H
 
+#include "../winternals/winternals.h" /* bool_t */
+
 #define WNS "wyliodrin" /* Wyliodrin namespace */
 
 #define TAGS_SIZE  100  /* Size of tags hashmap */

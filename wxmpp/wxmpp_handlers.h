@@ -28,10 +28,8 @@ int wping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *co
 int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
 
 /**
- * Subscribe handler
- *
- * Needed to set roster between owner and board.
+ * Presence handler
  */
-int wsubscribe_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
+int wpresence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
 
 #endif // _WXMPP_HANDLERS_H
