@@ -34,14 +34,20 @@ shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
 pthread_mutex_t shells_lock; /* shells mutex */
 
-void init_shells() {
-  uint32_t i;
+bool_t shells_initialized = false;
 
-  pthread_mutex_lock(&shells_lock);
-  for(i = 0; i < MAX_SHELLS; i++) {
-    shells_vector[i] = NULL;
+void init_shells() {
+  if (!shells_initialized) {
+    uint32_t i;
+
+    pthread_mutex_lock(&shells_lock);
+    for(i = 0; i < MAX_SHELLS; i++) {
+      shells_vector[i] = NULL;
+    }
+    pthread_mutex_unlock(&shells_lock);
+
+    shells_initialized = true;
   }
-  pthread_mutex_unlock(&shells_lock);
 }
 
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
