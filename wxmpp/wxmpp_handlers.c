@@ -8,6 +8,7 @@
 #include <strophe.h> /* Strophe XMPP stuff */
 #include <strings.h> /* strncasecmp */
 #include <string.h>  /* strlen */
+#include <pthread.h> /* mutex and cond */
 
 #include "../winternals/winternals.h" /* logs and errs*/
 #include "../libds/ds.h"              /* hashmap */
@@ -72,12 +73,44 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
 
     is_user_online = false;
 
+    /* Signal disconnect event to files module */
+    int rc;
+
+    rc = pthread_mutex_lock(&mutex);
+    wsyserr(rc != 0, "pthread_mutex_lock");
+
+    signal_attr = true;
+    signal_list = true;
+    signal_read = true;
+    signal_fail = true;
+    rc = pthread_cond_signal(&cond);
+    wsyserr(rc != 0, "pthread_cond_signal");
+
+    rc = pthread_mutex_unlock(&mutex);
+    wsyserr(rc != 0, "pthread_mutex_unlock");
+
     xmpp_ctx_t *ctx = (xmpp_ctx_t *)userdata;
     xmpp_stop(ctx);
   } else if (status == XMPP_CONN_FAIL) {
     werr("Connection error: status XMPP_CONN_FAIL");
 
     is_user_online = false;
+
+    /* Signal disconnect event to files module */
+    int rc;
+
+    rc = pthread_mutex_lock(&mutex);
+    wsyserr(rc != 0, "pthread_mutex_lock");
+
+    signal_attr = true;
+    signal_list = true;
+    signal_read = true;
+    signal_fail = true;
+    rc = pthread_cond_signal(&cond);
+    wsyserr(rc != 0, "pthread_cond_signal");
+
+    rc = pthread_mutex_unlock(&mutex);
+    wsyserr(rc != 0, "pthread_mutex_unlock");
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t *)userdata;
     xmpp_stop(ctx);
