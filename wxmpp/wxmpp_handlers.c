@@ -16,6 +16,7 @@
 #include "wxmpp_handlers.h"           /* handlers api */
 #include "../shells/shells.h"
 #include "../files/files.h"
+#include "../make/make.h"
 
 bool_t is_user_online = false;
 
@@ -196,6 +197,11 @@ int wpresence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
 #     ifdef SHELLS
         init_files();
 #     endif
+
+      /* Init make module */
+#     ifdef MAKE
+        init_make();
+#     endif      
     }
 
     return TRUE;

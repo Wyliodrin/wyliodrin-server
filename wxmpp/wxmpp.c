@@ -26,6 +26,10 @@
   #include "../ps/ps.h"                 /* ps module */
 #endif
 
+#ifdef MAKE
+  #include "../make/make.h"             /* make module */
+#endif
+
 hashmap_p tags = NULL; /* tags hashmap */
 
 xmpp_ctx_t *ctx;   /* Context    */
@@ -83,6 +87,10 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
 
   #ifdef PS
     wadd_tag("ps", ps);
+  #endif
+
+  #ifdef MAKE
+    wadd_tag("make", make);
   #endif
 
   /* Enter the event loop */
