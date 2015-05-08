@@ -121,14 +121,14 @@ static int wfuse_getattr(const char *path, struct stat *stbuf) {
   } else {
     memset(stbuf, 0, sizeof(struct stat));
     if (strcmp(path, "/") == 0) {
-      stbuf->st_mode = S_IFDIR | 0444;
+      stbuf->st_mode = S_IFDIR | 0777;
       stbuf->st_nlink = 2;
     }
 
     else {
       if (attributes.is_valid == 1) {
         if (attributes.type == DIR) {
-          stbuf->st_mode = S_IFDIR | 0444;
+          stbuf->st_mode = S_IFDIR | 0777;
           stbuf->st_nlink = 2;
           stbuf->st_size = attributes.size;
         } else if (attributes.type == REG) {
