@@ -7,6 +7,7 @@
 
 #ifdef MAKE
 
+#include <stdio.h>   /* sprintf    */
 #include <string.h>  /* strcmp     */
 #include <strophe.h> /* xmpp stuff */
 #include <stdlib.h>  /* malloc     */
@@ -50,16 +51,19 @@ void *fork_thread(void *args) {
 
   pid = fork();
 
-  wfatal(pid == -1, "fork returned -1");
+  wfatal(pid == -1, "fork error");
 
   if (pid == 0) {
     char src[4 + strlen(projectid_attr) + 1];
     sprintf(src, "mnt/%s", projectid_attr);
 
-    char *args[] = {"cp", "-r", src, "build", NULL};
-    execvp(args[0], args);
+    char cmd[100];
+    sprintf(cmd, "rm -rf build/%s && cp -r %s build && cd build/%s && make -f Makefile.raspberrypi", 
+      projectid_attr, src, projectid_attr);
+    system((const char *)cmd);
+    wlog("system done\n\n\n\n\n\n\n\n\n\n\n\n\n");
 
-    wfatal(true,"execvp failed");
+    exit(EXIT_SUCCESS);
   }
 
   waitpid(pid, &status, 0);
