@@ -52,6 +52,7 @@ void *out_read_thread(void *args) {
   char buf[BUFSIZE];
 
   while(1) {
+    memset(buf, 0, BUFSIZE);
     rc = read(fd, buf, BUFSIZE);
     if (rc > 0) {
       /* Send Working */
@@ -97,8 +98,8 @@ void *err_read_thread(void *args) {
   char buf[BUFSIZE];
 
   while(1) {
+    memset(buf, 0, BUFSIZE);
     rc = read(fd, buf, BUFSIZE);
-    wlog("read err\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
     if (rc > 0) {
       /* Send Working */
       xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
@@ -126,7 +127,6 @@ void *err_read_thread(void *args) {
       xmpp_send(conn, message_stz);
       xmpp_stanza_release(message_stz);
     } else if (rc < 0) {
-      wlog("read err done\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
       return NULL;
     }
   }
@@ -146,6 +146,10 @@ void *fork_thread(void *args) {
   int rc;
   int out_fd[2];
   int err_fd[2];
+  char *system_exitstatus_str;
+
+  system_exitstatus_str = (char *)malloc(8);
+  wsyserr(system_exitstatus_str == NULL, "malloc");
 
   rc = pipe(out_fd);
   wsyserr(rc != 0, "pipe");
@@ -190,15 +194,16 @@ void *fork_thread(void *args) {
     rc = dup2(err_fd[1], STDERR_FILENO); /* Redirect error to write end of err_fd */
     wsyserr(rc < 0, "dup2");
 
-    system((const char *)cmd);
+    rc = system((const char *)cmd);
+    wsyserr(rc == -1, "system");
 
-    rc = close(out_fd[0]); /* Close out read entry */
+    sprintf(system_exitstatus_str, "%d", WIFEXITED(rc));
+
+    /* Close STDOUT and STDERR */
+    /* This will cause the read threads to finish their execution */
+    rc = close(STDOUT_FILENO);
     wsyserr(rc != 0, "close");
-    rc = close(out_fd[0]); /* Close err read entry */
-    wsyserr(rc != 0, "close");
-    rc = close(out_fd[1]); /* Close out write entry */
-    wsyserr(rc != 0, "close");
-    rc = close(out_fd[1]); /* Close err write entry */
+    rc = close(STDERR_FILENO);
     wsyserr(rc != 0, "close");
 
     exit(EXIT_SUCCESS);
@@ -219,7 +224,7 @@ void *fork_thread(void *args) {
   xmpp_stanza_set_attribute(make_stz, "action", "build");
   xmpp_stanza_set_attribute(make_stz, "response", "done");
   xmpp_stanza_set_attribute(make_stz, "request", request_attr);
-  xmpp_stanza_set_attribute(make_stz, "code", "-1");
+  xmpp_stanza_set_attribute(make_stz, "code", system_exitstatus_str);
 
   xmpp_stanza_add_child(message_stz, make_stz);
   xmpp_send(conn, message_stz);
