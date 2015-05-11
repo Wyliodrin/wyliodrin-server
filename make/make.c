@@ -197,6 +197,7 @@ void *fork_thread(void *args) {
     rc = system((const char *)cmd);
     wsyserr(rc == -1, "system");
 
+    /* Not working */
     sprintf(system_exitstatus_str, "%d", WIFEXITED(rc));
 
     /* Close STDOUT and STDERR */
