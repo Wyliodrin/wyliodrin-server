@@ -2,3 +2,4 @@ wtalk
 *.o
 etc/*
 mnt/*
+build/*
