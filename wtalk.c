@@ -18,7 +18,10 @@
 
 #define SLEEP_NO_CONFIG (1 * 60) /* 1 minute of sleep in case of no config file */
 
-const char *owner_str; /* owner */
+const char *owner_str;      /* owner      */
+const char *mount_file_str; /* mount file */
+const char *build_file_str; /* build file */
+const char *board_str;      /* board name */
 
 /**
  * Read and decode settings file, get location of config file, read and decode config file,
@@ -67,6 +70,48 @@ int8_t wtalk() {
     sleep(SLEEP_NO_CONFIG);
     return wtalk();
   }
+
+  /* Get mount file path */
+  json_t *mount_file = json_object_get(settings, "mountFile"); /* mountFile object */
+  if (mount_file == NULL) {
+    wlog("Return -1 due to not existing mountFile key");
+    return -1;
+  }
+  if (!json_is_string(mount_file)) {
+    json_decref(settings);
+
+    wlog("Return -2 because mountFile value is not a string");
+    return -2;    
+  }
+  mount_file_str = json_string_value(mount_file);
+
+  /* Get board name */
+  json_t *board = json_object_get(settings, "board"); /* board object */
+  if (board == NULL) {
+    wlog("Return -1 due to not existing board key");
+    return -1;
+  }
+  if (!json_is_string(board)) {
+    json_decref(settings);
+
+    wlog("Return -2 because board value is not a string");
+    return -2;    
+  }
+  board_str = json_string_value(board);
+
+  /* Get build file path */
+  json_t *build_file = json_object_get(settings, "buildFile"); /* mountFile object */
+  if (build_file == NULL) {
+    wlog("Return -1 due to not existing buildFile key");
+    return -1;
+  }
+  if (!json_is_string(build_file)) {
+    json_decref(settings);
+
+    wlog("Return -2 because buildFile value is not a string");
+    return -2;    
+  }
+  build_file_str = json_string_value(build_file);
 
   /* Decode config JSON */
   json_t *config = file_to_json_t(config_file_txt); /* config_file JSON */

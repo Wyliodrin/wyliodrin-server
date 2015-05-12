@@ -26,7 +26,10 @@
 
 #define BUFSIZE (1 * 1024) /* 1 KB */
 
-extern const char *owner_str; /* owner_str from init.c */
+extern const char *owner_str;      /* owner_str from init.c */
+extern const char *mount_file_str; /* mount file */
+extern const char *build_file_str; /* build file */
+extern const char *board_str;      /* board name */
 
 void init_make() { }
 
@@ -141,7 +144,6 @@ void *status_read_thread(void *args) {
 
   while(1) {
     rc = read(fd, buf, BUFSIZE);
-    wlog("status_read_thread: %s\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", buf);
     if (rc > 0) {
       /* Send done */
       xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
@@ -225,12 +227,12 @@ void *fork_thread(void *args) {
   wsyserr(pid == -1, "fork");
 
   if (pid == 0) {
-    char src[4 + strlen(projectid_attr) + 1];
-    sprintf(src, "mnt/%s", projectid_attr);
-
-    char cmd[100];
-    sprintf(cmd, "rm -rf build/%s && cp -r %s build && cd build/%s && make -f Makefile.raspberrypi", 
-      projectid_attr, src, projectid_attr);
+    char cmd[1024];
+    sprintf(cmd, "rm -rf %s/%s && cp -r %s/%s %s && cd %s/%s && make -f Makefile.%s", 
+      build_file_str, projectid_attr,
+      mount_file_str, projectid_attr, build_file_str,
+      build_file_str, projectid_attr,
+      board_str);
 
     rc = dup2(out_fd[1], STDOUT_FILENO); /* Redirect output to write end of out_fd */
     wsyserr(rc < 0, "dup2");

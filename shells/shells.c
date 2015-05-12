@@ -30,6 +30,8 @@
 #include "shells.h"                   /* shells module api */
 #include "shells_helper.h"            /* read routine */
 
+extern const char *build_file_str; /* build_file_str from init.c */
+
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
 pthread_mutex_t shells_lock; /* shells mutex */
@@ -183,6 +185,15 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     }
 
     send_shells_open_response(stanza, conn, userdata, TRUE, shell_index);
+
+    /* Check if a make shell must be open */
+    char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
+    if (projectid_attr != NULL) {
+      char command[128];
+      sprintf(command, "cd %s/%s\n", build_file_str, projectid_attr);
+
+      write(fdm, command, strlen(command));
+    }
 
     wlog("Return success from shells_open");    
     return;

@@ -32,6 +32,7 @@ extern xmpp_ctx_t *ctx;   /* Context    */
 extern xmpp_conn_t *conn; /* Connection */
 
 extern const char *owner_str; /* owner_str from init.c */
+extern const char *mount_file_str; /* mount file */
 
 extern bool_t is_user_online; /* connection checker from wxmpp_handlers.c */
 
@@ -317,7 +318,7 @@ static struct fuse_operations wfuse_oper = {
 };
 
 void *init_files_thread(void *a) {
-  char *argv[] = {"dummy", "-s", "-f", "mnt"};
+  char *argv[] = {"dummy", "-s", "-f", (char *)mount_file_str};
   fuse_main(4, argv, &wfuse_oper, NULL);
   return NULL;
 }
