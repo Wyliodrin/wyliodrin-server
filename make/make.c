@@ -28,9 +28,7 @@
 
 extern const char *owner_str; /* owner_str from init.c */
 
-void init_make() {
-
-}
+void init_make() { }
 
 typedef struct {
   xmpp_conn_t *conn;
@@ -52,7 +50,6 @@ void *out_read_thread(void *args) {
   char buf[BUFSIZE];
 
   while(1) {
-    memset(buf, 0, BUFSIZE);
     rc = read(fd, buf, BUFSIZE);
     if (rc > 0) {
       /* Send Working */
@@ -69,9 +66,9 @@ void *out_read_thread(void *args) {
       xmpp_stanza_set_attribute(make_stz, "request", request_attr);
       xmpp_stanza_set_attribute(make_stz, "source", "stdout");
 
-      char *encoded_data = (char *)malloc(BASE64_SIZE(strlen(buf)));
-      encoded_data = base64_encode(encoded_data, BASE64_SIZE(strlen(buf)), 
-        (const unsigned char *)buf, strlen(buf));
+      char *encoded_data = (char *)malloc(BASE64_SIZE(rc));
+      encoded_data = base64_encode(encoded_data, BASE64_SIZE(rc), 
+        (const unsigned char *)buf, rc);
 
       xmpp_stanza_t *data_stz = xmpp_stanza_new(ctx); /* make stanza */
       xmpp_stanza_set_text(data_stz, encoded_data);
@@ -98,7 +95,6 @@ void *err_read_thread(void *args) {
   char buf[BUFSIZE];
 
   while(1) {
-    memset(buf, 0, BUFSIZE);
     rc = read(fd, buf, BUFSIZE);
     if (rc > 0) {
       /* Send Working */
@@ -115,14 +111,52 @@ void *err_read_thread(void *args) {
       xmpp_stanza_set_attribute(make_stz, "request", request_attr);
       xmpp_stanza_set_attribute(make_stz, "source", "stderr");
 
-      char *encoded_data = (char *)malloc(BASE64_SIZE(strlen(buf)));
-      encoded_data = base64_encode(encoded_data, BASE64_SIZE(strlen(buf)), 
-        (const unsigned char *)buf, strlen(buf));
+      char *encoded_data = (char *)malloc(BASE64_SIZE(rc));
+      encoded_data = base64_encode(encoded_data, BASE64_SIZE(rc), 
+        (const unsigned char *)buf, rc);
 
       xmpp_stanza_t *data_stz = xmpp_stanza_new(ctx); /* make stanza */
       xmpp_stanza_set_text(data_stz, encoded_data);
 
       xmpp_stanza_add_child(make_stz, data_stz);
+      xmpp_stanza_add_child(message_stz, make_stz);
+      xmpp_send(conn, message_stz);
+      xmpp_stanza_release(message_stz);
+    } else if (rc < 0) {
+      return NULL;
+    }
+  }
+}
+
+void *status_read_thread(void *args) {
+  thread_arg *arg = (thread_arg *)args;
+
+  xmpp_conn_t *conn = arg->conn;
+  void *userdata = arg->userdata;
+  char *request_attr = arg->request_attr;
+  int fd = arg->fd;
+
+  int rc;
+  char buf[BUFSIZE];
+
+  while(1) {
+    rc = read(fd, buf, BUFSIZE);
+    wlog("status_read_thread: %s\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", buf);
+    if (rc > 0) {
+      /* Send done */
+      xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+
+      xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza with make */
+      xmpp_stanza_set_name(message_stz, "message");
+      xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+      xmpp_stanza_t *make_stz = xmpp_stanza_new(ctx); /* make stanza */
+      xmpp_stanza_set_name(make_stz, "make");
+      xmpp_stanza_set_ns(make_stz, WNS);
+      xmpp_stanza_set_attribute(make_stz, "action", "build");
+      xmpp_stanza_set_attribute(make_stz, "response", "done");
+      xmpp_stanza_set_attribute(make_stz, "request", request_attr);
+      xmpp_stanza_set_attribute(make_stz, "code", buf);
+
       xmpp_stanza_add_child(message_stz, make_stz);
       xmpp_send(conn, message_stz);
       xmpp_stanza_release(message_stz);
@@ -146,10 +180,7 @@ void *fork_thread(void *args) {
   int rc;
   int out_fd[2];
   int err_fd[2];
-  char *system_exitstatus_str;
-
-  system_exitstatus_str = (char *)malloc(8);
-  wsyserr(system_exitstatus_str == NULL, "malloc");
+  int status_fd[2];
 
   rc = pipe(out_fd);
   wsyserr(rc != 0, "pipe");
@@ -157,8 +188,11 @@ void *fork_thread(void *args) {
   rc = pipe(err_fd);
   wsyserr(rc != 0, "pipe");
 
+  rc = pipe(status_fd);
+  wsyserr(rc != 0, "pipe");
+
   /* Create read threads */
-  pthread_t out_rt, err_rt; /* Output and error read threads */
+  pthread_t out_rt, err_rt, status_rt; /* Output, error and status read threads */
 
   thread_arg *out_arg = (thread_arg *)malloc(sizeof(thread_arg));
   out_arg->conn = conn;
@@ -172,10 +206,19 @@ void *fork_thread(void *args) {
   err_arg->request_attr = strdup(request_attr);
   err_arg->fd = err_fd[0];
 
+  thread_arg *status_arg = (thread_arg *)malloc(sizeof(thread_arg));
+  status_arg->conn = conn;
+  status_arg->userdata = userdata;
+  status_arg->request_attr = strdup(request_attr);
+  status_arg->fd = status_fd[0];
+
   rc = pthread_create(&out_rt, NULL, out_read_thread, out_arg);
   wsyserr(rc < 0, "pthread_create");
 
   rc = pthread_create(&err_rt, NULL, err_read_thread, err_arg);
+  wsyserr(rc < 0, "pthread_create");
+
+  rc = pthread_create(&status_rt, NULL, status_read_thread, status_arg);
   wsyserr(rc < 0, "pthread_create");
 
   pid = fork();
@@ -197,8 +240,10 @@ void *fork_thread(void *args) {
     rc = system((const char *)cmd);
     wsyserr(rc == -1, "system");
 
-    /* Not working */
-    sprintf(system_exitstatus_str, "%d", WIFEXITED(rc));
+    char system_exitstatus_str[8];
+    sprintf(system_exitstatus_str, "%d", rc);
+
+    rc = write(status_fd[1], system_exitstatus_str, strlen(system_exitstatus_str));
 
     /* Close STDOUT and STDERR */
     /* This will cause the read threads to finish their execution */
@@ -206,30 +251,14 @@ void *fork_thread(void *args) {
     wsyserr(rc != 0, "close");
     rc = close(STDERR_FILENO);
     wsyserr(rc != 0, "close");
+    rc = close(status_fd[1]);
+    wsyserr(rc != 0, "close");
 
     exit(EXIT_SUCCESS);
   }
 
   waitpid(pid, &status, 0);
   wfatal(!WIFEXITED(status), "make command failed");
-
-  /* Send done */
-  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-
-  xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza with make */
-  xmpp_stanza_set_name(message_stz, "message");
-  xmpp_stanza_set_attribute(message_stz, "to", owner_str);
-  xmpp_stanza_t *make_stz = xmpp_stanza_new(ctx); /* make stanza */
-  xmpp_stanza_set_name(make_stz, "make");
-  xmpp_stanza_set_ns(make_stz, WNS);
-  xmpp_stanza_set_attribute(make_stz, "action", "build");
-  xmpp_stanza_set_attribute(make_stz, "response", "done");
-  xmpp_stanza_set_attribute(make_stz, "request", request_attr);
-  xmpp_stanza_set_attribute(make_stz, "code", system_exitstatus_str);
-
-  xmpp_stanza_add_child(message_stz, make_stz);
-  xmpp_send(conn, message_stz);
-  xmpp_stanza_release(message_stz);
 
   return NULL;
 }
