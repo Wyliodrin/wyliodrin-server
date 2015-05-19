@@ -31,6 +31,7 @@
 #include "shells_helper.h"            /* read routine */
 
 extern const char *build_file_str; /* build_file_str from init.c */
+extern const char *board_str;      /* board name */
 
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
@@ -186,13 +187,12 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
     send_shells_open_response(stanza, conn, userdata, TRUE, shell_index);
 
-    /* Check if a make shell must be open */
     char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
     if (projectid_attr != NULL) {
-      char command[128];
-      sprintf(command, "cd %s/%s\n", build_file_str, projectid_attr);
+      char make_run[256];
+      sprintf(make_run, "make -f Makefile.%s run\n", board_str);
 
-      write(fdm, command, strlen(command));
+      write(fdm, make_run, strlen(make_run));
     }
 
     wlog("Return success from shells_open");    
@@ -205,6 +205,16 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     char shell_id_str[3];
     sprintf(shell_id_str, "%d", shell_index);
     strcat(shell_name, shell_id_str);
+
+    /* Check if a make shell must be open */
+    char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
+    if (projectid_attr != NULL) {
+      char cd_path[256];
+      sprintf(cd_path, "%s/%s", build_file_str, projectid_attr);
+
+      int rc = chdir(cd_path);
+      wsyserr(rc == -1, "chdir");
+    }
 
     char *args[] = {"screen", "-dRR", shell_name, NULL};
     execvp(args[0], args);

@@ -196,7 +196,7 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     signal_read = false;
     signal_fail = false;
   } else {
-    wfatal(root == NULL, "root is NULL");
+    // wfatal(root == NULL, "root is NULL");
 
     (void) offset;
     (void) fi;
