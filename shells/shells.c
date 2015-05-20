@@ -189,10 +189,20 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
     char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
     if (projectid_attr != NULL) {
-      char make_run[256];
-      sprintf(make_run, "make -f Makefile.%s run\n", board_str);
+      int pid2 = fork();
+      wsyserr(pid2 == -1, "fork");
+      if (pid2 == 0) {
+        char make_run[256];
+        sprintf(make_run, "make -f Makefile.%s run\n", board_str);
 
-      write(fdm, make_run, strlen(make_run));
+        /* Give a chance to screen session to start */
+        usleep(500000);
+
+        char system_cmd[256];
+        sprintf(system_cmd, "screen -S shell%d -X stuff 'make -f Makefile.%s run\n'", shell_index, board_str);
+        system(system_cmd);
+        exit(EXIT_SUCCESS);
+      }
     }
 
     wlog("Return success from shells_open");    
@@ -200,14 +210,9 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   }
 
   else { /* Child */
-    /* Set name of screen session */
-    char shell_name[9] = "shell";
-    char shell_id_str[3];
-    sprintf(shell_id_str, "%d", shell_index);
-    strcat(shell_name, shell_id_str);
-
     /* Check if a make shell must be open */
     char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
+
     if (projectid_attr != NULL) {
       char cd_path[256];
       sprintf(cd_path, "%s/%s", build_file_str, projectid_attr);
@@ -215,6 +220,9 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       int rc = chdir(cd_path);
       wsyserr(rc == -1, "chdir");
     }
+
+    char shell_name[256];
+    sprintf(shell_name, "shell%d", shell_index);
 
     char *args[] = {"screen", "-dRR", shell_name, NULL};
     execvp(args[0], args);
@@ -303,19 +311,10 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
 
   /* Child from fork */
   if (pid == 0) {
-    /* Set name of screen session */
-    char shell_name[9] = "shell";
-    char shell_id_str[4];
-    sprintf(shell_id_str, "%ld", shellid);
-    strcat(shell_name, shell_id_str);
-
-    /* Detach from screen session */
-    char *args[] = {"screen", "-d", shell_name, NULL};
-    execvp(args[0], args);
-
-    /* If screen detach fail */
-    werr("SYSERR execvp");
-    perror("execvp");
+    char screen_quit_cmd[256];
+    sprintf(screen_quit_cmd, "screen -S shell%ld -X quit", shellid);
+    system(screen_quit_cmd);
+    exit(EXIT_SUCCESS);
   }
 
   wlog("Return from shells_close");
