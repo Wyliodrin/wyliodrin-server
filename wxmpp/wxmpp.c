@@ -30,6 +30,10 @@
   #include "../make/make.h"             /* make module */
 #endif
 
+#ifdef COMMUNICATION
+  #include "../communication/communication.h"
+#endif
+
 hashmap_p tags = NULL; /* tags hashmap */
 
 xmpp_ctx_t *ctx;   /* Context    */
@@ -91,6 +95,10 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
 
   #ifdef MAKE
     wadd_tag("make", make);
+  #endif
+
+  #ifdef COMMUNICATION
+    wadd_tag("communication", communication);
   #endif
 
   /* Enter the event loop */

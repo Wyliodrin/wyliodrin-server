@@ -17,6 +17,7 @@
 #include "../shells/shells.h"
 #include "../files/files.h"
 #include "../make/make.h"
+#include "../communication/communication.h"
 
 bool_t is_user_online = false;
 
@@ -201,7 +202,12 @@ int wpresence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
       /* Init make module */
 #     ifdef MAKE
         init_make();
-#     endif      
+#     endif
+
+      /* Init communication module */
+#     ifdef COMMUNICATION
+        init_communication();
+#     endif
     }
 
     return TRUE;
