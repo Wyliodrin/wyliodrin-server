@@ -10,6 +10,12 @@
 
 #ifdef COMMUNICATION
 
+#define REDIS_HOST "127.0.0.1"
+#define REDIS_PORT 6379
+
+#define PUB_CHANNEL "communication_client"
+#define SUB_CHANNEL "communication_server:*"
+
 void init_communication();
 
 void communication(const char *from, const char *to, int error, xmpp_stanza_t *stanza,

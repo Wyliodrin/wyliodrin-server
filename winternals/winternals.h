@@ -8,6 +8,9 @@
 #ifndef _INTERNALS_H
 #define _INTERNALS_H
 
+#include <stdio.h>
+#include <stdlib.h>
+
 /* Data types */
 typedef signed char    int8_t;
 typedef short int      int16_t;

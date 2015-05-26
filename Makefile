@@ -1,12 +1,12 @@
 CC = gcc
-CFLAGS = -g -Wall -DERR -DLOG -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64 -pthread -lutil -lfuse
+CFLAGS = -g -Wall -DERR -DLOG -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64 -pthread -lutil -lfuse -lhiredis -levent
 
 .PHONY: wtalk clean
 
 wtalk: wtalk.o wjson.o wxmpp.o wxmpp_handlers.o shells.o shells_helper.o files.o make.o communication.o ps.o base64.o libds
 	make -C libds
 	$(CC) wtalk.o wjson.o wxmpp.o wxmpp_handlers.o shells.o shells_helper.o files.o ps.o make.o communication.o base64.o libds/*.o -o wtalk \
-	-ljansson -lstrophe -pthread -lutil -lfuse
+	-ljansson -lstrophe -pthread -lutil -lfuse -lhiredis -levent
 
 wtalk.o: wtalk.c winternals/winternals.h wjson/wjson.h wxmpp/wxmpp.h
 	$(CC) $(CFLAGS) -c wtalk.c
