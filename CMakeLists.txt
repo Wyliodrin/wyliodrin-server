@@ -1,0 +1,74 @@
+cmake_minimum_required (VERSION 2.8.8)
+project (wyliodrin-server)
+
+include (GNUInstallDirs)
+include (FindPkgConfig)
+include (FindEXPAT)
+include (FindOpenSSL)
+
+find_package (Threads REQUIRED)
+find_package (EXPAT REQUIRED)
+pkg_check_modules (STROPHE REQUIRED libstrophe)
+pkg_check_modules (JANSSON REQUIRED jansson)
+pkg_check_modules (FUSE REQUIRED fuse)
+pkg_check_modules (HIREDIS REQUIRED hiredis)
+pkg_check_modules (EVENT REQUIRED libevent)
+
+include_directories (
+  ${PROJECT_SOURCE_DIR}/libds
+  ${FUSE_INCLUDE_DIRS}
+  ${HIREDIS_INCLUDE_DIRS}
+  ${EVENT_INCLUDE_DIRS}
+  ${JANSSON_INCLUDE_DIRS}
+  ${STROPHE_INCLUDE_DIRS}
+  ${EXPAT_INCLUDE_DIRS}
+  ${OPENSSL_INCLUDE_DIR}
+)
+
+set (wyliodrind_SRCS
+  ${PROJECT_SOURCE_DIR}/wtalk.c
+  ${PROJECT_SOURCE_DIR}/wxmpp/wxmpp.c
+  ${PROJECT_SOURCE_DIR}/wxmpp/wxmpp_handlers.c
+  ${PROJECT_SOURCE_DIR}/shells/shells.c
+  ${PROJECT_SOURCE_DIR}/shells/shells_helper.c
+  ${PROJECT_SOURCE_DIR}/wjson/wjson.c
+  ${PROJECT_SOURCE_DIR}/ps/ps.c
+  ${PROJECT_SOURCE_DIR}/make/make.c
+  ${PROJECT_SOURCE_DIR}/files/files.c
+  ${PROJECT_SOURCE_DIR}/communication/communication.c
+  ${PROJECT_SOURCE_DIR}/base64/base64.c
+)
+
+add_library (dbs STATIC
+  ${PROJECT_SOURCE_DIR}/libds/treetest.c
+  ${PROJECT_SOURCE_DIR}/libds/listtest.c
+  ${PROJECT_SOURCE_DIR}/libds/maptest.c
+  ${PROJECT_SOURCE_DIR}/libds/heap.c
+  ${PROJECT_SOURCE_DIR}/libds/hashmap.c
+  ${PROJECT_SOURCE_DIR}/libds/vector.c
+  ${PROJECT_SOURCE_DIR}/libds/strutiltest.c
+  ${PROJECT_SOURCE_DIR}/libds/heaptest.c
+  ${PROJECT_SOURCE_DIR}/libds/strutils.c
+  ${PROJECT_SOURCE_DIR}/libds/vectest.c
+  ${PROJECT_SOURCE_DIR}/libds/tree.c
+  ${PROJECT_SOURCE_DIR}/libds/list.c
+)
+
+add_executable (wyliodrind
+  ${wyliodrind_SRCS}
+)
+
+add_definitions ("-DERR -DLOG -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
+
+target_link_libraries (wyliodrind
+  ${CMAKE_THREAD_LIBS_INIT}
+  -lutil
+  ${HIREDIS_LIBRARIES}
+  ${EVENT_LIBRARIES}
+  ${FUSE_LIBRARIES}
+  ${JANSSON_LIBRARIES}
+  ${STROPHE_LIBRARIES}
+  ${EXPAT_LIBRARIES}
+  ${OPENSSL_LIBRARIES}
+  ${CMAKE_BINARY_DIR}/libdbs.a
+)
