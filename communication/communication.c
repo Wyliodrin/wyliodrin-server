@@ -13,6 +13,7 @@
 #include <signal.h>
 #include <strophe.h>
 #include <pthread.h>
+#include <jansson.h>
 
 #include <hiredis/hiredis.h>
 #include <hiredis/async.h>
@@ -38,6 +39,8 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
             wlog("%u) %s\n", j, r->element[j]->str);
         }
     }
+
+    /* Send it */
 }
 
 void connectCallback(const redisAsyncContext *c, int status) {
@@ -101,7 +104,17 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
 	uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
 	base64_decode(decoded, data_str, dec_size);
 
-	redisCommand(c, "PUBLISH %s:%s %s", PUB_CHANNEL, port_attr, (char *) decoded);
+    /* Put it in json */
+    char *ret_strings = NULL;
+    char *ret_string = "AAABBBCCC";
+
+    json_t *root = json_object();
+    json_t *result_json_arr = json_array();
+
+    json_object_set_new(root, "from", json_string(from));
+    json_object_set_new(root, "data", json_string((char *)decoded));
+
+	redisCommand(c, "PUBLISH %s:%s %s", PUB_CHANNEL, port_attr, json_dumps(root, 0));
 }
 
 #endif /* COMMUNICATION */
