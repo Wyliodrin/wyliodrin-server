@@ -17,11 +17,11 @@ json_t* file_to_json_t(const char *filename) {
 
 	char *buffer;       /* JSON text */
 	json_t *root;       /* Main json_t object */ 
-  json_error_t error; /* Error information */
-  int fd;             /* File descriptor with JSON text */
-  int ret_read;       /* Read return value */
+	json_error_t error; /* Error information */
+	int fd;             /* File descriptor with JSON text */
+	int ret_read;       /* Read return value */
 
-  /* Allocate memory for buffer */
+	/* Allocate memory for buffer */
 	buffer = (char*) calloc(BUFFER_SIZE, 1);
 	if(buffer == NULL) {
 		perror("[perror] Allocate memory for buffer");
