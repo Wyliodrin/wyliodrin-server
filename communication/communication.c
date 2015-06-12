@@ -3,6 +3,8 @@
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
  * Date last modified: May 2015
+ *
+ * TODO sendMesage, post, xmpp
  *************************************************************************************************/
 
 #ifdef COMMUNICATION
@@ -20,14 +22,20 @@
 #include <hiredis/adapters/libevent.h>
 
 #include "../winternals/winternals.h" /* logs and errs */
+#include "../wxmpp/wxmpp.h"
 #include "../base64/base64.h"
 #include "communication.h"
 
 redisContext *c;
 
+extern xmpp_ctx_t *ctx;
+extern xmpp_conn_t *conn;
+
 void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     redisReply *r = reply;
     int j;
+    json_t *json_message;
+    json_error_t json_error;
 
     if (reply == NULL) {
     	wlog("onMessage NULL reply");
@@ -35,12 +43,75 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     }
 
     if (r->type == REDIS_REPLY_ARRAY) {
-        for (j = 0; j < r->elements; j++) {
-            wlog("%u) %s\n", j, r->element[j]->str);
+        if (r->elements < 4) {
+            wlog("At least 4 elements required");
+            return;
         }
-    }
 
-    /* Send it */
+        /* Get port. The channel name must be communication_server:port */
+        char *port = strchr(r->element[2]->str, ':');
+        wfatal(port == NULL, "No : in channel %s", r->element[2]->str);
+
+        port = strdup((const char *)port + 1);
+        wsyserr(port == NULL, "strdup");
+
+        /* Get json message */
+        json_message = json_loads(r->element[3]->str, 0, &json_error);
+        if(json_message == NULL) {
+            werr("Message received on subscription is not a valid json: %s", r->element[3]->str);
+            return;
+        }
+
+        /* Get id */
+        json_t *id_json_obj = json_object_get(json_message, "id");
+        if (id_json_obj == NULL) {
+            werr("No id field in received json");
+            return;
+        }
+        if (!json_is_string(id_json_obj)) {
+            werr("Field id is not a string");
+            return;
+        }
+        const char *id_str = json_string_value(id_json_obj);
+
+        /* Get data */
+        json_t *data_json_obj = json_object_get(json_message, "data");
+        if (data_json_obj == NULL) {
+            werr("No data field in received json");
+            return;
+        }
+        if (!json_is_string(data_json_obj)) {
+            werr("Field data is not a string");
+            return;
+        }
+        const char *data_str = json_string_value(data_json_obj);
+
+        /* Encode data_str in base64 */
+        char *encoded_data = malloc(BASE64_SIZE(strlen(data_str)));
+        wsyserr(encoded_data == NULL, "malloc");
+        encoded_data = base64_encode(encoded_data, BASE64_SIZE(strlen(data_str)), 
+            (const unsigned char *)data_str, strlen(data_str));
+        wfatal(encoded_data == NULL, "encoded_data failed");
+
+        /* Send it */
+        xmpp_stanza_t *message = xmpp_stanza_new(ctx);
+        xmpp_stanza_set_name(message, "message");
+        xmpp_stanza_set_attribute(message, "to", id_str);
+        xmpp_stanza_t *communication = xmpp_stanza_new(ctx);
+        xmpp_stanza_set_name(communication, "communication");
+        xmpp_stanza_set_ns(communication, WNS);
+        xmpp_stanza_set_attribute(communication, "port", port);
+
+        xmpp_stanza_t *data_stz = xmpp_stanza_new(ctx);
+        xmpp_stanza_set_text(data_stz, encoded_data);
+
+        xmpp_stanza_add_child(communication, data_stz);
+        xmpp_stanza_add_child(message, communication);
+        xmpp_send(conn, message);
+        xmpp_stanza_release(message);
+    } else {
+        werr("Got message on subscription different from REDIS_REPLY_ARRAY");
+    }
 }
 
 void connectCallback(const redisAsyncContext *c, int status) {
@@ -105,11 +176,7 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
 	base64_decode(decoded, data_str, dec_size);
 
     /* Put it in json */
-    char *ret_strings = NULL;
-    char *ret_string = "AAABBBCCC";
-
     json_t *root = json_object();
-    json_t *result_json_arr = json_array();
 
     json_object_set_new(root, "from", json_string(from));
     json_object_set_new(root, "data", json_string((char *)decoded));
