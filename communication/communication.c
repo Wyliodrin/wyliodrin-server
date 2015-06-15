@@ -138,11 +138,13 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
 
         char command[128];
         sprintf(command, "LRANGE %s 0 -1", projectId);
+        wlog("command = %s", command);
 
         redisReply *reply = redisCommand(c, command);
         if (reply->type == REDIS_REPLY_ARRAY) {
             if (reply->elements == 0) {
                 wlog("No elements");
+                return;
             }
 
             json_error_t json_error;
