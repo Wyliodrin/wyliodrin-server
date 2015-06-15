@@ -114,7 +114,18 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     }
 }
 
+void onWyliodrinMessage(redisAsyncContext *c, void *reply, void *privdata) {
+}
+
 void connectCallback(const redisAsyncContext *c, int status) {
+    if (status != REDIS_OK) {
+        werr("connectCallback: %s", c->errstr);
+        return;
+    }
+    wlog("REDIS connected");
+}
+
+void wyliodrinConnectCallback(const redisAsyncContext *c, int status) {
     if (status != REDIS_OK) {
         werr("connectCallback: %s", c->errstr);
         return;
@@ -139,6 +150,24 @@ void *start_subscriber_routine(void *arg) {
     return NULL;
 }
 
+
+void *start_wyliodrin_subscriber_routine(void *arg) {
+    redisAsyncContext *c;
+
+    signal(SIGPIPE, SIG_IGN);
+    struct event_base *base = event_base_new();
+
+    c = redisAsyncConnect(REDIS_HOST, REDIS_PORT);
+    wfatal(c->err != 0, "redisAsyncConnect: %s", c->errstr);
+
+    redisLibeventAttach(c, base);
+    redisAsyncSetConnectCallback(c, wyliodrinConnectCallback);
+    redisAsyncCommand(c, onWyliodrinMessage, NULL, "PSUBSCRIBE %s", WYLIODRIN_CHANNEL);
+    event_base_dispatch(base);
+
+    return NULL;
+}
+
 void start_subscriber() {
 	pthread_t t;
 	int rc;
@@ -147,8 +176,17 @@ void start_subscriber() {
     wsyserr(rc < 0, "pthread_create");
 }
 
+void start_wyliodrin_subscriber() {
+    pthread_t t;
+    int rc;
+
+    rc = pthread_create(&t, NULL, start_wyliodrin_subscriber_routine, NULL); /* Read rc */
+    wsyserr(rc < 0, "pthread_create");
+}
+
 void init_communication() {
 	start_subscriber();
+    start_wyliodrin_subscriber();
 
     struct timeval timeout = { 1, 500000 }; // 1.5 seconds
     c = redisConnectWithTimeout(REDIS_HOST, REDIS_PORT, timeout);
