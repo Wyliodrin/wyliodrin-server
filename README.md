@@ -9,3 +9,5 @@ Dependencies
 =========
 * [libjansson v2.7](http://www.digip.org/jansson/)
 * [libstrophe](http://strophe.im/libstrophe/)
+* [libhiredis](https://github.com/redis/hiredis)
+* [libevent] (https://github.com/libevent/libevent)
