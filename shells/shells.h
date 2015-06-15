@@ -15,6 +15,7 @@ extern const char *owner_str; /* owner_str from init.c */
 #define MAX_SHELLS 256 /* Maximum number of shells allowed */
 
 typedef struct {
+  int pid;
   uint8_t id;          /* Shell id */
   uint32_t request_id; /* open request */
   uint32_t fdm;        /* PTY file descriptor */

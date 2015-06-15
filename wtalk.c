@@ -18,6 +18,7 @@
 
 #define SLEEP_NO_CONFIG (1 * 60) /* 1 minute of sleep in case of no config file */
 
+const char *jid_str;        /* jid        */
 const char *owner_str;      /* owner      */
 const char *mount_file_str; /* mount file */
 const char *build_file_str; /* build file */
@@ -138,7 +139,7 @@ int8_t wtalk() {
     wlog("Return -5 because jid value is not a string");
     return -5;
   }
-  const char* jid_str  = json_string_value(jid); /* jid value */
+  jid_str  = json_string_value(jid); /* jid value */
 
   /* Get pass */
   json_t *pass = json_object_get(config, "password"); /* pass json */

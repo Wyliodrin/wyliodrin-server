@@ -30,6 +30,7 @@ redisContext *c;
 
 extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
+extern const char *jid_str;
 
 void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     redisReply *r = reply;
@@ -114,7 +115,71 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     }
 }
 
-void onWyliodrinMessage(redisAsyncContext *c, void *reply, void *privdata) {
+void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
+    redisReply *r = reply;
+    if (reply == NULL) return;
+
+    int j;
+    if (r->type == REDIS_REPLY_ARRAY) {
+        if (r->elements < 4) {
+            wlog("At least 4 elements required");
+            return;
+        }
+
+        char *message = r->element[3]->str;
+        if (strncmp(message, "signal", 6) != 0) {
+            werr("Ignore message: %s", message);
+            return;
+        }
+
+        char *projectId = message + 7;
+        if (projectId == NULL) {
+            werr("No project id");
+            return;
+        }
+
+        char command[100];
+        sprintf(command, "LRANGE %s 0 -1", projectId);
+
+        redisReply *reply = redisCommand(c, command);
+        if (reply->type == REDIS_REPLY_ARRAY) {
+            if (reply->elements == 0) {
+                wlog("No elements");
+            }
+
+            json_error_t json_error;
+            json_t *json = json_loads(reply->element[0]->str, 0, &json_error);
+            if(json == NULL) {
+                werr("Not a valid json: %s", r->element[0]->str);
+                return;
+            }
+
+            /* Get userid from json */
+            json_t *userid_val = json_object_get(json, "userid");
+            if (userid_val == NULL) {
+                werr("No userid in json");
+                return;
+            }
+            if (!json_is_string(userid_val)) {
+                wlog("userid is not a string");
+                return;
+            }
+            const char *userid_str = json_string_value(userid_val);
+
+            /* Build json to be sent */
+            json_t *json_to_send = json_object();
+            json_object_set_new(json_to_send, "projectid", json_string(projectId));
+            json_object_set_new(json_to_send, "gadgetid", json_string(jid_str));
+            json_object_set_new(json_to_send, "userid", json_string(userid_str));
+
+            for (j = 0; j < reply->elements; j++) {
+                printf("%u) %s\n", j, reply->element[j]->str);
+            }
+        }
+        freeReplyObject(reply);
+    } else {
+        werr("Got message on wyliodrin subscription different from REDIS_REPLY_ARRAY");
+    }
 }
 
 void connectCallback(const redisAsyncContext *c, int status) {
@@ -185,19 +250,25 @@ void start_wyliodrin_subscriber() {
 }
 
 void init_communication() {
-	start_subscriber();
-    start_wyliodrin_subscriber();
-
     struct timeval timeout = { 1, 500000 }; // 1.5 seconds
     c = redisConnectWithTimeout(REDIS_HOST, REDIS_PORT, timeout);
-    wfatal(c == NULL, "redisConnectWithTimeout");
-    wfatal(c->err != 0, "redisConnectWithTimeout: %s", c->errstr);
+    if (c == NULL || c->err != 0) {
+        werr("redis connect error: %s", c->err != 0 ? c->errstr : "context is NULL");
+        return;
+    }
+
+    start_subscriber();
+    start_wyliodrin_subscriber();
 }
 
 void communication(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 	xmpp_conn_t *const conn, void *const userdata) 
 {
 	wlog("communication");
+
+    if (c == NULL || c->err != 0) {
+        werr("Return from communication due to NULL redis connection error");
+    }
 
 	char *port_attr = xmpp_stanza_get_attribute(stanza, "port");
 	wfatal(port_attr == NULL, "No port attribute in communication");

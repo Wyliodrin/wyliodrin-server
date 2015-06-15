@@ -167,6 +167,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   if (pid != 0) { /* Parent in forkpty */
     pthread_mutex_lock(&shells_lock);
     shells_vector[shell_index]                = (shell_t *)malloc(sizeof(shell_t));
+    shells_vector[shell_index]->pid           = pid;
     shells_vector[shell_index]->id            = shell_index;
     shells_vector[shell_index]->request_id    = request;
     shells_vector[shell_index]->fdm           = fdm;
@@ -195,12 +196,13 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
         char make_run[256];
         sprintf(make_run, "make -f Makefile.%s run\n", board_str);
 
-        /* Give a chance to screen session to start */
+        // /* Give a chance to screen session to start */
         usleep(500000);
 
-        char system_cmd[256];
-        sprintf(system_cmd, "screen -S shell%d -X stuff 'make -f Makefile.%s run\n'", shell_index, board_str);
-        system(system_cmd);
+        // char system_cmd[256];
+        // sprintf(system_cmd, "screen -S shell%d -X stuff 'make -f Makefile.%s run\n'", shell_index, board_str);
+        // system(system_cmd);
+        write(shells_vector[shell_index]->fdm, make_run, strlen(make_run));
         exit(EXIT_SUCCESS);
       }
     }
@@ -224,7 +226,8 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     char shell_name[256];
     sprintf(shell_name, "shell%d", shell_index);
 
-    char *args[] = {"screen", "-dRR", shell_name, NULL};
+    // char *args[] = {"screen", "-dRR", shell_name, NULL};
+    char *args[] = {"bash", NULL};
     execvp(args[0], args);
     
     /* Error */
@@ -312,7 +315,8 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
   /* Child from fork */
   if (pid == 0) {
     char screen_quit_cmd[256];
-    sprintf(screen_quit_cmd, "screen -S shell%ld -X quit", shellid);
+    // sprintf(screen_quit_cmd, "screen -S shell%ld -X quit", shellid);
+    sprintf(screen_quit_cmd, "kill -9 %d", shells_vector[shellid]->pid);
     system(screen_quit_cmd);
     exit(EXIT_SUCCESS);
   }
