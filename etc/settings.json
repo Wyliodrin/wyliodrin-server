@@ -1,0 +1,11 @@
+{
+	"config_file": "/home/matei/Dropbox/Wyliodrin/Work/wyliodrin-server/etc/wyliodrin.json",
+	"home": "/wyliodrin",
+	"mountFile": "/home/matei/Dropbox/Wyliodrin/Work/wyliodrin-server/mnt",
+	"buildFile": "/home/matei/Dropbox/Wyliodrin/Work/wyliodrin-server/build",
+	"umount": "sudo umount -f",
+	"run": ["sudo", "-E", "make"],
+	"stop": ["sudo kill -9"],
+	"sudo": "sudo",
+	"board": "beagleboneblack"
+}
