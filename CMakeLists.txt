@@ -62,7 +62,7 @@ add_definitions ("-DERR -DLOG -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FI
 
 target_link_libraries (wyliodrind
   ${CMAKE_THREAD_LIBS_INIT}
-  -lutil
+  -lutil -lcurl
   ${HIREDIS_LIBRARIES}
   ${EVENT_LIBRARIES}
   ${FUSE_LIBRARIES}

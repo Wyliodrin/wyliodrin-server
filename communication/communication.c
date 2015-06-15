@@ -3,8 +3,6 @@
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
  * Date last modified: May 2015
- *
- * TODO sendMesage, post, xmpp
  *************************************************************************************************/
 
 #ifdef COMMUNICATION
@@ -16,6 +14,7 @@
 #include <strophe.h>
 #include <pthread.h>
 #include <jansson.h>
+#include <curl/curl.h>
 
 #include <hiredis/hiredis.h>
 #include <hiredis/async.h>
@@ -119,7 +118,6 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
     redisReply *r = reply;
     if (reply == NULL) return;
 
-    int j;
     if (r->type == REDIS_REPLY_ARRAY) {
         if (r->elements < 4) {
             wlog("At least 4 elements required");
@@ -138,7 +136,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
             return;
         }
 
-        char command[100];
+        char command[128];
         sprintf(command, "LRANGE %s 0 -1", projectId);
 
         redisReply *reply = redisCommand(c, command);
@@ -166,15 +164,65 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
             }
             const char *userid_str = json_string_value(userid_val);
 
+            /* Get session from json */
+            json_t *session_val = json_object_get(json, "session");
+            if (session_val == NULL) {
+                werr("No session in json");
+                return;
+            }
+            if (!json_is_string(session_val)) {
+                wlog("userid is not a string");
+                return;
+            }
+            const char *session_str = json_string_value(session_val);
+
             /* Build json to be sent */
             json_t *json_to_send = json_object();
             json_object_set_new(json_to_send, "projectid", json_string(projectId));
-            json_object_set_new(json_to_send, "gadgetid", json_string(jid_str));
-            json_object_set_new(json_to_send, "userid", json_string(userid_str));
-
-            for (j = 0; j < reply->elements; j++) {
-                printf("%u) %s\n", j, reply->element[j]->str);
+            json_object_set_new(json_to_send, "gadgetid",  json_string(jid_str));
+            json_object_set_new(json_to_send, "userid",    json_string(userid_str));
+            json_object_set_new(json_to_send, "session",   json_string(session_str));
+            int i;
+            json_t *aux;
+            json_t *array = json_array();
+            for (i = 0; i < reply->elements; i++) {
+                aux = json_loads(r->element[i]->str, 0, &json_error);
+                if (aux == NULL) {
+                    werr("%s is not a valid json", r->element[i]->str);
+                } else {
+                    json_object_del(aux, "userid");
+                    json_object_del(aux, "session");
+                    json_array_append(array, aux);
+                }
             }
+            json_object_set_new(json_to_send, "data", array);
+
+            /* Send it via http */
+            CURL *curl;
+            CURLcode res;
+
+            curl = curl_easy_init();
+            if (curl == NULL) {
+                werr("Curl init failed");
+                return;
+            }
+            curl_easy_setopt(curl, CURLOPT_URL, "http://wyliodrin.com/signals/send");
+            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, (const char*)json_dumps(json_to_send, 0));
+            struct curl_slist *list = NULL;
+            list = curl_slist_append(list, "Content-Type: application/json");
+            res = curl_easy_perform(curl);
+            /* Check for errors */ 
+            if(res != CURLE_OK) {
+                werr("curl_easy_perform() failed: %s", curl_easy_strerror(res));
+            } else {
+                char ltrim_command[128];
+                sprintf(ltrim_command, "LTRIM %s %d -1", projectId, (int)(r->elements));
+                redisCommand(c, ltrim_command);
+            }
+         
+            /* always cleanup */ 
+            curl_easy_cleanup(curl);
         }
         freeReplyObject(reply);
     } else {
