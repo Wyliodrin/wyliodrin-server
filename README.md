@@ -7,5 +7,5 @@ Further details will be available as soon as I find the right motivation to writ
 
 Dependencies
 =========
-* [libjansson](http://www.digip.org/jansson/)
+* [libjansson v2.7](http://www.digip.org/jansson/)
 * [libstrophe](http://strophe.im/libstrophe/)
