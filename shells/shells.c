@@ -231,8 +231,10 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
         write(shells_vector[shell_index]->fdm, make_run, strlen(make_run));
         exit(EXIT_SUCCESS);
       }
+      waitpid(pid2, NULL, 0);
     }
 
+    waitpid(pid, NULL, 0);
     wlog("Return success from shells_open");    
     return;
   }
@@ -322,6 +324,7 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
   pthread_mutex_lock(&shells_lock);
   if (shells_vector[shellid] != NULL) {
     shells_vector[shellid]->close_request = request;
+    close(shells_vector[shellid]->fdm);
   } else {
     pthread_mutex_unlock(&shells_lock);
     return;  
@@ -347,6 +350,7 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     exit(EXIT_SUCCESS);
   }
 
+  waitpid(pid, NULL, 0);
   wlog("Return from shells_close");
 }
 
@@ -384,8 +388,10 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   }
 
   /* Update xmpp context and connection in shell */
+  pthread_mutex_lock(&shells_lock);
   shells_vector[shellid]->ctx = (xmpp_ctx_t *)userdata;
   shells_vector[shellid]->conn = conn;
+  pthread_mutex_unlock(&shells_lock);
 
   /* Send decoded data to screen */
   write(shells_vector[shellid]->fdm, decoded, rc);
