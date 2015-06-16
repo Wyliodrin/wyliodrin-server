@@ -5,6 +5,7 @@
  * Date last modified: April 2015
  *************************************************************************************************/
 
+#include <unistd.h>                   /* usleep */
 #include <strophe.h>                  /* Strophe XMPP stuff */
 
 #include "../winternals/winternals.h" /* logs and errs */
@@ -68,13 +69,24 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
   xmpp_conn_set_pass(conn, pass);
 
   /* Initiate connection */
-  if(xmpp_connect_client(conn, NULL, WXMPP_PORT, wconn_handler, ctx) < 0) {
-    xmpp_conn_release(conn);
-    xmpp_ctx_free(ctx);
-    xmpp_shutdown();
+  // if(xmpp_connect_client(conn, NULL, WXMPP_PORT, wconn_handler, ctx) < 0) {
+  //   xmpp_conn_release(conn);
+  //   xmpp_ctx_free(ctx);
+  //   xmpp_shutdown();
 
-    wlog("Return -3 due to connection error to XMPP server");
-    return -3;
+  //   wlog("Return -3 due to connection error to XMPP server");
+  //   return -3;
+  // }
+
+  /* Initiate connection in loop */
+  int conn_rc;
+  while (1) {
+    conn_rc = xmpp_connect_client(conn, NULL, WXMPP_PORT, wconn_handler, ctx);
+    if (conn_rc < 0) {
+      sleep(1000000);
+    } else {
+      break;
+    }
   }
 
   /* Create tags hashmap */
