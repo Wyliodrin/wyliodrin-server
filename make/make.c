@@ -143,6 +143,7 @@ void *status_read_thread(void *args) {
   char buf[BUFSIZE];
 
   while(1) {
+    memset(buf, 0, BUFSIZE)
     rc = read(fd, buf, BUFSIZE);
     if (rc > 0) {
       /* Send done */
