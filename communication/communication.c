@@ -31,6 +31,9 @@ extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
 extern const char *jid_str;
 
+extern char *userid_signal;
+extern char *request_signal;
+
 void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     redisReply *r = reply;
     int j;
@@ -115,6 +118,17 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
 }
 
 void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
+    /* Sanity checks */
+    if (userid_signal == NULL) {
+        werr("userid_signal is NULL");
+        return;
+    }
+
+    if (request_signal == NULL) {
+        werr("request_signal is NULL");
+        return;
+    }
+
     redisReply *r = reply;
     if (reply == NULL) return;
 
@@ -154,36 +168,36 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 return;
             }
 
-            /* Get userid from json */
-            json_t *userid_val = json_object_get(json, "userid");
-            if (userid_val == NULL) {
-                werr("No userid in json");
-                return;
-            }
-            if (!json_is_string(userid_val)) {
-                wlog("userid is not a string");
-                return;
-            }
-            const char *userid_str = json_string_value(userid_val);
+            // /* Get userid from json */
+            // json_t *userid_val = json_object_get(json, "userid");
+            // if (userid_val == NULL) {
+            //     werr("No userid in json");
+            //     return;
+            // }
+            // if (!json_is_string(userid_val)) {
+            //     wlog("userid is not a string");
+            //     return;
+            // }
+            // const char *userid_str = json_string_value(userid_val);
 
-            /* Get session from json */
-            json_t *session_val = json_object_get(json, "session");
-            if (session_val == NULL) {
-                werr("No session in json");
-                return;
-            }
-            if (!json_is_string(session_val)) {
-                wlog("userid is not a string");
-                return;
-            }
-            const char *session_str = json_string_value(session_val);
+            // /* Get session from json */
+            // json_t *session_val = json_object_get(json, "session");
+            // if (session_val == NULL) {
+            //     werr("No session in json");
+            //     return;
+            // }
+            // if (!json_is_string(session_val)) {
+            //     wlog("userid is not a string");
+            //     return;
+            // }
+            // const char *session_str = json_string_value(session_val);
 
             /* Build json to be sent */
             json_t *json_to_send = json_object();
             json_object_set_new(json_to_send, "projectid", json_string(projectId));
             json_object_set_new(json_to_send, "gadgetid",  json_string(jid_str));
-            json_object_set_new(json_to_send, "userid",    json_string(userid_str));
-            json_object_set_new(json_to_send, "session",   json_string(session_str));
+            json_object_set_new(json_to_send, "userid",    json_string(userid_signal));
+            json_object_set_new(json_to_send, "session",   json_string(request_signal));
             int i;
             json_t *aux;
             json_t *array = json_array();
@@ -194,6 +208,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 } else {
                     json_object_del(aux, "userid");
                     json_object_del(aux, "session");
+                    json_object_del(aux, "projectid");
                     json_array_append(array, aux);
                     wlog("added aux = %s", json_dumps(aux, 0));
                 }
@@ -210,8 +225,11 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 werr("Curl init failed");
                 return;
             }
-            curl_easy_setopt(curl, CURLOPT_URL, "https://wyliodrin.com/signals/send");
+            curl_easy_setopt(curl, CURLOPT_URL, "https://wyliodrin.org/signals/send");
             curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+            //curl_easy_setopt(curl, CURLOPT_SSL_VERIFYSTATUS, 0L);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, (const char*)json_dumps(json_to_send, 0));
             struct curl_slist *list = NULL;
             list = curl_slist_append(list, "Content-Type: application/json");

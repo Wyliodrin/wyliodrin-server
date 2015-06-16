@@ -33,6 +33,9 @@
 extern const char *build_file_str; /* build_file_str from init.c */
 extern const char *board_str;      /* board name */
 
+char *userid_signal = NULL;  /* userid  received in make user for siganls */
+char *request_signal = NULL; /* request received in make user for siganls */
+
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
 pthread_mutex_t shells_lock; /* shells mutex */
@@ -191,6 +194,28 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
     char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
     if (projectid_attr != NULL) {
+      /* Set request signal */
+      char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
+      if (request_attr == NULL) {
+        werr("No request attribute");
+      } else {
+        if (request_signal != NULL) {
+          free(request_signal);
+        }
+        request_signal = strdup(request_attr);
+      }
+
+      /* Set userid signal */
+      char *userid_attr = xmpp_stanza_get_attribute(stanza, "userid");
+      if (userid_attr == NULL) {
+        werr("No userid attribute");
+      } else {
+        if (userid_signal != NULL) {
+          free(userid_signal);
+        }
+        userid_signal = strdup(userid_attr);
+      }
+
       int pid2 = fork();
       wsyserr(pid2 == -1, "fork");
       if (pid2 == 0) {
