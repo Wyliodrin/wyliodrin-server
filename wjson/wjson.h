@@ -10,7 +10,7 @@
 
 #define BUFFER_SIZE (1 * 1024) /* 1 KB */
 
-#define SETTINGS_PATH  "../etc/settings_" /* Settings file path */
+#define SETTINGS_PATH  "/etc/setting/settings_" /* Settings file path */
 
 /**
  * Open <filename>, read the JSON object, convert it to json_t and return it.
