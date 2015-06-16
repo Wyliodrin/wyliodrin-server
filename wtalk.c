@@ -141,6 +141,18 @@ int8_t wtalk() {
     return -3;
   }
 
+  /* Get nameserver */
+  json_t *nameserver = json_object_get(config, "nameserver");
+  if (nameserver == NULL) {
+    wlog("No nameserver in wyliodrin.json");
+  } else {
+    if (!json_is_string(nameserver)) {
+      wlog("nameserver is not a string");
+    } else {
+      const char *nameserver_str = json_string_value(nameserver); /* jid value */
+    }
+  }
+
   /* Get jid */
   json_t *jid = json_object_get(config, "jid"); /* jid json */
   if (jid == NULL) {

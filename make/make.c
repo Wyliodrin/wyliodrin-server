@@ -261,10 +261,18 @@ void *fork_thread(void *args) {
 
     exit(EXIT_SUCCESS);
   }
-  waitpid(pid, NULL, 0);
 
   waitpid(pid, &status, 0);
-  wfatal(!WIFEXITED(status), "make command failed");
+  if (!WIFEXITED(status)) {
+    werr("make command failed");
+  }
+
+  close(out_fd[0]);
+  close(out_fd[1]);
+  close(err_fd[0]);
+  close(err_fd[1]);
+  close(status_fd[0]);
+  close(status_fd[1]);
 
   return NULL;
 }
