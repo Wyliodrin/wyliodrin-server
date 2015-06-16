@@ -244,8 +244,11 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   else { /* Child */
     /* Check if a make shell must be open */
     char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
-
     if (projectid_attr != NULL) {
+      char *userid_attr = xmpp_stanza_get_attribute(stanza, "userid");
+      setenv("wyliodrin_project", projectid_attr, 1);
+      setenv("wyliodrin_userid", userid_signal, 1);
+      
       char cd_path[256];
       sprintf(cd_path, "%s/%s", build_file_str, projectid_attr);
 
