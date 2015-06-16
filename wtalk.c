@@ -52,9 +52,9 @@ int8_t wtalk() {
   wsyserr(fd == -1, "open");
 
   char boardtype[32];
+  memset(boardtype, 0 ,32);
   int rc = read(fd, boardtype, 32);
   wsyserr(rc == -1, "read");
-
   char settings_path[128];
   sprintf(settings_path, "%s%s.json", SETTINGS_PATH, boardtype);
 
