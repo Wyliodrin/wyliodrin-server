@@ -237,5 +237,6 @@ int8_t wtalk() {
 int main(int argc, char *argv[]) {
   wtalk();
 
+  sleep (3000);
   return 0;
 }
