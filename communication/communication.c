@@ -35,6 +35,7 @@ extern char *userid_signal;
 extern char *request_signal;
 
 void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
+    printf("on message\n");
     redisReply *r = reply;
     int j;
     json_t *json_message;
@@ -168,7 +169,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 return;
             }
 
-            // /* Get userid from json */
+            /* Get userid from json */
             // json_t *userid_val = json_object_get(json, "userid");
             // if (userid_val == NULL) {
             //     werr("No userid in json");
@@ -179,6 +180,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
             //     return;
             // }
             // const char *userid_str = json_string_value(userid_val);
+            // printf("user is : %s\n",userid_str);
 
             // /* Get session from json */
             // json_t *session_val = json_object_get(json, "session");
