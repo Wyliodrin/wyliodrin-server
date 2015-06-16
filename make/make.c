@@ -261,6 +261,7 @@ void *fork_thread(void *args) {
 
     exit(EXIT_SUCCESS);
   }
+  waitpid(pid, NULL, 0);
 
   waitpid(pid, &status, 0);
   wfatal(!WIFEXITED(status), "make command failed");

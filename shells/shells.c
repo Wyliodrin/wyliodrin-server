@@ -216,6 +216,9 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
         userid_signal = strdup(userid_attr);
       }
 
+      setenv("wyliodrin_project", projectid_attr, 1);
+      setenv("wyliodrin_userid", userid_signal, 1);
+
       int pid2 = fork();
       wsyserr(pid2 == -1, "fork");
       if (pid2 == 0) {

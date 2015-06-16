@@ -48,6 +48,9 @@ const char *board_str;      /* board name */
 int8_t wtalk() {
   wlog("wtalk()");
 
+  system("fusermount -u /wyliodrin/projects/mount");
+  usleep(1000000);
+
   int fd = open(BOARDTYPE_PATH, O_RDONLY);
   wsyserr(fd == -1, "open");
 
