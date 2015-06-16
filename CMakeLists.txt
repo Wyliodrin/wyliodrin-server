@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.8.8)
 project (wyliodrin-server)
 
+set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 include (GNUInstallDirs)
 include (FindPkgConfig)
 include (FindEXPAT)
@@ -11,7 +12,7 @@ find_package (EXPAT REQUIRED)
 pkg_check_modules (STROPHE REQUIRED libstrophe)
 pkg_check_modules (JANSSON REQUIRED jansson)
 pkg_check_modules (FUSE REQUIRED fuse)
-pkg_check_modules (HIREDIS REQUIRED hiredis)
+find_package (Hiredis REQUIRED)
 pkg_check_modules (EVENT REQUIRED libevent)
 
 include_directories (
