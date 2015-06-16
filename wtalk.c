@@ -21,7 +21,7 @@
 
 #define SLEEP_NO_CONFIG (1 * 60) /* 1 minute of sleep in case of no config file */
 
-#define BOARDTYPE_PATH "../etc/boardtype"
+#define BOARDTYPE_PATH "/etc/settings/boardtype"
 
 const char *jid_str;        /* jid        */
 const char *owner_str;      /* owner      */
