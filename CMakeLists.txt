@@ -59,6 +59,8 @@ add_executable (wyliodrind
   ${wyliodrind_SRCS}
 )
 
+install (TARGETS wyliodrind DESTINATION bin)
+
 add_definitions ("-DERR -DLOG -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
 
 target_link_libraries (wyliodrind
