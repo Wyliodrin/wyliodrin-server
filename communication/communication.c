@@ -188,16 +188,18 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
             json_t *aux;
             json_t *array = json_array();
             for (i = 0; i < reply->elements; i++) {
-                aux = json_loads(r->element[i]->str, 0, &json_error);
+                aux = json_loads(reply->element[i]->str, 0, &json_error);
                 if (aux == NULL) {
-                    werr("%s is not a valid json", r->element[i]->str);
+                    werr("%s is not a valid json, i = %d", reply->element[i]->str, i);
                 } else {
                     json_object_del(aux, "userid");
                     json_object_del(aux, "session");
                     json_array_append(array, aux);
+                    wlog("added aux = %s", json_dumps(aux, 0));
                 }
             }
             json_object_set_new(json_to_send, "data", array);
+            wlog("json = %s", json_dumps(json_to_send, 0));
 
             /* Send it via http */
             CURL *curl;
@@ -208,16 +210,20 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 werr("Curl init failed");
                 return;
             }
-            curl_easy_setopt(curl, CURLOPT_URL, "http://wyliodrin.com/signals/send");
+            curl_easy_setopt(curl, CURLOPT_URL, "https://wyliodrin.com/signals/send");
             curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, (const char*)json_dumps(json_to_send, 0));
             struct curl_slist *list = NULL;
             list = curl_slist_append(list, "Content-Type: application/json");
+            list = curl_slist_append(list, "Connection: close");
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+            curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
             res = curl_easy_perform(curl);
             /* Check for errors */ 
             if(res != CURLE_OK) {
                 werr("curl_easy_perform() failed: %s", curl_easy_strerror(res));
             } else {
+                wlog("DONE\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
                 char ltrim_command[128];
                 sprintf(ltrim_command, "LTRIM %s %d -1", projectId, (int)(r->elements));
                 redisCommand(c, ltrim_command);
@@ -289,6 +295,7 @@ void start_subscriber() {
 
     rc = pthread_create(&t, NULL, start_subscriber_routine, NULL); /* Read rc */
     wsyserr(rc < 0, "pthread_create");
+    pthread_detach(t);
 }
 
 void start_wyliodrin_subscriber() {
@@ -297,6 +304,7 @@ void start_wyliodrin_subscriber() {
 
     rc = pthread_create(&t, NULL, start_wyliodrin_subscriber_routine, NULL); /* Read rc */
     wsyserr(rc < 0, "pthread_create");
+    pthread_detach(t);
 }
 
 void init_communication() {

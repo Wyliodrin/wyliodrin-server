@@ -216,12 +216,15 @@ void *fork_thread(void *args) {
 
   rc = pthread_create(&out_rt, NULL, out_read_thread, out_arg);
   wsyserr(rc < 0, "pthread_create");
+  pthread_detach(out_rt);
 
   rc = pthread_create(&err_rt, NULL, err_read_thread, err_arg);
   wsyserr(rc < 0, "pthread_create");
+  pthread_detach(err_rt);
 
   rc = pthread_create(&status_rt, NULL, status_read_thread, status_arg);
   wsyserr(rc < 0, "pthread_create");
+  pthread_detach(status_rt);
 
   pid = fork();
   wsyserr(pid == -1, "fork");
@@ -301,6 +304,7 @@ void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 
     int rc = pthread_create(&ft, NULL, fork_thread, arg); /* Read rc */
     wsyserr(rc < 0, "pthread_create");
+    pthread_detach(ft);
   }
 
   /* Treat close action */

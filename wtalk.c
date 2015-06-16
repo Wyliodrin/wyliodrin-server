@@ -11,12 +11,17 @@
 #include <unistd.h>  /* sleep */
 #include <strophe.h> /* Strophe stuff */
 #include <ctype.h>   /* tolower */
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
 
 #include "winternals/winternals.h" /* logs and errs */
 #include "wjson/wjson.h"           /* json handling */
 #include "wxmpp/wxmpp.h"           /* xmpp handling */
 
 #define SLEEP_NO_CONFIG (1 * 60) /* 1 minute of sleep in case of no config file */
+
+#define BOARDTYPE_PATH "../etc/boardtype"
 
 const char *jid_str;        /* jid        */
 const char *owner_str;      /* owner      */
@@ -43,8 +48,18 @@ const char *board_str;      /* board name */
 int8_t wtalk() {
   wlog("wtalk()");
 
+  int fd = open(BOARDTYPE_PATH, O_RDONLY);
+  wsyserr(fd == -1, "open");
+
+  char boardtype[32];
+  int rc = read(fd, boardtype, 32);
+  wsyserr(rc == -1, "read");
+
+  char settings_path[128];
+  sprintf(settings_path, "%s%s.json", SETTINGS_PATH, boardtype);
+
   /* Get settings JSON */
-  json_t *settings = file_to_json_t(SETTINGS_PATH); /* Settings JSON */
+  json_t *settings = file_to_json_t(settings_path); /* Settings JSON */
   if (settings == NULL) {
     wlog("Return -1 due to NULL decoded settings JSON");
     return -1;

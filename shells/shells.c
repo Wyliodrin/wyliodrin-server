@@ -185,6 +185,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       send_shells_open_response(stanza, conn, userdata, FALSE, -1);
       return;
     }
+    pthread_detach(rt);
 
     send_shells_open_response(stanza, conn, userdata, TRUE, shell_index);
 
