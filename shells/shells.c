@@ -234,7 +234,6 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       waitpid(pid2, NULL, 0);
     }
 
-    waitpid(pid, NULL, 0);
     wlog("Return success from shells_open");    
     return;
   }
@@ -347,6 +346,7 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     // sprintf(screen_quit_cmd, "screen -S shell%ld -X quit", shellid);
     sprintf(screen_quit_cmd, "kill -9 %d", shells_vector[shellid]->pid);
     system(screen_quit_cmd);
+    waitpid(shells_vector[shellid]->pid, NULL, 0);
     exit(EXIT_SUCCESS);
   }
 
