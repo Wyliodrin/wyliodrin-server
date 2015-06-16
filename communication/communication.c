@@ -225,7 +225,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 werr("Curl init failed");
                 return;
             }
-            curl_easy_setopt(curl, CURLOPT_URL, "https://wyliodrin.org/signals/send");
+            curl_easy_setopt(curl, CURLOPT_URL, "https://wyliodrin.com/signals/send");
             curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
