@@ -150,6 +150,15 @@ int8_t wtalk() {
       wlog("nameserver is not a string");
     } else {
       const char *nameserver_str = json_string_value(nameserver); /* jid value */
+
+      int fd = open("/etc/resolv.conf", O_WRONLY | O_TRUNC);
+      if (fd < 0) {
+        werr("Could not open resolv.conf");
+      } else {
+        char to_write[128];
+        sprintf(to_write, "nameserver %s", nameserver_str);
+        write(fd, to_write, strlen(to_write));
+      }
     }
   }
 
