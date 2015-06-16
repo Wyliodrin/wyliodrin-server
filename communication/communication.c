@@ -31,19 +31,18 @@ extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
 extern const char *jid_str;
 
-extern char *userid_signal;
-extern char *request_signal;
+// extern char *userid_signal;
+// extern char *request_signal;
 
 void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
-    printf("on message\n");
     redisReply *r = reply;
     int j;
     json_t *json_message;
     json_error_t json_error;
 
     if (reply == NULL) {
-    	wlog("onMessage NULL reply");
-    	return;
+        wlog("onMessage NULL reply");
+        return;
     }
 
     if (r->type == REDIS_REPLY_ARRAY) {
@@ -118,32 +117,48 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     }
 }
 
+
 void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
     /* Sanity checks */
-    if (userid_signal == NULL) {
-        werr("userid_signal is NULL");
-        return;
-    }
+    // if (userid_signal == NULL) {
+    //     werr("userid_signal is NULL");
+    //     return;
+    // }
 
-    if (request_signal == NULL) {
-        werr("request_signal is NULL");
-        return;
-    }
+    // if (request_signal == NULL) {
+    //     werr("request_signal is NULL");
+    //     return;
+    // }
+
 
     redisReply *r = reply;
+    printf ("wyliodrin message\n");
     if (reply == NULL) return;
-
+printf ("wyliodrin message\n");
     if (r->type == REDIS_REPLY_ARRAY) {
-        if (r->elements < 4) {
-            wlog("At least 4 elements required");
+printf ("wyliodrin message\n");
+        if (strncmp (r->element[0]->str, "subscribe", 9)==0) 
+        {
+            wlog ("Subscribed to wyliodrin");
             return;
         }
+printf ("wyliodrin message\n");
 
-        char *message = r->element[3]->str;
+
+        if (r->elements < 3) {
+            wlog("At least 3 elements required");
+            return;
+        }
+printf ("wyliodrin message\n");
+
+        char *message = r->element[2]->str;
+printf ("wyliodrin message\n");
+
         if (strncmp(message, "signal", 6) != 0) {
             werr("Ignore message: %s", message);
             return;
         }
+        printf ("wyliodrin message\n");
 
         char *projectId = message + 7;
         if (projectId == NULL) {
@@ -151,6 +166,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
             return;
         }
 
+printf ("wyliodrin message\n");
         char command[128];
         sprintf(command, "LRANGE %s 0 -1", projectId);
         wlog("command = %s", command);
@@ -198,8 +214,8 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
             json_t *json_to_send = json_object();
             json_object_set_new(json_to_send, "projectid", json_string(projectId));
             json_object_set_new(json_to_send, "gadgetid",  json_string(jid_str));
-            json_object_set_new(json_to_send, "userid",    json_string(userid_signal));
-            json_object_set_new(json_to_send, "session",   json_string(request_signal));
+            json_object_set_new(json_to_send, "userid",    json_object_get (json, "userid"));
+            json_object_set_new(json_to_send, "session",   json_object_get (json, "session"));
             int i;
             json_t *aux;
             json_t *array = json_array();
@@ -227,7 +243,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 werr("Curl init failed");
                 return;
             }
-            curl_easy_setopt(curl, CURLOPT_URL, "https://wyliodrin.com/signals/send");
+            curl_easy_setopt(curl, CURLOPT_URL, "https://projects.wyliodrin.com/signals/send");
             curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
             curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
@@ -244,8 +260,9 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 werr("curl_easy_perform() failed: %s", curl_easy_strerror(res));
             } else {
                 wlog("DONE\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-                char ltrim_command[128];
-                sprintf(ltrim_command, "LTRIM %s %d -1", projectId, (int)(r->elements));
+                char ltrim_command[500];
+                sprintf(ltrim_command, "LTRIM %s %d -1", projectId, (int)(reply->elements));
+                printf ("%s\n", ltrim_command);
                 redisCommand(c, ltrim_command);
             }
          
@@ -275,7 +292,7 @@ void wyliodrinConnectCallback(const redisAsyncContext *c, int status) {
 }
 
 void *start_subscriber_routine(void *arg) {
-	redisAsyncContext *c;
+    redisAsyncContext *c;
 
     signal(SIGPIPE, SIG_IGN);
     struct event_base *base = event_base_new();
@@ -303,15 +320,15 @@ void *start_wyliodrin_subscriber_routine(void *arg) {
 
     redisLibeventAttach(c, base);
     redisAsyncSetConnectCallback(c, wyliodrinConnectCallback);
-    redisAsyncCommand(c, onWyliodrinMessage, NULL, "PSUBSCRIBE %s", WYLIODRIN_CHANNEL);
+    redisAsyncCommand(c, onWyliodrinMessage, NULL, "SUBSCRIBE %s", WYLIODRIN_CHANNEL);
     event_base_dispatch(base);
 
     return NULL;
 }
 
 void start_subscriber() {
-	pthread_t t;
-	int rc;
+    pthread_t t;
+    int rc;
 
     rc = pthread_create(&t, NULL, start_subscriber_routine, NULL); /* Read rc */
     wsyserr(rc < 0, "pthread_create");
@@ -340,27 +357,27 @@ void init_communication() {
 }
 
 void communication(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-	xmpp_conn_t *const conn, void *const userdata) 
+    xmpp_conn_t *const conn, void *const userdata) 
 {
-	wlog("communication");
+    wlog("communication");
 
     if (c == NULL || c->err != 0) {
         werr("Return from communication due to NULL redis connection error");
     }
 
-	char *port_attr = xmpp_stanza_get_attribute(stanza, "port");
-	wfatal(port_attr == NULL, "No port attribute in communication");
+    char *port_attr = xmpp_stanza_get_attribute(stanza, "port");
+    wfatal(port_attr == NULL, "No port attribute in communication");
 
-	char *data_str = xmpp_stanza_get_text(stanza); /* data string */
-	if(data_str == NULL) {
-		werr("NULL data");
-		return;
-	}
+    char *data_str = xmpp_stanza_get_text(stanza); /* data string */
+    if(data_str == NULL) {
+        werr("NULL data");
+        return;
+    }
 
-	/* Decode */
-	int dec_size = strlen(data_str) * 3 / 4 + 1; /* decoded data length */
-	uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
-	base64_decode(decoded, data_str, dec_size);
+    /* Decode */
+    int dec_size = strlen(data_str) * 3 / 4 + 1; /* decoded data length */
+    uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
+    base64_decode(decoded, data_str, dec_size);
 
     /* Put it in json */
     json_t *root = json_object();
@@ -368,7 +385,7 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
     json_object_set_new(root, "from", json_string(from));
     json_object_set_new(root, "data", json_string((char *)decoded));
 
-	redisCommand(c, "PUBLISH %s:%s %s", PUB_CHANNEL, port_attr, json_dumps(root, 0));
+    redisCommand(c, "PUBLISH %s:%s %s", PUB_CHANNEL, port_attr, json_dumps(root, 0));
 }
 
 #endif /* COMMUNICATION */
