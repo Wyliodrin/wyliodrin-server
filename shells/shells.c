@@ -383,6 +383,10 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     return;
   }
 
+  /* Update xmpp context and connection in shell */
+  shells_vector[shellid]->ctx = (xmpp_ctx_t *)userdata;
+  shells_vector[shellid]->conn = conn;
+
   /* Send decoded data to screen */
   write(shells_vector[shellid]->fdm, decoded, rc);
 
@@ -392,6 +396,10 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
     char *data_str, int data_len, int shell_id) {
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+  if (ctx == NULL) {
+    wlog("NULL xmpp context");
+    return;
+  }
 
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");

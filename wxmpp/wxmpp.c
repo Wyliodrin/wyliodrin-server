@@ -83,7 +83,7 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
   while (1) {
     conn_rc = xmpp_connect_client(conn, NULL, WXMPP_PORT, wconn_handler, ctx);
     if (conn_rc < 0) {
-      sleep(1000000); /* sleep 1 second */
+      usleep(1000000); /* sleep 1 second */
     } else {
       break;
     }
