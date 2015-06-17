@@ -388,7 +388,7 @@ static void files_attr(xmpp_stanza_t *stanza) {
 
     char *size_attr = xmpp_stanza_get_attribute(stanza, "size"); /* size */
     if (size_attr == NULL) {
-      werr("xmpp_stanza_get_attribute attribute = size");
+      werr("xmpp_stanza_get_attribute attribute = size (%s)", xmpp_stanza_get_attribute(stanza, "name"));
       attributes.size = 0;
     } else {
       char *endptr; /* strtol endptr */

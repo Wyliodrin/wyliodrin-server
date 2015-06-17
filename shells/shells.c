@@ -263,8 +263,6 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       char wyliodrin_session_env [100];
       sprintf(wyliodrin_session_env,"wyliodrin_session=%s",request_attr);
 
-      printf ("userid signal %s\n", userid_attr);
-
       char *env[] = {wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env, NULL};
 
       execvpe(make_run[0], make_run, env);

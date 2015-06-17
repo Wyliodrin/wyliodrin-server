@@ -132,33 +132,26 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
 
 
     redisReply *r = reply;
-    printf ("wyliodrin message\n");
     if (reply == NULL) return;
-printf ("wyliodrin message\n");
+
     if (r->type == REDIS_REPLY_ARRAY) {
-printf ("wyliodrin message\n");
         if (strncmp (r->element[0]->str, "subscribe", 9)==0) 
         {
             wlog ("Subscribed to wyliodrin");
             return;
         }
-printf ("wyliodrin message\n");
-
 
         if (r->elements < 3) {
             wlog("At least 3 elements required");
             return;
         }
-printf ("wyliodrin message\n");
 
         char *message = r->element[2]->str;
-printf ("wyliodrin message\n");
 
         if (strncmp(message, "signal", 6) != 0) {
             werr("Ignore message: %s", message);
             return;
         }
-        printf ("wyliodrin message\n");
 
         char *projectId = message + 7;
         if (projectId == NULL) {
@@ -166,7 +159,6 @@ printf ("wyliodrin message\n");
             return;
         }
 
-printf ("wyliodrin message\n");
         char command[128];
         sprintf(command, "LRANGE %s 0 -1", projectId);
         wlog("command = %s", command);
@@ -253,16 +245,17 @@ printf ("wyliodrin message\n");
             list = curl_slist_append(list, "Content-Type: application/json");
             list = curl_slist_append(list, "Connection: close");
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+            #ifdef LOG
             curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+            #endif
             res = curl_easy_perform(curl);
             /* Check for errors */ 
             if(res != CURLE_OK) {
                 werr("curl_easy_perform() failed: %s", curl_easy_strerror(res));
             } else {
-                wlog("DONE\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+                // wlog("DONE\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
                 char ltrim_command[500];
                 sprintf(ltrim_command, "LTRIM %s %d -1", projectId, (int)(reply->elements));
-                printf ("%s\n", ltrim_command);
                 redisCommand(c, ltrim_command);
             }
          

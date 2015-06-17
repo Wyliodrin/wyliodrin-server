@@ -60,9 +60,9 @@ add_executable (wyliodrind
 )
 
 install (TARGETS wyliodrind DESTINATION bin)
-install (TARGETS etc/settings_arduinogalileo.json DESTINATION etc/wyliodrin/settings_arduinogalileo.json)
+install (FILES etc/settings_arduinogalileo.json DESTINATION /etc/wyliodrin)
 
-add_definitions ("-DERR -DLOG -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
+add_definitions ("-DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
 
 target_link_libraries (wyliodrind
   ${CMAKE_THREAD_LIBS_INIT}

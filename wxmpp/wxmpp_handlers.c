@@ -163,7 +163,7 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
       name = xmpp_stanza_get_name(tag);
       function = hashmap_get(tags, name);
       if(function != NULL && *function != NULL) { 
-        werr("Function available");
+        wlog("Function available");
         (*function)(xmpp_stanza_get_attribute(stanza, "from"), 
           xmpp_stanza_get_attribute(stanza, "to"), error, tag, conn, userdata);
       } else {

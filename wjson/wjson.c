@@ -34,6 +34,7 @@ json_t* file_to_json_t(const char *filename) {
 	fd = open(filename, O_RDONLY);
 	if(fd < 0) {
 		perror("[perror] Open file with JSON text");
+		werr ("Error open %s", filename);
 		free(buffer);
 
 		wlog("Return NULL due to trying to open %s", filename);

@@ -21,7 +21,7 @@
 
 #define SLEEP_NO_CONFIG (1 * 60) /* 1 minute of sleep in case of no config file */
 
-#define BOARDTYPE_PATH "/etc/settings/boardtype"
+#define BOARDTYPE_PATH "/etc/wyliodrin/boardtype"
 
 const char *jid_str;        /* jid        */
 const char *owner_str;      /* owner      */
@@ -237,6 +237,6 @@ int8_t wtalk() {
 int main(int argc, char *argv[]) {
   wtalk();
 
-  sleep (3000);
+  usleep (3000000);
   return 0;
 }
