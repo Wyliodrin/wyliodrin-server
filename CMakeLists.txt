@@ -9,10 +9,11 @@ include (FindOpenSSL)
 
 find_package (Threads REQUIRED)
 find_package (EXPAT REQUIRED)
+find_package (Hiredis REQUIRED)
 pkg_check_modules (STROPHE REQUIRED libstrophe)
 pkg_check_modules (JANSSON REQUIRED jansson)
 pkg_check_modules (FUSE REQUIRED fuse)
-find_package (Hiredis REQUIRED)
+pkg_check_modules (CURL REQUIRED libcurl)
 pkg_check_modules (EVENT REQUIRED libevent)
 
 include_directories (
@@ -24,6 +25,7 @@ include_directories (
   ${STROPHE_INCLUDE_DIRS}
   ${EXPAT_INCLUDE_DIRS}
   ${OPENSSL_INCLUDE_DIR}
+  ${CURL_INCLUDE_DIRS}
 )
 
 set (wyliodrind_SRCS
@@ -66,7 +68,8 @@ add_definitions ("-DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFF
 
 target_link_libraries (wyliodrind
   ${CMAKE_THREAD_LIBS_INIT}
-  -lutil -lcurl
+  ${CURL_LIBRARIES} 
+  -lutil
   ${HIREDIS_LIBRARIES}
   ${EVENT_LIBRARIES}
   ${FUSE_LIBRARIES}
