@@ -160,109 +160,116 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
         }
 
         char command[128];
-        sprintf(command, "LRANGE %s 0 -1", projectId);
+        sprintf(command, "LRANGE %s 0 500", projectId);
         wlog("command = %s", command);
 
         redisReply *reply = redisCommand(c, command);
-        if (reply->type == REDIS_REPLY_ARRAY) {
-            if (reply->elements == 0) {
-                wlog("No elements");
-                return;
-            }
-
-            json_error_t json_error;
-            json_t *json = json_loads(reply->element[0]->str, 0, &json_error);
-            if(json == NULL) {
-                werr("Not a valid json: %s", r->element[0]->str);
-                return;
-            }
-
-            /* Get userid from json */
-            // json_t *userid_val = json_object_get(json, "userid");
-            // if (userid_val == NULL) {
-            //     werr("No userid in json");
-            //     return;
-            // }
-            // if (!json_is_string(userid_val)) {
-            //     wlog("userid is not a string");
-            //     return;
-            // }
-            // const char *userid_str = json_string_value(userid_val);
-            // printf("user is : %s\n",userid_str);
-
-            // /* Get session from json */
-            // json_t *session_val = json_object_get(json, "session");
-            // if (session_val == NULL) {
-            //     werr("No session in json");
-            //     return;
-            // }
-            // if (!json_is_string(session_val)) {
-            //     wlog("userid is not a string");
-            //     return;
-            // }
-            // const char *session_str = json_string_value(session_val);
-
-            /* Build json to be sent */
-            json_t *json_to_send = json_object();
-            json_object_set_new(json_to_send, "projectid", json_string(projectId));
-            json_object_set_new(json_to_send, "gadgetid",  json_string(jid_str));
-            json_object_set_new(json_to_send, "userid",    json_object_get (json, "userid"));
-            json_object_set_new(json_to_send, "session",   json_object_get (json, "session"));
-            int i;
-            json_t *aux;
-            json_t *array = json_array();
-            for (i = 0; i < reply->elements; i++) {
-                aux = json_loads(reply->element[i]->str, 0, &json_error);
-                if (aux == NULL) {
-                    werr("%s is not a valid json, i = %d", reply->element[i]->str, i);
-                } else {
-                    json_object_del(aux, "userid");
-                    json_object_del(aux, "session");
-                    json_object_del(aux, "projectid");
-                    json_array_append(array, aux);
-                    wlog("added aux = %s", json_dumps(aux, 0));
+        if (reply != NULL)
+        { 
+            if (reply->type == REDIS_REPLY_ARRAY) {
+                if (reply->elements == 0) {
+                    wlog("No elements");
+                    return;
                 }
-            }
-            json_object_set_new(json_to_send, "data", array);
-            wlog("json = %s", json_dumps(json_to_send, 0));
 
-            /* Send it via http */
-            CURL *curl;
-            CURLcode res;
+                json_error_t json_error;
+                json_t *json = json_loads(reply->element[0]->str, 0, &json_error);
+                if(json == NULL) {
+                    werr("Not a valid json: %s", r->element[0]->str);
+                    return;
+                }
 
-            curl = curl_easy_init();
-            if (curl == NULL) {
-                werr("Curl init failed");
-                return;
+                /* Get userid from json */
+                // json_t *userid_val = json_object_get(json, "userid");
+                // if (userid_val == NULL) {
+                //     werr("No userid in json");
+                //     return;
+                // }
+                // if (!json_is_string(userid_val)) {
+                //     wlog("userid is not a string");
+                //     return;
+                // }
+                // const char *userid_str = json_string_value(userid_val);
+                // printf("user is : %s\n",userid_str);
+
+                // /* Get session from json */
+                // json_t *session_val = json_object_get(json, "session");
+                // if (session_val == NULL) {
+                //     werr("No session in json");
+                //     return;
+                // }
+                // if (!json_is_string(session_val)) {
+                //     wlog("userid is not a string");
+                //     return;
+                // }
+                // const char *session_str = json_string_value(session_val);
+
+                /* Build json to be sent */
+                json_t *json_to_send = json_object();
+                json_object_set_new(json_to_send, "projectid", json_string(projectId));
+                json_object_set_new(json_to_send, "gadgetid",  json_string(jid_str));
+                json_object_set_new(json_to_send, "userid",    json_object_get (json, "userid"));
+                json_object_set_new(json_to_send, "session",   json_object_get (json, "session"));
+                int i;
+                json_t *aux;
+                json_t *array = json_array();
+                for (i = 0; i < reply->elements; i++) {
+                    aux = json_loads(reply->element[i]->str, 0, &json_error);
+                    if (aux == NULL) {
+                        werr("%s is not a valid json, i = %d", reply->element[i]->str, i);
+                    } else {
+                        json_object_del(aux, "userid");
+                        json_object_del(aux, "session");
+                        json_object_del(aux, "projectid");
+                        json_array_append(array, aux);
+                        wlog("added aux = %s", json_dumps(aux, 0));
+                    }
+                }
+                json_object_set_new(json_to_send, "data", array);
+                wlog("json = %s", json_dumps(json_to_send, 0));
+
+                /* Send it via http */
+                CURL *curl;
+                CURLcode res;
+
+                curl = curl_easy_init();
+                if (curl == NULL) {
+                    werr("Curl init failed");
+                    return;
+                }
+                curl_easy_setopt(curl, CURLOPT_URL, "http://projects.wyliodrin.com/signals/send");
+                curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+                curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+                //curl_easy_setopt(curl, CURLOPT_SSL_VERIFYSTATUS, 0L);
+                curl_easy_setopt(curl, CURLOPT_POSTFIELDS, (const char*)json_dumps(json_to_send, 0));
+                struct curl_slist *list = NULL;
+                list = curl_slist_append(list, "Content-Type: application/json");
+                list = curl_slist_append(list, "Connection: close");
+                curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
+                #ifdef LOG
+                curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+                #endif
+                res = curl_easy_perform(curl);
+                /* Check for errors */ 
+                if(res != CURLE_OK) {
+                    werr("curl_easy_perform() failed: %s", curl_easy_strerror(res));
+                } else {
+                    // wlog("DONE\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+                    char ltrim_command[500];
+                    sprintf(ltrim_command, "LTRIM %s %d -1", projectId, (int)(reply->elements));
+                    redisCommand(c, ltrim_command);
+                }
+             
+                /* always cleanup */ 
+                curl_easy_cleanup(curl);
             }
-            curl_easy_setopt(curl, CURLOPT_URL, "https://projects.wyliodrin.com/signals/send");
-            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
-            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-            //curl_easy_setopt(curl, CURLOPT_SSL_VERIFYSTATUS, 0L);
-            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, (const char*)json_dumps(json_to_send, 0));
-            struct curl_slist *list = NULL;
-            list = curl_slist_append(list, "Content-Type: application/json");
-            list = curl_slist_append(list, "Connection: close");
-            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-            #ifdef LOG
-            curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-            #endif
-            res = curl_easy_perform(curl);
-            /* Check for errors */ 
-            if(res != CURLE_OK) {
-                werr("curl_easy_perform() failed: %s", curl_easy_strerror(res));
-            } else {
-                // wlog("DONE\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-                char ltrim_command[500];
-                sprintf(ltrim_command, "LTRIM %s %d -1", projectId, (int)(reply->elements));
-                redisCommand(c, ltrim_command);
-            }
-         
-            /* always cleanup */ 
-            curl_easy_cleanup(curl);
+            freeReplyObject(reply);
         }
-        freeReplyObject(reply);
+        else
+        {
+            wlog ("redis reply null");
+        }
     } else {
         werr("Got message on wyliodrin subscription different from REDIS_REPLY_ARRAY");
     }
