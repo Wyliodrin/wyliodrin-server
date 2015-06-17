@@ -450,6 +450,8 @@ void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
   xmpp_stanza_add_child(keys, data);
   xmpp_stanza_add_child(message, keys);
   xmpp_send(conn, message);
+  xmpp_stanza_release(keys);
+  xmpp_stanza_release(data);
   xmpp_stanza_release(message);
 
   free(encoded_data);
