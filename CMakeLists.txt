@@ -60,6 +60,7 @@ add_executable (wyliodrind
 )
 
 install (TARGETS wyliodrind DESTINATION bin)
+install (TARGETS etc/* DESTINATION etc/wyliodrin/*)
 
 add_definitions ("-DERR -DLOG -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
 
