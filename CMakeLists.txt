@@ -62,7 +62,6 @@ add_executable (wyliodrind
 )
 
 install (TARGETS wyliodrind DESTINATION bin)
-install (FILES etc/settings_arduinogalileo.json DESTINATION /etc/wyliodrin)
 
 add_definitions ("-DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
 
