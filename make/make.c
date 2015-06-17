@@ -79,6 +79,8 @@ void *out_read_thread(void *args) {
       xmpp_stanza_add_child(make_stz, data_stz);
       xmpp_stanza_add_child(message_stz, make_stz);
       xmpp_send(conn, message_stz);
+      xmpp_stanza_release(data_stz);
+      xmpp_stanza_release(make_stz);
       xmpp_stanza_release(message_stz);
     } else if (rc < 0) {
       return NULL;
@@ -124,6 +126,8 @@ void *err_read_thread(void *args) {
       xmpp_stanza_add_child(make_stz, data_stz);
       xmpp_stanza_add_child(message_stz, make_stz);
       xmpp_send(conn, message_stz);
+      xmpp_stanza_release(make_stz);
+      xmpp_stanza_release(data_stz);
       xmpp_stanza_release(message_stz);
     } else if (rc < 0) {
       return NULL;
@@ -162,6 +166,7 @@ void *status_read_thread(void *args) {
 
       xmpp_stanza_add_child(message_stz, make_stz);
       xmpp_send(conn, message_stz);
+      xmpp_stanza_release(make_stz);
       xmpp_stanza_release(message_stz);
     } else if (rc < 0) {
       return NULL;

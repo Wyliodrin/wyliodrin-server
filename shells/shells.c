@@ -305,6 +305,7 @@ void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
     (const char *)xmpp_stanza_get_attribute(stanza, "request"));
   xmpp_stanza_add_child(message, done);
   xmpp_send(conn, message);
+  xmpp_stanza_release(done);
   xmpp_stanza_release(message);
 }
 
@@ -477,6 +478,7 @@ void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   xmpp_stanza_add_child(list, project);
   xmpp_stanza_add_child(message, list);
   xmpp_send(conn, message);
+  xmpp_stanza_release(list);
   xmpp_stanza_release(message);
 
   wlog("Return from shell_list");

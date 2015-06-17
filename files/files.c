@@ -102,6 +102,7 @@ static int wfuse_getattr(const char *path, struct stat *stbuf) {
 
   xmpp_stanza_add_child(message, files);
   xmpp_send(conn, message);
+  xmpp_stanza_release(files);
   xmpp_stanza_release(message);
 
   /* Wait until attributes is set */
@@ -180,6 +181,7 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
   xmpp_stanza_add_child(message, files);
   xmpp_send(conn, message);
+  xmpp_stanza_release(files);
   xmpp_stanza_release(message);
 
   while (signal_list == false) {
@@ -270,6 +272,7 @@ static int wfuse_read(const char *path, char *buf, size_t size, off_t offset,
 
   xmpp_stanza_add_child(message, files);
   xmpp_send(conn, message);
+  xmpp_stanza_release(files);
   xmpp_stanza_release(message);
 
   /* Wait until attributes is set */
@@ -491,6 +494,9 @@ static void files_read(xmpp_stanza_t *stanza) {
   }
   read_data = strdup((char *)dec_text);
   wsyserr(read_data == NULL, "strdup");
+
+  free(text);
+  free(dec_text);
 
   signal_read = true;
   rc = pthread_cond_signal(&cond);
