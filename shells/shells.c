@@ -263,7 +263,11 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       char wyliodrin_session_env [100];
       sprintf(wyliodrin_session_env,"wyliodrin_session=%s",request_attr);
 
-      char *env[] = {wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env, NULL};
+      char wyliodrin_board_env [50];
+      sprintf(wyliodrin_board_env, "wyliodrin_board=%s",board_str);
+
+      char *env[] = {wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
+                   wyliodrin_board_env,NULL};
 
       execvpe(make_run[0], make_run, env);
     }
@@ -272,7 +276,13 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       char shell_name[256];
       sprintf(shell_name, "shell%d", shell_index);
       char *args[] = {"bash", NULL};
-      execvp(args[0], args);
+
+      char wyliodrin_board_env [50];
+      sprintf(wyliodrin_board_env, "wyliodrin_board=%s",board_str);
+
+      char *env[] = {wyliodrin_board_env,NULL};
+
+      execvpe(args[0], args, env);
       /* Error */
       wlog("SYSERR execvp");
       perror("execvp");
