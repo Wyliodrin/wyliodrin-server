@@ -342,21 +342,27 @@ void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
            xmpp_conn_t *const conn, void *const userdata)
 {
   wlog("files()");
+  if (error == 0)
+  {
+    char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
+    if (action_attr == NULL) {
+      werr("xmpp_stanza_get_attribute attribute = action");
+    }
+    wfatal(action_attr == NULL, "xmpp_stanza_get_attribute [attribute = action]");
 
-  char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
-  if (action_attr == NULL) {
-    werr("xmpp_stanza_get_attribute attribute = action");
+    if (strcmp(action_attr, "attributes") == 0) {
+      files_attr(stanza);
+    } else if (strcmp(action_attr, "list") == 0) {
+      files_list(stanza);
+    } else if (strncasecmp(action_attr, "read", 4) == 0) {
+      files_read(stanza);
+    } else {
+      werr("Unknown action: %s", action_attr);
+    }
   }
-  wfatal(action_attr == NULL, "xmpp_stanza_get_attribute [attribute = action]");
-
-  if (strcmp(action_attr, "attributes") == 0) {
-    files_attr(stanza);
-  } else if (strcmp(action_attr, "list") == 0) {
-    files_list(stanza);
-  } else if (strncasecmp(action_attr, "read", 4) == 0) {
-    files_read(stanza);
-  } else {
-    werr("Unknown action: %s", action_attr);
+  else
+  {
+    werr ("error stanza %s %s", xmpp_stanza_get_attribute(stanza, "path"), xmpp_stanza_get_attribute(stanza, "action"))
   }
 
   wlog("Return from files()");
@@ -391,7 +397,7 @@ static void files_attr(xmpp_stanza_t *stanza) {
 
     char *size_attr = xmpp_stanza_get_attribute(stanza, "size"); /* size */
     if (size_attr == NULL) {
-      werr("xmpp_stanza_get_attribute attribute = size (%s)", xmpp_stanza_get_attribute(stanza, "name"));
+      werr("xmpp_stanza_get_attribute attribute = size (%s)", xmpp_stanza_get_attribute(stanza, "path"));
       attributes.size = 0;
     } else {
       char *endptr; /* strtol endptr */
@@ -481,22 +487,25 @@ static void files_read(xmpp_stanza_t *stanza) {
 
   char *text = xmpp_stanza_get_text(stanza);
   if(text == NULL) {
-    werr("xmpp_stanza_get_text returned NULL");
+    werr("xmpp_stanza_get_text returned NULL (%s, error %s)", xmpp_stanza_get_attribute(stanza, "path"), xmpp_stanza_get_attribute(stanza, "error"));
+    read_data = strdup ("");
   }
+  else
+  {
+    int dec_size = strlen(text) * 3 / 4 + 1;
+    uint8_t *dec_text = (uint8_t *)calloc(dec_size, sizeof(uint8_t));
+    rc = base64_decode(dec_text, text, dec_size);
+    wfatal(rc < 0, "base64_decode");
 
-  int dec_size = strlen(text) * 3 / 4 + 1;
-  uint8_t *dec_text = (uint8_t *)calloc(dec_size, sizeof(uint8_t));
-  rc = base64_decode(dec_text, text, dec_size);
-  wfatal(rc < 0, "base64_decode");
+    if (read_data != NULL) {
+      free(read_data);
+    }
+    read_data = strdup((char *)dec_text);
+    wsyserr(read_data == NULL, "strdup");
 
-  if (read_data != NULL) {
-    free(read_data);
+    free(text);
+    free(dec_text);
   }
-  read_data = strdup((char *)dec_text);
-  wsyserr(read_data == NULL, "strdup");
-
-  free(text);
-  free(dec_text);
 
   signal_read = true;
   rc = pthread_cond_signal(&cond);

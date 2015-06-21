@@ -1,0 +1,11 @@
+{
+	"config_file": "/media/card/wyliodrin.json",
+	"home": "/wyliodrin",
+	"mountFile": "/wyliodrin/projects/mount",
+	"buildFile": "/wyliodrin/projects/build",
+	"umount": "umount -f",
+	"run": ["make"],
+	"stop": ["kill -9"],
+	"sudo": "",
+	"board": "arduinogalileo"
+}
