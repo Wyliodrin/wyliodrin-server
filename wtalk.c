@@ -2,7 +2,7 @@
  * WTalk
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
- * Date last modified: April 2015
+ * Date last modified: June 2015
  *************************************************************************************************/
 
 #include <stdio.h>   /* printf */
@@ -11,9 +11,10 @@
 #include <unistd.h>  /* sleep */
 #include <strophe.h> /* Strophe stuff */
 #include <ctype.h>   /* tolower */
- #include <sys/types.h>
- #include <sys/stat.h>
- #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 
 #include "winternals/winternals.h" /* logs and errs */
 #include "wjson/wjson.h"           /* json handling */
@@ -47,6 +48,7 @@ const char *board_str;      /* board name */
  */
 int8_t wtalk() {
   wlog("wtalk()");
+  int wifi_pid = -1;
 
   system("fusermount -u /wyliodrin/projects/mount");
   usleep(1000000);
@@ -58,6 +60,8 @@ int8_t wtalk() {
   memset(boardtype, 0 ,32);
   int rc = read(fd, boardtype, 32);
   wsyserr(rc == -1, "read");
+
+  /* Get settings path */
   char settings_path[128];
   sprintf(settings_path, "%s%s.json", SETTINGS_PATH, boardtype);
 
@@ -141,6 +145,73 @@ int8_t wtalk() {
     return -3;
   }
 
+  /* Configure wifi of Edison boards */
+  if (strcmp(boardtype, "edison") == 0) {
+    /* Get ssid */
+    json_t *ssid = json_object_get(config, "ssid");
+    if (ssid == NULL) {
+      json_decref(settings);
+      json_decref(config);
+
+      werr("No ssid in wyliodrin.json");
+      return -1;
+    }
+    if (!json_is_string(ssid)) {
+      json_decref(settings);
+      json_decref(config);
+
+      werr("Value of ssid is not a string");
+      return -1;
+    }
+    const char *ssid_str = json_string_value(ssid);
+
+    /* Continue only if ssid is non-empty */
+    if (strlen(ssid_str) != 0) {
+      printf("#include <.h>\n");
+      /* Get psk */
+      json_t *psk = json_object_get(config, "psk");
+      if (psk == NULL) {
+        json_decref(settings);
+        json_decref(config);
+
+        werr("No psk in wyliodrin.json");
+        return -1;
+      }
+      if (!json_is_string(psk)) {
+        json_decref(settings);
+        json_decref(config);
+
+        werr("Value of psk is not a string");
+        return -1;
+      }
+      const char *psk_str = json_string_value(psk);
+
+      /* Set wifi type: OPEN or WPA-PSK */
+      char *type;
+      if (strlen(psk_str) == 0) {
+        type = strdup("OPEN");
+      } else {
+        type = strdup("WPA-PSK");
+      }
+
+      /* Pad ssid and psk with parathesis */
+      char ssid_pad[strlen(ssid_str) + 3];
+      char psk_pad[strlen(psk_str) + 3];
+      sprintf(ssid_pad, "\"%s\"", ssid_str);
+      sprintf(psk_pad, "\"%s\"", psk_str);
+
+      /* Fork and exec configure_edison */
+      wifi_pid = fork();
+      wfatal(wifi_pid == -1, "fork");
+      if (wifi_pid == 0) { /* Child */
+        char *args[] = {"configure_edison", "--changeWifi", type, ssid_pad, psk_pad};
+        execvp(args[0], args);
+        werr("Configure edison failed");
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
+
   /* Get nameserver */
   json_t *nameserver = json_object_get(config, "nameserver");
   if (nameserver == NULL) {
@@ -221,6 +292,11 @@ int8_t wtalk() {
   char *p = (char *)owner_str; /* remove const-ness of owner_str */
   for (i = 0; i < strlen(p); i++) {
     p[i] = tolower(p[i]);
+  }
+
+  /* Wait for wifi configuration */
+  if (wifi_pid != -1) {
+    waitpid(wifi_pid, NULL, 0);
   }
 
   /* Connect to Wyliodrin XMPP server */
