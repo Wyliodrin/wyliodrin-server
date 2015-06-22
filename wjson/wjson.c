@@ -2,81 +2,62 @@
  * Working with JSONs
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
- * Date last modified: April 2015
+ * Date last modified: June 2015
  *************************************************************************************************/
 
-#include <fcntl.h>   /* open */
-#include <unistd.h>  /* read, close */
+#include <fcntl.h>   /* open         */
+#include <unistd.h>  /* read, close  */
 #include <jansson.h> /* json_t stuff */
 
-#include "wjson.h"                    /* JSON stuff */
+#include "wjson.h"                    /* declarations  */
 #include "../winternals/winternals.h" /* logs and errs */
 
-json_t* file_to_json_t(const char *filename) {
-	wlog("file_to_json_t(%s)", filename);
 
-	char *buffer;       /* JSON text */
-	json_t *root;       /* Main json_t object */ 
-	json_error_t error; /* Error information */
-	int fd;             /* File descriptor with JSON text */
-	int ret_read;       /* Read return value */
+#define BUFFER_SIZE (1 * 1024) /* 1 KB */
+
+/**
+ * Returns the json_t object corresponsing to the content of the file <filename>,
+ * or NULL when <filename> does not exits
+ */
+json_t* file_to_json_t(const char *filename) {
+	json_t *ret = NULL; /* return value       */
+	json_error_t error; /* Error information  */
+	int rc_int; /* Return code od interger type */
+
+	/* Open file containing the JSON */
+	int filename_fd = open(filename, O_RDONLY);
+	if (filename_fd < 0) {
+		werr("open %s", filename);
+		perror("open");
+		goto _exit;
+	}
 
 	/* Allocate memory for buffer */
-	buffer = (char*) calloc(BUFFER_SIZE, 1);
-	if(buffer == NULL) {
-		perror("[perror] Allocate memory for buffer");
-
-		wlog("Return NULL due to error in memory allocation");
-		return NULL;
-	}
-
-	/* Open file with with JSON text */
-	fd = open(filename, O_RDONLY);
-	if(fd < 0) {
-		perror("[perror] Open file with JSON text");
-		werr ("Error open %s", filename);
-		free(buffer);
-
-		wlog("Return NULL due to trying to open %s", filename);
-		return NULL;
-	}
+	char *buffer = (char*) calloc(BUFFER_SIZE, 1); /* buffer used in read */
+	wsyserr(buffer == NULL, "calloc");
 
 	/* Read JSON buffer */
-	ret_read = read(fd, buffer, BUFFER_SIZE);
-	if(ret_read < 0) {
-		perror("[perror] Read JSON buffer");
-		free(buffer);
-		close(fd);
-
-		wlog("Return NULL due to reading error from %s", filename);
-		return NULL;
-	}
+	rc_int = read(filename_fd, buffer, BUFFER_SIZE);
+	wsyserr(rc_int < 0, "read");
 
 	/* Convert JSON buffer */
-	root = json_loads(buffer, 0, &error);
-	if(root == NULL) {
+	ret = json_loads(buffer, 0, &error);
+	if(ret == NULL) {
 		werr("Undecodable JSON in %s\n", filename);
-		free(buffer);
-		close(fd);
-
-		wlog("Return NULL due to undecodable JSON");
-		return NULL;
+		goto _cleaning;
 	}
 
-	/* Check if root is object */
-	if(!json_is_object(root)) {
+	/* Check whether ret is object */
+	if(!json_is_object(ret)) {
 		werr("JSON in %s\n is not an object", filename);
-		free(buffer);
-		close(fd);
-
-		wlog("Return NULL because JSON in %s is not object", filename);
-		return NULL;	
+		json_decref(ret);
+		ret = NULL;
 	}
 
-	/* Cleaning */
+_cleaning:
 	free(buffer);
-	close(fd);
+	close(filename_fd);
 
-	wlog("Return successfully converted JSON object");
-	return root;
+_exit:
+	return ret;
 }

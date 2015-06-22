@@ -7,7 +7,10 @@
 
 
 #include <string.h>                /* strlen, strdup */
+#include <unistd.h>                /* read, write    */
 #include <fcntl.h>                 /* open           */
+#include <ctype.h>                 /* tolower        */
+#include <sys/wait.h>              /* waitpid        */
 #include "winternals/winternals.h" /* logs and errs  */
 #include "wjson/wjson.h"           /* json handling  */
 #include "wxmpp/wxmpp.h"           /* xmpp handling  */
@@ -34,9 +37,12 @@ const char *board_str;      /* board name  */
 /**
  * Get the string value of the key <key> in the json object <json>.
  *
- * Returns a pointer to a heap allocated zone of memory containing the string value
- * or NULL if the key does not exists or the value is not a string value.
- * The returned value must be freed by the user;
+ * Returns the associated value of string as a null terminated UTF-8 encoded string,
+ * or NULL if there is not a key <key> in <json>, or there is a key <key>, but not of
+ * string type.
+ *
+ * The retuned value is read-only and must not be modified or freed by the user.
+ * It is valid as long as string exists, i.e. as long as its reference count has not dropped to 0.
  */
 static const char *get_str_value(json_t *json, char *key) {
   json_t *value_json = json_object_get(json, key); /* value as JSON value */
@@ -51,8 +57,12 @@ static const char *get_str_value(json_t *json, char *key) {
 
 
 /**
- * Read and decode settings_json file, get location of config file, read and decode config file,
- * get jid and pass, connect to Wyliodrin XMPP server.
+ * Read settings_<board_type> file, read wyliodrin.json, get jid, password and other data
+ * needed by WTalk, connect to Wyliodrin XMPP server.
+ *
+ * Update /etc/resolv.conf if there is an entry named nameserver in wyliodrin.json.
+ * Umount the mount file.
+ * Configure wifi on edison boards.
  */
 void wtalk() {
   int rc_int; /* Return code of integer type */
@@ -75,6 +85,15 @@ void wtalk() {
   json_t *settings_json = file_to_json_t(settings_path); /* JSON object of settings_<boardtype> */
   wfatal(settings_json == NULL, "Invalid JSON is %s", settings_path);
 
+  /* Get config_file value. This value contains the path to wyliodrin.json */
+  const char *config_file_str = get_str_value(settings_json, "config_file"); /* config_file value */
+  wfatal(config_file_str == NULL || strlen(config_file_str) == 0,
+    "No non-empty config_file key of type string in %s", settings_path);
+
+  /* Get the content from the wyliodrin.json file in a json object */
+  json_t *config_json = file_to_json_t(config_file_str); /* config_file JSON */
+  wfatal(config_json == NULL, "Invalid JSON in %s", config_file_str);
+
   /* Get mountFile value. This value containts the path where the projects are to be mounted */
   mount_file_str = get_str_value(settings_json, "mountFile");
   wfatal(mount_file_str == NULL, "No non-empty mountFile key of type string in %s", settings_path);
@@ -92,14 +111,6 @@ void wtalk() {
   wfatal(board_str == NULL, "No non-empty board key of type string in %s", settings_path);
   board_str = strdup(board_str);
   wfatal(board_str == NULL, "strdup");
-
-  /* Get config_file value. This value contains the path to wyliodrin.json */
-  const char *config_file_str = get_str_value(settings_json, "config_file"); /* config_file value */
-  wfatal(config_file_str == NULL, "No non-empty config_file key of type string in %s", settings_path);
-
-  /* Get the content from the wyliodrin.json file in a json object */
-  json_t *config_json = file_to_json_t(config_file_str); /* config_file JSON */
-  wfatal(config_json == NULL, "Invalid JSON in %s", config_file_str);
 
   /* Get jid value from wyliodrin.json */
   jid_str = get_str_value(config_json, "jid");
@@ -190,7 +201,7 @@ void wtalk() {
   json_decref(settings_json);
 
   /* Connect to Wyliodrin XMPP server */
-  wxmpp_connect(jid_str, password_str);
+  // wxmpp_connect(jid_str, password_str);
 }
 
 int main(int argc, char *argv[]) {

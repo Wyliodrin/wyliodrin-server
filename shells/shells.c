@@ -116,7 +116,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   if (w == 0) {
     werr("width is 0");
     send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-    return; 
+    return;
   }
 
   /* Get height attribute */
@@ -233,7 +233,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     //   //waitpid(pid2, NULL, 0);
     // }
 
-    wlog("Return success from shells_open");    
+    wlog("Return success from shells_open");
     return;
   }
 
@@ -311,7 +311,7 @@ void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
   } else {
     xmpp_stanza_set_attribute(done, "response", "error");
   }
-  xmpp_stanza_set_attribute(done, "request", 
+  xmpp_stanza_set_attribute(done, "request",
     (const char *)xmpp_stanza_get_attribute(stanza, "request"));
   xmpp_stanza_add_child(message, done);
   xmpp_send(conn, message);
@@ -355,7 +355,7 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     close(shells_vector[shellid]->fdm);
   } else {
     pthread_mutex_unlock(&shells_lock);
-    return;  
+    return;
   }
   pthread_mutex_unlock(&shells_lock);
 
@@ -449,7 +449,7 @@ void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
 
   xmpp_stanza_t *data = xmpp_stanza_new(ctx); /* data */
   char *encoded_data = (char *)malloc(BASE64_SIZE(data_len));
-  encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len), 
+  encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len),
     (const unsigned char *)data_str, data_len);
 
   if (encoded_data == NULL) {
