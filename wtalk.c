@@ -1,297 +1,183 @@
 /**************************************************************************************************
  * WTalk
  *
- * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
  * Date last modified: June 2015
  *************************************************************************************************/
 
-#include <stdio.h>   /* printf */
-#include <jansson.h> /* json_t stuff */
-#include <string.h>  /* strcmp */
-#include <unistd.h>  /* sleep */
-#include <strophe.h> /* Strophe stuff */
-#include <ctype.h>   /* tolower */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <fcntl.h>
 
-#include "winternals/winternals.h" /* logs and errs */
-#include "wjson/wjson.h"           /* json handling */
-#include "wxmpp/wxmpp.h"           /* xmpp handling */
+#include <string.h>                /* strlen, strdup */
+#include <fcntl.h>                 /* open           */
+#include "winternals/winternals.h" /* logs and errs  */
+#include "wjson/wjson.h"           /* json handling  */
+#include "wxmpp/wxmpp.h"           /* xmpp handling  */
 
-#define SLEEP_NO_CONFIG (1 * 60) /* 1 minute of sleep in case of no config file */
 
-#define BOARDTYPE_PATH "/etc/wyliodrin/boardtype"
+#define BOARDTYPE_PATH "/etc/wyliodrin/boardtype" /* File path of the file named boardtype.
+                                                     This file contains the name of the board.
+                                                     Example: edison or arduinogalileo. */
+#define SETTINGS_PATH  "/etc/wyliodrin/settings_" /* File path of "settings_<boardtype>.json".
+                                                     <boardtype> is the string found in the file
+                                                     named boardtype.
+                                                     Example: settings_edison.json */
 
-const char *jid_str;        /* jid        */
-const char *owner_str;      /* owner      */
-const char *mount_file_str; /* mount file */
-const char *build_file_str; /* build file */
-const char *board_str;      /* board name */
+
+/* Variables to be used by all the modules */
+const char *jid_str;        /* jid         */
+const char *owner_str;      /* owner       */
+const char *mount_file_str; /* mount file  */
+const char *build_file_str; /* build file  */
+const char *board_str;      /* board name  */
+
+
 
 /**
- * Read and decode settings file, get location of config file, read and decode config file,
- * get jid and pass, connect to Wyliodrin XMPP server.
+ * Get the string value of the key <key> in the json object <json>.
  *
- * RETURN
- *     0 : succes
- *    -1 : NULL settings JSON
- *    -2 : config_file value is not a string
- *    -3 : NULL config JSON
- *    -4 : No jid in config file
- *    -5 : jid value is not a string
- *    -6 : No password in config file
- *    -7 : password value is not a string
- *    -8 : No owner in config file
- *    -9 : onwer value is not a string
+ * Returns a pointer to a heap allocated zone of memory containing the string value
+ * or NULL if the key does not exists or the value is not a string value.
+ * The returned value must be freed by the user;
  */
-int8_t wtalk() {
-  wlog("wtalk()");
-  int wifi_pid = -1;
+static const char *get_str_value(json_t *json, char *key) {
+  json_t *value_json = json_object_get(json, key); /* value as JSON value */
 
-  system("fusermount -u /wyliodrin/projects/mount");
-  usleep(1000000);
-
-  int fd = open(BOARDTYPE_PATH, O_RDONLY);
-  wsyserr(fd == -1, "open");
-
-  char boardtype[32];
-  memset(boardtype, 0 ,32);
-  int rc = read(fd, boardtype, 32);
-  wsyserr(rc == -1, "read");
-
-  /* Get settings path */
-  char settings_path[128];
-  sprintf(settings_path, "%s%s.json", SETTINGS_PATH, boardtype);
-
-  /* Get settings JSON */
-  json_t *settings = file_to_json_t(settings_path); /* Settings JSON */
-  if (settings == NULL) {
-    wlog("Return -1 due to NULL decoded settings JSON");
-    return -1;
-  }
-
-  /* Check whether config_file key exists or not */
-  json_t *config_file = json_object_get(settings, "config_file"); /* config_file object */
-  if (config_file == NULL) {
-    wlog("Return -1 due to not existing config_file key");
-    return -1;
-  }
-  if (!json_is_string(config_file)) {
-    json_decref(settings);
-
-    wlog("Return -2 because config_file value is not a string");
-    return -2;
-  }
-  const char *config_file_txt = json_string_value(config_file); /* config_file text */
-  if (strcmp(config_file_txt, "") == 0) {
-    json_decref(settings);
-
-    /* Sleep and try again */
-    wlog("Config file value is an empty string. Sleep and retry.");
-    sleep(SLEEP_NO_CONFIG);
-    return wtalk();
-  }
-
-  /* Get mount file path */
-  json_t *mount_file = json_object_get(settings, "mountFile"); /* mountFile object */
-  if (mount_file == NULL) {
-    wlog("Return -1 due to not existing mountFile key");
-    return -1;
-  }
-  if (!json_is_string(mount_file)) {
-    json_decref(settings);
-
-    wlog("Return -2 because mountFile value is not a string");
-    return -2;    
-  }
-  mount_file_str = json_string_value(mount_file);
-
-  /* Get board name */
-  json_t *board = json_object_get(settings, "board"); /* board object */
-  if (board == NULL) {
-    wlog("Return -1 due to not existing board key");
-    return -1;
-  }
-  if (!json_is_string(board)) {
-    json_decref(settings);
-
-    wlog("Return -2 because board value is not a string");
-    return -2;    
-  }
-  board_str = json_string_value(board);
-
-  /* Get build file path */
-  json_t *build_file = json_object_get(settings, "buildFile"); /* mountFile object */
-  if (build_file == NULL) {
-    wlog("Return -1 due to not existing buildFile key");
-    return -1;
-  }
-  if (!json_is_string(build_file)) {
-    json_decref(settings);
-
-    wlog("Return -2 because buildFile value is not a string");
-    return -2;    
-  }
-  build_file_str = json_string_value(build_file);
-
-  /* Decode config JSON */
-  json_t *config = file_to_json_t(config_file_txt); /* config_file JSON */
-  if (config == NULL) {
-    json_decref(settings);
-
-    wlog("Return -3 due to NULL decoded config JSON");
-    return -3;
-  }
-
-  /* Configure wifi of Edison boards */
-  if (strcmp(boardtype, "edison") == 0) {
-    /* Get ssid */
-    json_t *ssid = json_object_get(config, "ssid");
-    if (ssid == NULL) {
-      json_decref(settings);
-      json_decref(config);
-
-      werr("No ssid in wyliodrin.json");
-      return -1;
-    }
-    if (!json_is_string(ssid)) {
-      json_decref(settings);
-      json_decref(config);
-
-      werr("Value of ssid is not a string");
-      return -1;
-    }
-    const char *ssid_str = json_string_value(ssid);
-
-    /* Continue only if ssid is non-empty */
-    if (strlen(ssid_str) != 0) {
-      printf("#include <.h>\n");
-      /* Get psk */
-      json_t *psk = json_object_get(config, "psk");
-      if (psk == NULL) {
-        json_decref(settings);
-        json_decref(config);
-
-        werr("No psk in wyliodrin.json");
-        return -1;
-      }
-      if (!json_is_string(psk)) {
-        json_decref(settings);
-        json_decref(config);
-
-        werr("Value of psk is not a string");
-        return -1;
-      }
-      const char *psk_str = json_string_value(psk);
-
-      /* Set wifi type: OPEN or WPA-PSK */
-      char *type;
-      if (strlen(psk_str) == 0) {
-        type = strdup("OPEN");
-      } else {
-        type = strdup("WPA-PSK");
-      }
-
-      /* Pad ssid and psk with parathesis */
-      char ssid_pad[strlen(ssid_str) + 3];
-      char psk_pad[strlen(psk_str) + 3];
-      sprintf(ssid_pad, "\"%s\"", ssid_str);
-      sprintf(psk_pad, "\"%s\"", psk_str);
-
-      /* Fork and exec configure_edison */
-      wifi_pid = fork();
-      wfatal(wifi_pid == -1, "fork");
-      if (wifi_pid == 0) { /* Child */
-        char *args[] = {"configure_edison", "--changeWifi", type, ssid_pad, psk_pad};
-        execvp(args[0], args);
-        werr("Configure edison failed");
-        exit(EXIT_FAILURE);
-      }
-    }
-  }
-
-  /* Get nameserver */
-  json_t *nameserver = json_object_get(config, "nameserver");
-  if (nameserver == NULL) {
-    wlog("No nameserver in wyliodrin.json");
+  /* Sanity checks */
+  if (value_json == NULL || !json_is_string(value_json)) {
+    return NULL;
   } else {
-    if (!json_is_string(nameserver)) {
-      wlog("nameserver is not a string");
-    } else {
-      const char *nameserver_str = json_string_value(nameserver); /* jid value */
-
-      int fd = open("/etc/resolv.conf", O_WRONLY | O_TRUNC);
-      if (fd < 0) {
-        werr("Could not open resolv.conf");
-      } else {
-        char to_write[128];
-        sprintf(to_write, "nameserver %s", nameserver_str);
-        write(fd, to_write, strlen(to_write));
-      }
-    }
+    return json_string_value(value_json);
   }
+}
 
-  /* Get jid */
-  json_t *jid = json_object_get(config, "jid"); /* jid json */
-  if (jid == NULL) {
-    json_decref(settings);
-    json_decref(config);
 
-    wlog("Return -4 due to inexistent jid in config file or error");
-    return -4;
-  }
-  if (!json_is_string(jid)) {
-    json_decref(settings);
-    json_decref(config);
+/**
+ * Read and decode settings_json file, get location of config file, read and decode config file,
+ * get jid and pass, connect to Wyliodrin XMPP server.
+ */
+void wtalk() {
+  int rc_int; /* Return code of integer type */
+  int wifi_pid = -1; /* Pid of fork's child in which edison's wifi configuration is done */
 
-    wlog("Return -5 because jid value is not a string");
-    return -5;
-  }
-  jid_str  = json_string_value(jid); /* jid value */
+  /* Get the type of board from the boardtype file */
+  int boardtype_fd = open(BOARDTYPE_PATH, O_RDONLY); /* File descriptor of boardtype file */
+  wsyserr(boardtype_fd == -1, "open");
+  char boardtype[64]; /* Content of boardtype */
+  memset(boardtype, 0, 64);
+  rc_int = read(boardtype_fd, boardtype, 64);
+  wsyserr(rc_int == -1, "read");
 
-  /* Get pass */
-  json_t *pass = json_object_get(config, "password"); /* pass json */
-  if (pass == NULL) {
-    json_decref(settings);
-    json_decref(config);
+  /* Get the path of settings_<boardtype> file */
+  char settings_path[128];
+  rc_int = sprintf(settings_path, "%s%s.json", SETTINGS_PATH, boardtype);
+  wsyserr(rc_int < 0, "sprintf");
 
-    wlog("Return -6 due to inexistent password in config file or error");
-    return -6;
-  }
-  if (!json_is_string(pass)) {
-    json_decref(settings);
-    json_decref(config);
+  /* Get the content from the settings_<boardtype> file in a json_object */
+  json_t *settings_json = file_to_json_t(settings_path); /* JSON object of settings_<boardtype> */
+  wfatal(settings_json == NULL, "Invalid JSON is %s", settings_path);
 
-    wlog("Return -7 because password value is not a string");
-    return -7;
-  }
-  const char* pass_str  = json_string_value(pass); /* password value */
+  /* Get mountFile value. This value containts the path where the projects are to be mounted */
+  mount_file_str = get_str_value(settings_json, "mountFile");
+  wfatal(mount_file_str == NULL, "No non-empty mountFile key of type string in %s", settings_path);
+  mount_file_str = strdup(mount_file_str);
+  wfatal(mount_file_str == NULL, "strdup");
 
-  /* Get owner*/
-  json_t *owner = json_object_get(config, "owner"); /* owner json */
-  if (owner == NULL) {
-    json_decref(settings);
-    json_decref(config);
+  /* Get buildFile value. This value containts the path where the projects are to be mounted */
+  build_file_str = get_str_value(settings_json, "buildFile");
+  wfatal(build_file_str == NULL, "No non-empty buildFile key of type string in %s", settings_path);
+  build_file_str = strdup(build_file_str);
+  wfatal(build_file_str == NULL, "strdup");
 
-    wlog("Return -8 due to inexistent owner in config file or error");
-    return -8;
-  }
-  if (!json_is_string(owner)) {
-    json_decref(settings);
-    json_decref(config);
+  /* Get the board value */
+  board_str = get_str_value(settings_json, "board");
+  wfatal(board_str == NULL, "No non-empty board key of type string in %s", settings_path);
+  board_str = strdup(board_str);
+  wfatal(board_str == NULL, "strdup");
 
-    wlog("Return -9 because password value is not a string");
-    return -9;
-  }
-  owner_str = json_string_value(owner);
+  /* Get config_file value. This value contains the path to wyliodrin.json */
+  const char *config_file_str = get_str_value(settings_json, "config_file"); /* config_file value */
+  wfatal(config_file_str == NULL, "No non-empty config_file key of type string in %s", settings_path);
+
+  /* Get the content from the wyliodrin.json file in a json object */
+  json_t *config_json = file_to_json_t(config_file_str); /* config_file JSON */
+  wfatal(config_json == NULL, "Invalid JSON in %s", config_file_str);
+
+  /* Get jid value from wyliodrin.json */
+  jid_str = get_str_value(config_json, "jid");
+  wfatal(jid_str == NULL, "No non-empty jid key of type string in %s", config_file_str);
+  jid_str = strdup(jid_str);
+
+  /* Get passwork value from wyliodrin.json */
+  const char* password_str = get_str_value(config_json, "password");
+  wfatal(password_str == NULL, "No non-empty password key of type string in %s", config_file_str);
+
+  /* Get owner value from wyliodrin.json */
+  owner_str = get_str_value(config_json, "owner");
+  wfatal(owner_str == NULL, "No non-empty owner key of type string in %s", config_file_str);
+  owner_str = strdup(owner_str);
+  wfatal(owner_str == NULL, "strdup");
 
   /* Convert owner to lowercase */
-  uint32_t i; /* browser */
+  int i; /* browser */
   char *p = (char *)owner_str; /* remove const-ness of owner_str */
   for (i = 0; i < strlen(p); i++) {
     p[i] = tolower(p[i]);
+  }
+
+  /* Unmount the mountFile */
+  char umount_cmd[128];
+  rc_int = sprintf(umount_cmd, "fusermount -u %s", mount_file_str);
+  wsyserr(rc_int < 0, "sprintf");
+  rc_int = system(umount_cmd);
+  wsyserr(rc_int == -1, "system");
+
+  /* Configure wifi of Edison boards */
+  if (strcmp(boardtype, "edison") == 0) {
+    const char *ssid_str = get_str_value(config_json, "ssid");
+
+    if (ssid_str != NULL && strlen(ssid_str) != 0) {
+      const char *psk_str = get_str_value(config_json, "psk");
+      if (psk_str != NULL) {
+        /* Set wifi type: OPEN or WPA-PSK */
+        char wifi_type[16];
+        if (strlen(psk_str) == 0) {
+          rc_int = sprintf(wifi_type, "OPEN");
+        } else {
+          rc_int = sprintf(wifi_type, "WPA-PSK");
+        }
+        wsyserr(rc_int < 0, "sprintf");
+
+        /* Pad ssid and psk with parathesis */
+        char ssid_pad[strlen(ssid_str) + 3];
+        char psk_pad[strlen(psk_str) + 3];
+        sprintf(ssid_pad, "\"%s\"", ssid_str);
+        sprintf(psk_pad, "\"%s\"", psk_str);
+
+        /* Fork and exec configure_edison */
+        wifi_pid = fork();
+        wfatal(wifi_pid == -1, "fork");
+        if (wifi_pid == 0) { /* Child */
+          char *args[] = {"configure_edison", "--changeWifi", wifi_type, ssid_pad, psk_pad};
+          execvp(args[0], args);
+          werr("configure_edison failed");
+          exit(EXIT_FAILURE);
+        }
+      }
+    }
+  }
+
+  /* Update /etc/resolv.conf if nameserver is a valid entry in wyliodrin.json */
+  const char *nameserver_str = get_str_value(config_json, "nameserver");
+  if (nameserver_str != NULL && strlen(nameserver_str) != 0) {
+    int resolv_fd = open("/etc/resolv.conf", O_WRONLY | O_TRUNC);
+    if (resolv_fd < 0) {
+      werr("Could not open resolv.conf");
+    } else {
+      char to_write[128];
+      rc_int = sprintf(to_write, "nameserver %s", nameserver_str);
+      wsyserr(rc_int < 0, "sprintf");
+      rc_int = write(resolv_fd, to_write, strlen(to_write));
+      wsyserr(rc_int == -1, "write");
+    }
   }
 
   /* Wait for wifi configuration */
@@ -299,20 +185,16 @@ int8_t wtalk() {
     waitpid(wifi_pid, NULL, 0);
   }
 
-  /* Connect to Wyliodrin XMPP server */
-  wxmpp_connect(jid_str, pass_str);
-
   /* Cleaning */
-  json_decref(settings);
-  json_decref(config);
+  json_decref(config_json);
+  json_decref(settings_json);
 
-  wlog("Return 0 successful wtalk initializatioN");
-  return 0;
+  /* Connect to Wyliodrin XMPP server */
+  wxmpp_connect(jid_str, password_str);
 }
 
 int main(int argc, char *argv[]) {
   wtalk();
 
-  usleep (3000000);
   return 0;
 }

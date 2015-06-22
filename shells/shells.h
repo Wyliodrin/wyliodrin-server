@@ -16,12 +16,12 @@ extern const char *owner_str; /* owner_str from init.c */
 
 typedef struct {
   int pid;
-  uint8_t id;          /* Shell id */
-  uint32_t request_id; /* open request */
-  uint32_t fdm;        /* PTY file descriptor */
+  int id;          /* Shell id */
+  int request_id; /* open request */
+  int fdm;        /* PTY file descriptor */
   xmpp_conn_t *conn;   /* XMPP Connection */
   xmpp_ctx_t *ctx;     /* XMPP Context */
-  uint32_t close_request; /* close request */
+  int close_request; /* close request */
 } shell_t;
 
 /**

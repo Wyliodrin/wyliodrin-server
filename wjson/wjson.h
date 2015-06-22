@@ -8,9 +8,9 @@
 #ifndef _WJSON_H
 #define _WJSON_H
 
-#define BUFFER_SIZE (1 * 1024) /* 1 KB */
+#include <jansson.h> /* json handling */
 
-#define SETTINGS_PATH  "/etc/wyliodrin/settings_" /* Settings file path */
+#define BUFFER_SIZE (1 * 1024) /* 1 KB */
 
 /**
  * Open <filename>, read the JSON object, convert it to json_t and return it.

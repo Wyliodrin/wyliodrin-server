@@ -136,7 +136,7 @@ int wping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *co
   xmpp_stanza_release(pong);
 
   wlog("Return TRUE from w_ping_handler(...)");
-  return TRUE;
+  return 1;
 }
 
 /* Wyliodrin handler */
@@ -174,7 +174,7 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
   }
 
   wlog("Return TRUE from wyliodrin_handler(...)");
-  return TRUE;
+  return 1;
 }
 
 int wpresence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
@@ -210,7 +210,7 @@ int wpresence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
 #     endif
     }
 
-    return TRUE;
+    return 1;
   }
 
   if (strcmp(type, "subscribe") == 0) {
@@ -229,5 +229,5 @@ int wpresence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
   }
 
   wlog("Return TRUE from wpresence_handler(...)");
-  return TRUE;
+  return 1;
 }

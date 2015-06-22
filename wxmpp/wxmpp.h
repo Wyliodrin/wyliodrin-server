@@ -8,6 +8,8 @@
 #ifndef _WXMPP_H
 #define _WXMPP_H
 
+#include <strophe.h> /* Strophe stuff */
+
 #include "../winternals/winternals.h" /* bool_t */
 
 #define WNS "wyliodrin" /* Wyliodrin namespace */
