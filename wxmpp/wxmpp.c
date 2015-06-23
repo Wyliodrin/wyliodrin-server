@@ -48,10 +48,11 @@ int8_t wxmpp_connect(const char *jid, const char *pass) {
 
   /* Get Strophe logger, context and connection */
   #ifdef LOG
-  xmpp_log_t *log  = xmpp_get_default_logger(XMPP_LEVEL_DEBUG); /* Strophe logger */
+    xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_DEBUG); /* Strophe logger */
   #else
-  xmpp_log_t *log  = xmpp_get_default_logger(XMPP_LEVEL_WARN); /* Strophe logger */
+    xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_WARN); /* Strophe logger */
   #endif
+
   ctx  = xmpp_ctx_new(NULL, log); /* Strophe context */
   if(ctx == NULL) {
     xmpp_shutdown();

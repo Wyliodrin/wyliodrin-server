@@ -5,20 +5,17 @@
  * Date last modified: June 2015
  *************************************************************************************************/
 
-#include <fcntl.h>   /* open         */
-#include <unistd.h>  /* read, close  */
-#include <jansson.h> /* json_t stuff */
+#include <fcntl.h>   /* open            */
+#include <unistd.h>  /* read, close     */
+#include <jansson.h> /* json_t handling */
 
 #include "wjson.h"                    /* declarations  */
 #include "../winternals/winternals.h" /* logs and errs */
 
 
-#define BUFFER_SIZE (1 * 1024) /* 1 KB */
+#define BUFFER_SIZE (1 * 1024) /* Maximum size for <filename> */
 
-/**
- * Returns the json_t object corresponsing to the content of the file <filename>,
- * or NULL when <filename> does not exits
- */
+
 json_t* file_to_json_t(const char *filename) {
 	json_t *ret = NULL; /* return value       */
 	json_error_t error; /* Error information  */

@@ -1,21 +1,24 @@
 /**************************************************************************************************
  * XMPP connection
  *
- * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
- * Date last modified: April 2015
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
+ * Date last modified: June 2015
  *************************************************************************************************/
 
 #ifndef _WXMPP_H
 #define _WXMPP_H
 
+
 #include <strophe.h> /* Strophe stuff */
 
 #include "../winternals/winternals.h" /* bool_t */
 
-#define WNS "wyliodrin" /* Wyliodrin namespace */
 
+#define WNS "wyliodrin" /* Wyliodrin namespace */
 #define TAGS_SIZE  100  /* Size of tags hashmap */
 #define WXMPP_PORT 5222 /* Wyliodrin XMPP server port */
+
+
 
 typedef void (*tag_function)(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
                              xmpp_conn_t *const conn, void *const userdata);
@@ -34,11 +37,12 @@ typedef void (*tag_function)(const char *from, const char *to, int error, xmpp_s
  */
 int8_t wxmpp_connect(const char *jid, const char *pass);
 
+
 /**
  * Add tag function
  *
  * PARAMETERS:
- *    tag - tag name 
+ *    tag - tag name
  *    f   - tag function
  */
 void wadd_tag(char *tag, tag_function f);

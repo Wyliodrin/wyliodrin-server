@@ -39,7 +39,7 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
     wlog("Connection success");
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-    
+
     /* Add ping handler */
     xmpp_handler_add(conn, wping_handler, "urn:xmpp:ping", "iq", "get", ctx);
 
@@ -58,9 +58,9 @@ void wconn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, con
     xmpp_stanza_t *value = xmpp_stanza_new(ctx);
     xmpp_stanza_set_text(value, "50");
     xmpp_stanza_add_child(priority, value);
+    xmpp_send(conn, pres);
     xmpp_stanza_release(value);
     xmpp_stanza_release(priority);
-    xmpp_send(conn, pres);
     xmpp_stanza_release(pres);
 
     /* Send subscribe */
@@ -151,7 +151,7 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
   if(type != NULL && strncasecmp(type, "error", 5) == 0) {
     error = 1;
   }
-  
+
   /* Get every function from stanza and execute it */
   char *ns; /* namespace */
   char *name; /* name */
@@ -162,9 +162,9 @@ int wyliodrin_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
     if(ns != NULL && strncasecmp(ns, WNS, strlen(WNS)) == 0) {
       name = xmpp_stanza_get_name(tag);
       function = hashmap_get(tags, name);
-      if(function != NULL && *function != NULL) { 
+      if(function != NULL && *function != NULL) {
         wlog("Function available");
-        (*function)(xmpp_stanza_get_attribute(stanza, "from"), 
+        (*function)(xmpp_stanza_get_attribute(stanza, "from"),
           xmpp_stanza_get_attribute(stanza, "to"), error, tag, conn, userdata);
       } else {
         werr("Function not available");

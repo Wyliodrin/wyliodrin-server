@@ -192,7 +192,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
     send_shells_open_response(stanza, conn, userdata, TRUE, shell_index);
 
-    char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
+    // char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
     // if (projectid_attr != NULL) {
     //   /* Set request signal */
     //   // char *request_attr = xmpp_stanza_get_attribute(stanza, "request");

@@ -36,7 +36,6 @@ extern const char *jid_str;
 
 void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     redisReply *r = reply;
-    int j;
     json_t *json_message;
     json_error_t json_error;
 
@@ -92,7 +91,7 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
         /* Encode data_str in base64 */
         char *encoded_data = malloc(BASE64_SIZE(strlen(data_str)));
         wsyserr(encoded_data == NULL, "malloc");
-        encoded_data = base64_encode(encoded_data, BASE64_SIZE(strlen(data_str)), 
+        encoded_data = base64_encode(encoded_data, BASE64_SIZE(strlen(data_str)),
             (const unsigned char *)data_str, strlen(data_str));
         wfatal(encoded_data == NULL, "encoded_data failed");
 
@@ -135,7 +134,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
     if (reply == NULL) return;
 
     if (r->type == REDIS_REPLY_ARRAY) {
-        if (strncmp (r->element[0]->str, "subscribe", 9)==0) 
+        if (strncmp (r->element[0]->str, "subscribe", 9)==0)
         {
             wlog ("Subscribed to wyliodrin");
             return;
@@ -165,7 +164,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
 
         redisReply *reply = redisCommand(c, command);
         if (reply != NULL)
-        { 
+        {
             if (reply->type == REDIS_REPLY_ARRAY) {
                 if (reply->elements == 0) {
                     wlog("No elements");
@@ -251,7 +250,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
                 #endif
                 res = curl_easy_perform(curl);
-                /* Check for errors */ 
+                /* Check for errors */
                 if(res != CURLE_OK) {
                     werr("curl_easy_perform() failed: %s", curl_easy_strerror(res));
                 } else {
@@ -260,8 +259,8 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                     sprintf(ltrim_command, "LTRIM %s %d -1", projectId, (int)(reply->elements));
                     redisCommand(c, ltrim_command);
                 }
-             
-                /* always cleanup */ 
+
+                /* always cleanup */
                 curl_easy_cleanup(curl);
             }
             freeReplyObject(reply);
@@ -357,7 +356,7 @@ void init_communication() {
 }
 
 void communication(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-    xmpp_conn_t *const conn, void *const userdata) 
+    xmpp_conn_t *const conn, void *const userdata)
 {
     wlog("communication");
 

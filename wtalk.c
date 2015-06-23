@@ -11,6 +11,7 @@
 #include <fcntl.h>                 /* open           */
 #include <ctype.h>                 /* tolower        */
 #include <sys/wait.h>              /* waitpid        */
+
 #include "winternals/winternals.h" /* logs and errs  */
 #include "wjson/wjson.h"           /* json handling  */
 #include "wxmpp/wxmpp.h"           /* xmpp handling  */
@@ -196,12 +197,12 @@ void wtalk() {
     waitpid(wifi_pid, NULL, 0);
   }
 
+  /* Connect to Wyliodrin XMPP server */
+  wxmpp_connect(jid_str, password_str);
+
   /* Cleaning */
   json_decref(config_json);
   json_decref(settings_json);
-
-  /* Connect to Wyliodrin XMPP server */
-  // wxmpp_connect(jid_str, password_str);
 }
 
 int main(int argc, char *argv[]) {
