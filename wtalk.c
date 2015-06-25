@@ -158,17 +158,12 @@ void wtalk() {
         }
         wsyserr(rc_int < 0, "sprintf");
 
-        /* Pad ssid and psk with parathesis */
-        char ssid_pad[strlen(ssid_str) + 3];
-        char psk_pad[strlen(psk_str) + 3];
-        sprintf(ssid_pad, "\"%s\"", ssid_str);
-        sprintf(psk_pad, "\"%s\"", psk_str);
-
         /* Fork and exec configure_edison */
         wifi_pid = fork();
         wfatal(wifi_pid == -1, "fork");
         if (wifi_pid == 0) { /* Child */
-          char *args[] = {"configure_edison", "--changeWiFi", wifi_type, ssid_pad, psk_pad};
+          char *args[] = {"configure_edison", "--changeWiFi",
+            wifi_type, (char *)ssid_str, (char *)psk_str, NULL};
           execvp(args[0], args);
           werr("configure_edison failed");
           exit(EXIT_FAILURE);
