@@ -192,47 +192,6 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
     send_shells_open_response(stanza, conn, userdata, TRUE, shell_index);
 
-    // char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
-    // if (projectid_attr != NULL) {
-    //   /* Set request signal */
-    //   // char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
-    //   // if (request_attr == NULL) {
-    //   //   werr("No request attribute");
-    //   // } else {
-    //   //   // if (request_signal != NULL) {
-    //   //   //   free(request_signal);
-    //   //   // }
-    //   //   // request_signal = strdup(request_attr);
-    //   // }
-
-    //   /* Set userid signal */
-    //   // if (userid_attr == NULL) {
-    //   //   werr("No userid attribute");
-    //   // } else {
-    //   //   // if (userid_signal != NULL) {
-    //   //   //   free(userid_signal);
-    //   //   // }
-    //   //   // userid_signal = strdup(userid_attr);
-    //   // }
-
-    //   // int pid2 = fork();
-    //   // wsyserr(pid2 == -1, "fork");
-    //   // if (pid2 == 0) {
-    //   //   char make_run[256];
-    //   //   sprintf(make_run, "make -f Makefile.%s run\n", board_str);
-
-    //   //   // /* Give a chance to screen session to start */
-    //   //   //usleep(500000);
-
-    //   //   // char system_cmd[256];
-    //   //   // sprintf(system_cmd, "screen -S shell%d -X stuff 'make -f Makefile.%s run\n'", shell_index, board_str);
-    //   //   // system(system_cmd);
-    //   //   //write(shells_vector[shell_index]->fdm, make_run, strlen(make_run));
-    //   //   exit(EXIT_SUCCESS);
-    //   // }
-    //   //waitpid(pid2, NULL, 0);
-    // }
-
     wlog("Return success from shells_open");
     return;
   }
@@ -242,8 +201,6 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
     if (projectid_attr != NULL) {
       char *userid_attr = xmpp_stanza_get_attribute(stanza, "userid");
-      // setenv("wyliodrin_project", projectid_attr, 1);
-      // setenv("wyliodrin_userid", userid_signal, 1);
       char cd_path[256];
       sprintf(cd_path, "%s/%s", build_file_str, projectid_attr);
       int rc = chdir(cd_path);
@@ -270,9 +227,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
                    wyliodrin_board_env,NULL};
 
       execvpe(make_run[0], make_run, env);
-    }
-    else
-    {
+    } else {
       char shell_name[256];
       sprintf(shell_name, "shell%d", shell_index);
       char *args[] = {"bash", NULL};
@@ -280,14 +235,12 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       char wyliodrin_board_env [50];
       sprintf(wyliodrin_board_env, "wyliodrin_board=%s",board_str);
 
-      char *env[] = {wyliodrin_board_env,NULL};
-
+      char *env[] = {wyliodrin_board_env, NULL};
       execvpe(args[0], args, env);
-      /* Error */
-      wlog("SYSERR execvp");
-      perror("execvp");
+
+      werr("bash failed");
+      exit(EXIT_FAILURE);
     }
-    // char *args[] = {"screen", "-dRR", shell_name, NULL};
     return;
   }
 }
