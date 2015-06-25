@@ -168,7 +168,7 @@ void wtalk() {
         wifi_pid = fork();
         wfatal(wifi_pid == -1, "fork");
         if (wifi_pid == 0) { /* Child */
-          char *args[] = {"configure_edison", "--changeWifi", wifi_type, ssid_pad, psk_pad};
+          char *args[] = {"configure_edison", "--changeWiFi", wifi_type, ssid_pad, psk_pad};
           execvp(args[0], args);
           werr("configure_edison failed");
           exit(EXIT_FAILURE);
