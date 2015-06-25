@@ -226,9 +226,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
         curl_easy_cleanup(curl);
       }
       freeReplyObject(reply);
-    }
-    else
-    {
+    } else {
       wlog ("redis reply null");
     }
   } else {
@@ -318,8 +316,6 @@ void *init_communication_routine(void *args) {
       werr("redis connect error: %s", c->err != 0 ? c->errstr : "context is NULL");
       sleep(1);
     } else {
-      werr("Redis connected");
-
       start_subscriber();
       start_wyliodrin_subscriber();
 

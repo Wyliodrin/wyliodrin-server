@@ -41,6 +41,7 @@ set (wyliodrind_SRCS
   ${PROJECT_SOURCE_DIR}/files/files.c
   ${PROJECT_SOURCE_DIR}/communication/communication.c
   ${PROJECT_SOURCE_DIR}/base64/base64.c
+  ${PROJECT_SOURCE_DIR}/logs/logs.c
 )
 
 add_library (dbs STATIC
@@ -65,7 +66,7 @@ add_executable (wyliodrind
 install (TARGETS wyliodrind DESTINATION bin)
 install (FILES etc/settings_arduinogalileo.json DESTINATION /etc/wyliodrin)
 
-add_definitions ("-Wall -g -DLOG -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
+add_definitions ("-Wall -g -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
 
 target_link_libraries (wyliodrind
   ${CMAKE_THREAD_LIBS_INIT}

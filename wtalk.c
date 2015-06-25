@@ -33,7 +33,7 @@ const char *mount_file_str; /* mount file  */
 const char *build_file_str; /* build file  */
 const char *board_str;      /* board name  */
 
-
+bool_t privacy = false;
 
 /**
  * Get the string value of the key <key> in the json object <json>.
@@ -94,6 +94,12 @@ void wtalk() {
   /* Get the content from the wyliodrin.json file in a json object */
   json_t *config_json = file_to_json_t(config_file_str); /* config_file JSON */
   wfatal(config_json == NULL, "Invalid JSON in %s", config_file_str);
+
+  /* Set privacy based on privacy value from wyliodrin.json (if exists) */
+  json_t *privacy_json = json_object_get(config_json, "privacy");
+  if (privacy_json != NULL && json_is_boolean(privacy_json) && json_is_true(privacy_json)) {
+    privacy = true;
+  }
 
   /* Get mountFile value. This value containts the path where the projects are to be mounted */
   mount_file_str = get_str_value(settings_json, "mountFile");

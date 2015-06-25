@@ -342,8 +342,7 @@ void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
            xmpp_conn_t *const conn, void *const userdata)
 {
   wlog("files()");
-  if (error == 0)
-  {
+  if (error == 0) {
     char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
     if (action_attr == NULL) {
       werr("xmpp_stanza_get_attribute attribute = action");
@@ -359,10 +358,8 @@ void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     } else {
       werr("Unknown action: %s", action_attr);
     }
-  }
-  else
-  {
-    werr ("error stanza %s %s", xmpp_stanza_get_attribute(stanza, "path"), xmpp_stanza_get_attribute(stanza, "action"))
+  } else {
+    werr("error stanza %s %s", xmpp_stanza_get_attribute(stanza, "path"), xmpp_stanza_get_attribute(stanza, "action"));
   }
 
   wlog("Return from files()");
@@ -404,7 +401,7 @@ static void files_attr(xmpp_stanza_t *stanza) {
       long int size = strtol(size_attr, &endptr, 10);
       if (*endptr != '\0') {
         werr("strtol error: str = %s, val = %ld", size_attr, size);
-        attributes.size = 0; 
+        attributes.size = 0;
       }
       attributes.size = size;
     }
@@ -512,7 +509,7 @@ static void files_read(xmpp_stanza_t *stanza) {
   wsyserr(rc != 0, "pthread_cond_signal");
 
   rc = pthread_mutex_unlock(&mutex);
-  wsyserr(rc != 0, "pthread_mutex_unlock");  
+  wsyserr(rc != 0, "pthread_mutex_unlock");
 }
 
 #endif /* FILES */

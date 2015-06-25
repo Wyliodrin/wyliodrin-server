@@ -8,10 +8,17 @@
 #ifndef _INTERNALS_H
 #define _INTERNALS_H
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "../logs/logs.h"
+
 typedef enum {
   false = 0,
   true  = 1
 } bool_t;
+
+extern bool_t privacy;
 
 #define LOG_FILE stdout
 #define ERR_FILE stderr
@@ -26,7 +33,13 @@ typedef enum {
 #endif
 
 #ifdef ERR
-  #define werr(msg, ...) fprintf(ERR_FILE, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);
+  #define werr(msg, ...)                                                                   \
+    do {                                                                                   \
+      fprintf(ERR_FILE, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);   \
+      if (!privacy) {                                                                      \
+        add_log(msg, ##__VA_ARGS__);                                                       \
+      }                                                                                    \
+    } while (0)
 #else
   #define werr(msg, ...) /* Do nothing */
 #endif
