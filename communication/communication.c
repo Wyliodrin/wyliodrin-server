@@ -14,6 +14,7 @@
 #include <strophe.h>
 #include <pthread.h>
 #include <jansson.h>
+#include <unistd.h>
 #include <curl/curl.h>
 
 #include <hiredis/hiredis.h>
@@ -25,14 +26,13 @@
 #include "../base64/base64.h"
 #include "communication.h"
 
-redisContext *c;
+redisContext *c = NULL;
 
 extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
 extern const char *jid_str;
 
-// extern char *userid_signal;
-// extern char *request_signal;
+static bool_t is_connetion_in_progress = false;
 
 void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
   redisReply *r = reply;
@@ -118,18 +118,6 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
 
 
 void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
-  /* Sanity checks */
-  // if (userid_signal == NULL) {
-  //     werr("userid_signal is NULL");
-  //     return;
-  // }
-
-  // if (request_signal == NULL) {
-  //     werr("request_signal is NULL");
-  //     return;
-  // }
-
-
   redisReply *r = reply;
   if (reply == NULL) return;
 
@@ -178,37 +166,12 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
           return;
         }
 
-        /* Get userid from json */
-        // json_t *userid_val = json_object_get(json, "userid");
-        // if (userid_val == NULL) {
-        //     werr("No userid in json");
-        //     return;
-        // }
-        // if (!json_is_string(userid_val)) {
-        //     wlog("userid is not a string");
-        //     return;
-        // }
-        // const char *userid_str = json_string_value(userid_val);
-        // printf("user is : %s\n",userid_str);
-
-        // /* Get session from json */
-        // json_t *session_val = json_object_get(json, "session");
-        // if (session_val == NULL) {
-        //     werr("No session in json");
-        //     return;
-        // }
-        // if (!json_is_string(session_val)) {
-        //     wlog("userid is not a string");
-        //     return;
-        // }
-        // const char *session_str = json_string_value(session_val);
-
         /* Build json to be sent */
         json_t *json_to_send = json_object();
         json_object_set_new(json_to_send, "projectid", json_string(projectId));
         json_object_set_new(json_to_send, "gadgetid",  json_string(jid_str));
-        json_object_set_new(json_to_send, "userid",    json_object_get (json, "userid"));
-        json_object_set_new(json_to_send, "session",   json_object_get (json, "session"));
+        json_object_set_new(json_to_send, "userid",    json_object_get(json, "userid"));
+        json_object_set_new(json_to_send, "session",   json_object_get(json, "session"));
         int i;
         json_t *aux;
         json_t *array = json_array();
@@ -321,6 +284,8 @@ void *start_wyliodrin_subscriber_routine(void *arg) {
   redisAsyncCommand(c, onWyliodrinMessage, NULL, "SUBSCRIBE %s", WYLIODRIN_CHANNEL);
   event_base_dispatch(base);
 
+  werr("Return from start_wyliodrin_subscriber_routine");
+
   return NULL;
 }
 
@@ -342,16 +307,36 @@ void start_wyliodrin_subscriber() {
   pthread_detach(t);
 }
 
-void init_communication() {
-  struct timeval timeout = { 1, 500000 }; // 1.5 seconds
-  c = redisConnectWithTimeout(REDIS_HOST, REDIS_PORT, timeout);
-  if (c == NULL || c->err != 0) {
-    werr("redis connect error: %s", c->err != 0 ? c->errstr : "context is NULL");
-    return;
-  }
+void *init_communication_routine(void *args) {
+  struct timeval timeout = {1, 500000}; /* 1.5 seconds */
 
-  start_subscriber();
-  start_wyliodrin_subscriber();
+  is_connetion_in_progress = true;
+
+  while (1) {
+    c = redisConnectWithTimeout(REDIS_HOST, REDIS_PORT, timeout);
+    if (c == NULL || c->err != 0) {
+      werr("redis connect error: %s", c->err != 0 ? c->errstr : "context is NULL");
+      sleep(1);
+    } else {
+      werr("Redis connected");
+
+      start_subscriber();
+      start_wyliodrin_subscriber();
+
+      is_connetion_in_progress = false;
+      return NULL;
+    }
+  }
+}
+
+void init_communication() {
+  pthread_t t; /* Read thread */
+  int rc_int;
+
+  rc_int = pthread_create(&t, NULL, &(init_communication_routine), NULL);
+  wsyserr(rc_int < 0, "pthread_create");
+
+  pthread_detach(t);
 }
 
 void communication(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
@@ -360,7 +345,13 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
   wlog("communication");
 
   if (c == NULL || c->err != 0) {
-    werr("Return from communication due to NULL redis connection error");
+    werr("Redis connection error");
+    if (!is_connetion_in_progress) {
+      init_communication();
+    }
+    return;
+  } else {
+    werr("communication OK");
   }
 
   char *port_attr = xmpp_stanza_get_attribute(stanza, "port");
