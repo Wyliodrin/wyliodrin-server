@@ -40,10 +40,12 @@ static void *send_logs_routine(void *args) {
       wsyserr(rc_int != 0, "pthread_mutex_lock");
 
       big_msg = calloc(logs_size * MAX_LOG_SIZE, sizeof(char));
+      sprintf(big_msg, "{\"str\":\"");
       for (i = 0; i < logs_size; i++) {
         strcat(big_msg, logs[i]);
         free(logs[i]);
       }
+      strcat(big_msg, "\"}");
 
       logs_size = 0;
 
@@ -53,19 +55,20 @@ static void *send_logs_routine(void *args) {
         return NULL;
       }
 
-      sprintf(URL, "http://projects.wyliodrin.com//gadgets/logs/%s", jid_str);
+      sprintf(URL, "https://wyliodrin.com/gadgets/logs/%s", jid_str);
       curl_easy_setopt(curl, CURLOPT_URL, URL);
       curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
       curl_easy_setopt(curl, CURLOPT_POSTFIELDS, (const char*)big_msg);
       struct curl_slist *list = NULL;
-      list = curl_slist_append(list, "Content-Type: text");
+      list = curl_slist_append(list, "Content-Type: application/json");
       list = curl_slist_append(list, "Connection: close");
       curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-      curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+      #ifdef LOGS
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+      #endif
 
-      printf("sendinf: [%d] %s\n", strlen(big_msg), big_msg);
       res = curl_easy_perform(curl);
 
       /* Check for errors */

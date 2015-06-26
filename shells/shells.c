@@ -82,7 +82,8 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 }
 
 void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
-  wlog("shells_open(...)");
+  werr("shells_open(...)");
+  werr("Test error message");
 
   char *endptr; /* strtol endptr */
 
