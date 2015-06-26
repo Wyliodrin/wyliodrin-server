@@ -44,6 +44,9 @@ static void *send_logs_routine(void *args) {
       for (i = 0; i < logs_size; i++) {
         strcat(big_msg, logs[i]);
         free(logs[i]);
+        if (i != logs_size - 1) {
+          strcat(big_msg, "\\n");
+        }
       }
       strcat(big_msg, "\"}");
 
