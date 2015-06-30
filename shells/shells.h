@@ -15,12 +15,12 @@ extern const char *owner_str; /* owner_str from init.c */
 #define MAX_SHELLS 256 /* Maximum number of shells allowed */
 
 typedef struct {
-  int pid;
-  int id;          /* Shell id */
-  int request_id; /* open request */
-  int fdm;        /* PTY file descriptor */
-  xmpp_conn_t *conn;   /* XMPP Connection */
-  xmpp_ctx_t *ctx;     /* XMPP Context */
+  int pid;           /* PID */
+  int id;            /* Shell id */
+  int request_id;    /* open request */
+  int fdm;           /* PTY file descriptor */
+  xmpp_conn_t *conn; /* XMPP Connection */
+  xmpp_ctx_t *ctx;   /* XMPP Context */
   int close_request; /* close request */
 } shell_t;
 
