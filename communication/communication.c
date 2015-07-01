@@ -407,6 +407,9 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
     cmp_ctx_t cmp;
     char storage[STORAGESIZE] = {0};
 
+    reader_offset = 0;
+    writer_offset = 0;
+
     cmp_init(&cmp, storage, string_reader, string_writer);
 
     if (!cmp_write_map(&cmp, 2)) {
@@ -434,7 +437,6 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
   if (to_publish == NULL) {
     werr("to_publish is NULL");
   } else {
-    wlog("PUBLISH %s", to_publish);
     redisReply *reply; /* command reply */
     reply = redisCommand(c, "PUBLISH %s:%s %s", PUB_CHANNEL, port_attr, to_publish);
     if (reply == NULL) {
