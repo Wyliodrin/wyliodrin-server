@@ -42,26 +42,30 @@ static bool_t is_connetion_in_progress = false;
   #define STORAGESIZE 1024
   #define SBUFSIZE    32
 
+  static uint32_t reader_offset = 0;
+  static uint32_t writer_offset = 0;
+
   static bool string_reader(cmp_ctx_t *ctx, void *data, size_t limit) {
-    static uint32_t offset = 0;
-
-    strncpy((char *)data, (const char *)ctx->buf + offset, limit);
-    offset += limit;
-
-    if (offset > STORAGESIZE) {
+    if (reader_offset + limit > STORAGESIZE) {
+      fprintf(stderr, "No more space available in string_reader\n");
       return false;
-    } else {
-      return true;
     }
+
+    memcpy(data, ctx->buf + reader_offset, limit);
+    reader_offset += limit;
+
+    return true;
   }
 
   static size_t string_writer(cmp_ctx_t *ctx, const void *data, size_t count) {
-    if (strlen((char *)ctx->buf) + count >= STORAGESIZE) {
-      fprintf(stderr, "STORAGESIZE REACHED\n");
+    if (writer_offset + count > STORAGESIZE) {
+      fprintf(stderr, "No more space available in string_writer\n");
       return 0;
     }
 
-    strncat((char *)ctx->buf, (const char *)data, count);
+    memcpy(ctx->buf + writer_offset, data, count);
+    writer_offset += count;
+
     return count;
   }
 #endif
@@ -430,13 +434,13 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
   if (to_publish == NULL) {
     werr("to_publish is NULL");
   } else {
+    wlog("PUBLISH %s", to_publish);
     redisReply *reply; /* command reply */
     reply = redisCommand(c, "PUBLISH %s:%s %s", PUB_CHANNEL, port_attr, to_publish);
     if (reply == NULL) {
       werr("Failed to PUBLISH on channel %s:%s the data %s. Redis error: %s",
         PUB_CHANNEL, port_attr, to_publish, c->errstr);
     }
-    free(to_publish);
     freeReplyObject(reply);
   }
 }
