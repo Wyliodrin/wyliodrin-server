@@ -1,8 +1,8 @@
 /**************************************************************************************************
  * Communication module
  *
- * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
- * Date last modified: May 2015
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
+ * Date last modified: June 2015
  *************************************************************************************************/
 
 #ifdef COMMUNICATION
@@ -26,6 +26,7 @@
 #include "../base64/base64.h"
 #include "communication.h"
 
+
 redisContext *c = NULL;
 
 extern xmpp_ctx_t *ctx;
@@ -33,6 +34,37 @@ extern xmpp_conn_t *conn;
 extern const char *jid_str;
 
 static bool_t is_connetion_in_progress = false;
+
+#ifdef USEMSGPACK
+  #include <stdbool.h>
+  #include "../cmp/cmp.h"
+
+  #define STORAGESIZE 1024
+  #define SBUFSIZE    32
+
+  static bool string_reader(cmp_ctx_t *ctx, void *data, size_t limit) {
+    static uint32_t offset = 0;
+
+    strncpy((char *)data, (const char *)ctx->buf + offset, limit);
+    offset += limit;
+
+    if (offset > STORAGESIZE) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  static size_t string_writer(cmp_ctx_t *ctx, const void *data, size_t count) {
+    if (strlen((char *)ctx->buf) + count >= STORAGESIZE) {
+      fprintf(stderr, "STORAGESIZE REACHED\n");
+      return 0;
+    }
+
+    strncat((char *)ctx->buf, (const char *)data, count);
+    return count;
+  }
+#endif
 
 void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
   redisReply *r = reply;
@@ -340,37 +372,73 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
 {
   wlog("communication");
 
+  /* Sanity checks */
   if (c == NULL || c->err != 0) {
     werr("Redis connection error");
     if (!is_connetion_in_progress) {
       init_communication();
     }
     return;
-  } else {
-    werr("communication OK");
   }
 
-  char *port_attr = xmpp_stanza_get_attribute(stanza, "port");
+  /* Get port attribute from the received stanza */
+  char *port_attr = xmpp_stanza_get_attribute(stanza, "port"); /* port attribute */
   wfatal(port_attr == NULL, "No port attribute in communication");
 
-  char *data_str = xmpp_stanza_get_text(stanza); /* data string */
-  if(data_str == NULL) {
-    werr("NULL data");
+  /* Get the text from the received stanza */
+  char *text = xmpp_stanza_get_text(stanza); /* text */
+  if (text == NULL) {
+    werr("communication message with no text");
     return;
   }
 
-  /* Decode */
-  int dec_size = strlen(data_str) * 3 / 4 + 1; /* decoded data length */
-  uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
-  base64_decode(decoded, data_str, dec_size);
+  /* Decode the text */
+  int dec_size = strlen(text) * 3 / 4 + 1; /* decoded text length */
+  uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded text */
+  base64_decode(decoded, text, dec_size);
 
-  /* Put it in json */
-  json_t *root = json_object();
+  /* Form the JSON that will be published */
+  char *to_publish = NULL; /* pointer to the data that will be published */
+  #ifdef USEMSGPACK
+    cmp_ctx_t cmp;
+    char storage[STORAGESIZE] = {0};
 
-  json_object_set_new(root, "from", json_string(from));
-  json_object_set_new(root, "data", json_string((char *)decoded));
+    cmp_init(&cmp, storage, string_reader, string_writer);
 
-  redisCommand(c, "PUBLISH %s:%s %s", PUB_CHANNEL, port_attr, json_dumps(root, 0));
+    if (!cmp_write_map(&cmp, 2)) {
+      werr("cmp_write_map error: %s", cmp_strerror(&cmp));
+    } else if (!cmp_write_str(&cmp, "f", 1)) {
+      werr("cmp_write_str error: %s", cmp_strerror(&cmp));
+    } else if (!cmp_write_str(&cmp, from, strlen(from))) {
+      werr("cmp_write_str error: %s", cmp_strerror(&cmp));
+    } else if (!cmp_write_str(&cmp, "d", 1)) {
+      werr("cmp_write_str error: %s", cmp_strerror(&cmp));
+    } else if (!cmp_write_str(&cmp, (const char *)decoded, strlen((char *)decoded))) {
+      werr("cmp_write_str error: %s", cmp_strerror(&cmp));
+    } else {
+      to_publish = storage;
+    }
+  #else
+    json_t *json = json_object(); /* json object */
+    json_object_set_new(json, "from", json_string(from));
+    json_object_set_new(json, "data", json_string((char *)decoded));
+    to_publish = json_dumps(json, 0);
+    json_decref(json);
+  #endif
+
+  /* Publish */
+  if (to_publish == NULL) {
+    werr("to_publish is NULL");
+  } else {
+    redisReply *reply; /* command reply */
+    reply = redisCommand(c, "PUBLISH %s:%s %s", PUB_CHANNEL, port_attr, to_publish);
+    if (reply == NULL) {
+      werr("Failed to PUBLISH on channel %s:%s the data %s. Redis error: %s",
+        PUB_CHANNEL, port_attr, to_publish, c->errstr);
+    }
+    free(to_publish);
+    freeReplyObject(reply);
+  }
 }
 
 #endif /* COMMUNICATION */
