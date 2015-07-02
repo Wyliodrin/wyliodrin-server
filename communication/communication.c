@@ -116,6 +116,8 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
       char sbuf[SBUFSIZE] = {0};
       char storage[STORAGESIZE] = {0};
 
+      memcpy(storage, r->element[3]->str, strlen(r->element[3]->str));
+
       cmp_init(&cmp, storage, string_reader, string_writer);
 
       if (!cmp_read_map(&cmp, &map_size)) {
