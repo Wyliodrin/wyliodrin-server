@@ -302,7 +302,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
           char sbuf[SBUFSIZE] = {0};
           char kbuf[SBUFSIZE] = {0};
           char vbuf[SBUFSIZE] = {0};
-          char storage[STORAGESIZE] = {0};
+          char *storage = NULL;
 
           json_t *aux, *signals;
           json_t *array = json_array();
@@ -311,7 +311,13 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
             aux = json_object();
             signals = json_object();
 
-            memcpy(storage, reply->element[i]->str, strlen(reply->element[i]->str));
+            if (storage != NULL) {
+              free(storage);
+            }
+            wlog("reply->element[%d]->str = %s", j, reply->element[j]->str);
+            storage = strdup(reply->element[j]->str);
+            wsyserr(storage == NULL, "strdup");
+
             reader_offset = 0;
             cmp_init(&cmp, storage, string_reader, string_writer);
 
