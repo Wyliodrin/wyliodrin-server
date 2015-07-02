@@ -358,7 +358,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                   }
 
                   string_size = sizeof(vbuf);
-                  if (!cmp_read_double(&cmp, %d)) {
+                  if (!cmp_read_double(&cmp, &d)) {
                     werr("cmp_read_double error: %s", cmp_strerror(&cmp));
                     return;
                   }
