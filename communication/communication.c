@@ -250,61 +250,174 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
     }
 
     char *message = r->element[2]->str;
+    char *projectId;
 
-    if (strncmp(message, "signal", 6) != 0) {
-      werr("Ignore message: %s", message);
-      return;
-    }
+    #ifdef USEMSGPACK
+      if (strncmp(message, "signalmp", 8) != 0) {
+        werr("Ignore message: %s", message);
+        return;
+      }
 
-    char *projectId = message + 7;
-    if (projectId == NULL) {
-      werr("No project id");
-      return;
-    }
+      projectId = message + 9;
+      if (projectId == NULL) {
+        werr("No project id");
+        return;
+      }
+    #else
+      if (strncmp(message, "signal", 6) != 0) {
+        werr("Ignore message: %s", message);
+        return;
+      }
+
+      projectId = message + 7;
+      if (projectId == NULL) {
+        werr("No project id");
+        return;
+      }
+    #endif
 
     char command[128];
     sprintf(command, "LRANGE %s 0 500", projectId);
-    wlog("command = %s", command);
 
     redisReply *reply = redisCommand(c, command);
-    if (reply != NULL)
-    {
+    if (reply != NULL) {
       if (reply->type == REDIS_REPLY_ARRAY) {
         if (reply->elements == 0) {
           wlog("No elements");
           return;
         }
 
-        json_error_t json_error;
-        json_t *json = json_loads(reply->element[0]->str, 0, &json_error);
-        if(json == NULL) {
-          werr("Not a valid json: %s", r->element[0]->str);
-          return;
-        }
-
         /* Build json to be sent */
+        const char *data_to_send;
         json_t *json_to_send = json_object();
         json_object_set_new(json_to_send, "projectid", json_string(projectId));
         json_object_set_new(json_to_send, "gadgetid",  json_string(jid_str));
-        json_object_set_new(json_to_send, "userid",    json_object_get(json, "userid"));
-        json_object_set_new(json_to_send, "session",   json_object_get(json, "session"));
-        int i;
-        json_t *aux;
-        json_t *array = json_array();
-        for (i = 0; i < reply->elements; i++) {
-          aux = json_loads(reply->element[i]->str, 0, &json_error);
-          if (aux == NULL) {
-            werr("%s is not a valid json, i = %d", reply->element[i]->str, i);
-          } else {
-            json_object_del(aux, "userid");
-            json_object_del(aux, "session");
-            json_object_del(aux, "projectid");
+
+        #ifdef USEMSGPACK
+          int i, j, k;
+          cmp_ctx_t cmp;
+          uint32_t map_size = 0;
+          uint32_t map_size2 = 0;
+          uint32_t string_size = 0;
+          char sbuf[SBUFSIZE] = {0};
+          char kbuf[SBUFSIZE] = {0};
+          char vbuf[SBUFSIZE] = {0};
+          char storage[STORAGESIZE] = {0};
+
+          json_t *aux, *signals;
+          json_t *array = json_array();
+
+          for (j = 0; j < reply->elements; j++) {
+            aux = json_object();
+            signals = json_object();
+
+            memcpy(storage, reply->element[i]->str, strlen(reply->element[i]->str));
+            reader_offset = 0;
+            cmp_init(&cmp, storage, string_reader, string_writer);
+
+            if (!cmp_read_map(&cmp, &map_size)) {
+              werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+              return;
+            }
+
+            for (i = 0; i < map_size; i++) {
+              string_size = sizeof(sbuf);
+              if (!cmp_read_str(&cmp, sbuf, &string_size)) {
+                werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                return;
+              }
+
+              if (strncmp(sbuf, "u", 1)) { /* userid */
+                string_size = sizeof(sbuf);
+                if (!cmp_read_str(&cmp, sbuf, &string_size)) {
+                  werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                  return;
+                }
+
+                if (j == 0) {
+                  json_object_set_new(json_to_send, "userid", json_string(sbuf));
+                }
+              } else if (strncmp(sbuf, "s",  1)) { /* session */
+                string_size = sizeof(sbuf);
+                if (!cmp_read_str(&cmp, sbuf, &string_size)) {
+                  werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                  return;
+                }
+
+                if (j == 0) {
+                  json_object_set_new(json_to_send, "session", json_string(sbuf));
+                }
+              } else if (strncmp(sbuf, "ts", 2)) { /* timestamp */
+                string_size = sizeof(sbuf);
+                if (!cmp_read_str(&cmp, sbuf, &string_size)) {
+                  werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                  return;
+                }
+
+                json_object_set_new(aux, "timestamp", json_real(atof(sbuf)));
+              } else if (strncmp(sbuf, "t",  1)) { /* text */
+                string_size = sizeof(sbuf);
+                if (!cmp_read_str(&cmp, sbuf, &string_size)) {
+                  werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                  return;
+                }
+
+                json_object_set_new(aux, "text", json_string(sbuf));
+              } else if (strncmp(sbuf, "sg", 2)) { /* timestamp */
+                if (!cmp_read_map(&cmp, &map_size2)) {
+                  werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                  return;
+                }
+
+                for (k = 0; k < map_size2; k++) {
+                  string_size = sizeof(kbuf);
+                  if (!cmp_read_str(&cmp, kbuf, &string_size)) {
+                    werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                    return;
+                  }
+
+                  string_size = sizeof(vbuf);
+                  if (!cmp_read_str(&cmp, vbuf, &string_size)) {
+                    werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                    return;
+                  }
+
+                  json_object_set_new(signals, kbuf, json_real(atof(vbuf)));
+                }
+              } else {
+                werr("Unknown key: %s", sbuf);
+                return;
+              }
+            }
             json_array_append(array, aux);
-            wlog("added aux = %s", json_dumps(aux, 0));
           }
-        }
-        json_object_set_new(json_to_send, "data", array);
-        wlog("json = %s", json_dumps(json_to_send, 0));
+          json_object_set_new(json_to_send, "data", array);
+          data_to_send = (const char*)json_dumps(json_to_send, 0);
+        #else
+          json_error_t json_error;
+          json_t *json = json_loads(reply->element[0]->str, 0, &json_error);
+          if(json == NULL) {
+            werr("Not a valid json: %s", r->element[0]->str);
+            return;
+          }
+          json_object_set_new(json_to_send, "userid",  json_object_get(json, "userid"));
+          json_object_set_new(json_to_send, "session", json_object_get(json, "session"));
+          int i;
+          json_t *aux;
+          json_t *array = json_array();
+          for (i = 0; i < reply->elements; i++) {
+            aux = json_loads(reply->element[i]->str, 0, &json_error);
+            if (aux == NULL) {
+              werr("%s is not a valid json, i = %d", reply->element[i]->str, i);
+            } else {
+              json_object_del(aux, "userid");
+              json_object_del(aux, "session");
+              json_array_append(array, aux);
+            }
+          }
+          json_object_set_new(json_to_send, "data", array);
+          data_to_send = (const char*)json_dumps(json_to_send, 0);
+        #endif
 
         /* Send it via http */
         CURL *curl;
@@ -319,7 +432,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, (const char*)json_dumps(json_to_send, 0));
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data_to_send);
         struct curl_slist *list = NULL;
         list = curl_slist_append(list, "Content-Type: application/json");
         list = curl_slist_append(list, "Connection: close");
@@ -343,7 +456,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
       }
       freeReplyObject(reply);
     } else {
-      wlog ("redis reply null");
+      werr("redis reply null");
     }
   } else {
     werr("Got message on wyliodrin subscription different from REDIS_REPLY_ARRAY");
