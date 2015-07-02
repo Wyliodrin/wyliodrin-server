@@ -40,7 +40,7 @@ static bool_t is_connetion_in_progress = false;
   #include "../cmp/cmp.h"
 
   #define STORAGESIZE 1024
-  #define SBUFSIZE    32
+  #define SBUFSIZE    512
 
   static uint32_t reader_offset = 0;
   static uint32_t writer_offset = 0;
@@ -344,6 +344,27 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 if (j == 0) {
                   json_object_set_new(json_to_send, "userid", json_string(sbuf));
                 }
+              } else if (strncmp(sbuf, "sg", 2) == 0) { /* timestamp */
+                if (!cmp_read_map(&cmp, &map_size2)) {
+                  werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                  return;
+                }
+
+                for (k = 0; k < map_size2; k++) {
+                  string_size = sizeof(kbuf);
+                  if (!cmp_read_str(&cmp, kbuf, &string_size)) {
+                    werr("cmp_read_str error: %s", cmp_strerror(&cmp));
+                    return;
+                  }
+
+                  string_size = sizeof(vbuf);
+                  if (!cmp_read_str(&cmp, vbuf, &string_size)) {
+                    werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                    return;
+                  }
+
+                  json_object_set_new(signals, kbuf, json_real(atof(vbuf)));
+                }
               } else if (strncmp(sbuf, "s",  1) == 0) { /* session */
                 string_size = sizeof(sbuf);
                 if (!cmp_read_str(&cmp, sbuf, &string_size)) {
@@ -371,27 +392,6 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 }
 
                 json_object_set_new(aux, "text", json_string(sbuf));
-              } else if (strncmp(sbuf, "sg", 2) == 0) { /* timestamp */
-                if (!cmp_read_map(&cmp, &map_size2)) {
-                  werr("cmp_read_map error: %s", cmp_strerror(&cmp));
-                  return;
-                }
-
-                for (k = 0; k < map_size2; k++) {
-                  string_size = sizeof(kbuf);
-                  if (!cmp_read_str(&cmp, kbuf, &string_size)) {
-                    werr("cmp_read_str error: %s", cmp_strerror(&cmp));
-                    return;
-                  }
-
-                  string_size = sizeof(vbuf);
-                  if (!cmp_read_str(&cmp, vbuf, &string_size)) {
-                    werr("cmp_read_map error: %s", cmp_strerror(&cmp));
-                    return;
-                  }
-
-                  json_object_set_new(signals, kbuf, json_real(atof(vbuf)));
-                }
               } else {
                 werr("Unknown key: %s", sbuf);
                 return;
