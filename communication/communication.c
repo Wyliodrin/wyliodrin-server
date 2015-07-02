@@ -333,43 +333,43 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 return;
               }
 
-              if (strncmp(sbuf, "u", 1)) { /* userid */
+              if (strncmp(sbuf, "u", 1) == 0) { /* userid */
                 string_size = sizeof(sbuf);
                 if (!cmp_read_str(&cmp, sbuf, &string_size)) {
-                  werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                  werr("cmp_read_str error: %s", cmp_strerror(&cmp));
                   return;
                 }
 
                 if (j == 0) {
                   json_object_set_new(json_to_send, "userid", json_string(sbuf));
                 }
-              } else if (strncmp(sbuf, "s",  1)) { /* session */
+              } else if (strncmp(sbuf, "s",  1) == 0) { /* session */
                 string_size = sizeof(sbuf);
                 if (!cmp_read_str(&cmp, sbuf, &string_size)) {
-                  werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                  werr("cmp_read_str error: %s", cmp_strerror(&cmp));
                   return;
                 }
 
                 if (j == 0) {
                   json_object_set_new(json_to_send, "session", json_string(sbuf));
                 }
-              } else if (strncmp(sbuf, "ts", 2)) { /* timestamp */
+              } else if (strncmp(sbuf, "ts", 2) == 0) { /* timestamp */
                 string_size = sizeof(sbuf);
                 if (!cmp_read_str(&cmp, sbuf, &string_size)) {
-                  werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                  werr("cmp_read_str error: %s", cmp_strerror(&cmp));
                   return;
                 }
 
                 json_object_set_new(aux, "timestamp", json_real(atof(sbuf)));
-              } else if (strncmp(sbuf, "t",  1)) { /* text */
+              } else if (strncmp(sbuf, "t",  1) == 0) { /* text */
                 string_size = sizeof(sbuf);
                 if (!cmp_read_str(&cmp, sbuf, &string_size)) {
-                  werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                  werr("cmp_read_str error: %s", cmp_strerror(&cmp));
                   return;
                 }
 
                 json_object_set_new(aux, "text", json_string(sbuf));
-              } else if (strncmp(sbuf, "sg", 2)) { /* timestamp */
+              } else if (strncmp(sbuf, "sg", 2) == 0) { /* timestamp */
                 if (!cmp_read_map(&cmp, &map_size2)) {
                   werr("cmp_read_map error: %s", cmp_strerror(&cmp));
                   return;
@@ -378,7 +378,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                 for (k = 0; k < map_size2; k++) {
                   string_size = sizeof(kbuf);
                   if (!cmp_read_str(&cmp, kbuf, &string_size)) {
-                    werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                    werr("cmp_read_str error: %s", cmp_strerror(&cmp));
                     return;
                   }
 
