@@ -365,6 +365,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
 
                   json_object_set_new(signals, kbuf, json_real(d));
                 }
+                json_object_set_new(aux, "signals", signals);
               } else if (strncmp(sbuf, "s",  1) == 0) { /* session */
                 string_size = sizeof(sbuf);
                 if (!cmp_read_str(&cmp, sbuf, &string_size)) {
