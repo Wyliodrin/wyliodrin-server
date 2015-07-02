@@ -358,12 +358,12 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                   }
 
                   string_size = sizeof(vbuf);
-                  if (!cmp_read_str(&cmp, vbuf, &string_size)) {
-                    werr("cmp_read_map error: %s", cmp_strerror(&cmp));
+                  if (!cmp_read_double(&cmp, %d)) {
+                    werr("cmp_read_double error: %s", cmp_strerror(&cmp));
                     return;
                   }
 
-                  json_object_set_new(signals, kbuf, json_real(atof(vbuf)));
+                  json_object_set_new(signals, kbuf, json_real(d));
                 }
               } else if (strncmp(sbuf, "s",  1) == 0) { /* session */
                 string_size = sizeof(sbuf);
