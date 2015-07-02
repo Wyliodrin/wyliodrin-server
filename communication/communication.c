@@ -303,6 +303,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
           char kbuf[SBUFSIZE] = {0};
           char vbuf[SBUFSIZE] = {0};
           char *storage = NULL;
+          double d;
 
           json_t *aux, *signals;
           json_t *array = json_array();
@@ -354,13 +355,14 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
                   json_object_set_new(json_to_send, "session", json_string(sbuf));
                 }
               } else if (strncmp(sbuf, "ts", 2) == 0) { /* timestamp */
+
                 string_size = sizeof(sbuf);
-                if (!cmp_read_str(&cmp, sbuf, &string_size)) {
+                if (!cmp_read_double(&cmp, &d)) {
                   werr("cmp_read_str error: %s", cmp_strerror(&cmp));
                   return;
                 }
 
-                json_object_set_new(aux, "timestamp", json_real(atof(sbuf)));
+                json_object_set_new(aux, "timestamp", json_real(d));
               } else if (strncmp(sbuf, "t",  1) == 0) { /* text */
                 string_size = sizeof(sbuf);
                 if (!cmp_read_str(&cmp, sbuf, &string_size)) {
