@@ -72,8 +72,6 @@ static bool_t is_connetion_in_progress = false;
 
 void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
   redisReply *r = reply;
-  json_t *json_message;
-  json_error_t json_error;
 
   if (reply == NULL) {
     wlog("onMessage NULL reply");
@@ -86,43 +84,124 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
       return;
     }
 
-    /* Get port. The channel name must be communication_server:port */
-    char *port = strchr(r->element[2]->str, ':');
-    wfatal(port == NULL, "No : in channel %s", r->element[2]->str);
+    /* Get port. The channel name must be communication_server:port or communication_server:mp:port */
+    /* r->element[2]->str is the channel where the message has been received */
+    char *port;
+    const char *id_str;
+    const char *data_str;
+    #ifdef USEMSGPACK
+      char *mp = strchr(r->element[2]->str, ':');
+      if (mp == NULL) {
+        werr("There should be at least a \":\" in channel %s", r->element[2]->str);
+        return;
+      } if (strncmp(mp+1, "mp", 2) != 0) {
+        werr("Unknown channel: %s", r->element[2]->str);
+        return;
+      }
 
-    port = strdup((const char *)port + 1);
-    wsyserr(port == NULL, "strdup");
+      port = strchr(mp + 1, ':');
+      if (port == NULL) {
+        werr("There should be 2 \":\" in channel %s", r->element[2]->str);
+        return;
+      }
+      port = strdup((const char *)port + 1);
+      wsyserr(port == NULL, "strdup");
 
-    /* Get json message */
-    json_message = json_loads(r->element[3]->str, 0, &json_error);
-    if(json_message == NULL) {
-      werr("Message received on subscription is not a valid json: %s", r->element[3]->str);
-      return;
-    }
+      reader_offset = 0;
 
-    /* Get id */
-    json_t *id_json_obj = json_object_get(json_message, "id");
-    if (id_json_obj == NULL) {
-      werr("No id field in received json");
-      return;
-    }
-    if (!json_is_string(id_json_obj)) {
-      werr("Field id is not a string");
-      return;
-    }
-    const char *id_str = json_string_value(id_json_obj);
+      int i;
+      cmp_ctx_t cmp;
+      uint32_t map_size = 0;
+      uint32_t string_size = 0;
+      char sbuf[SBUFSIZE] = {0};
+      char storage[STORAGESIZE] = {0};
 
-    /* Get data */
-    json_t *data_json_obj = json_object_get(json_message, "data");
-    if (data_json_obj == NULL) {
-      werr("No data field in received json");
-      return;
-    }
-    if (!json_is_string(data_json_obj)) {
-      werr("Field data is not a string");
-      return;
-    }
-    const char *data_str = json_string_value(data_json_obj);
+      cmp_init(&cmp, storage, string_reader, string_writer);
+
+      if (!cmp_read_map(&cmp, &map_size)) {
+        werr("cmp_read_map: %s", cmp_strerror(&cmp));
+        return;
+      }
+
+      if (map_size != 2) {
+        werr("map_size should be 2 instead of %d", map_size);
+        return;
+      }
+
+      for (i = 0; i < map_size; i++) {
+        /* Read key */
+        string_size = sizeof(sbuf);
+        if (!cmp_read_str(&cmp, sbuf, &string_size)) {
+          werr("cmp_read_str: %s", cmp_strerror(&cmp));
+          return;
+        }
+
+        /* Read value */
+        if (strncmp(sbuf, "id", 2) == 0) {
+          string_size = sizeof(sbuf);
+          if (!cmp_read_str(&cmp, sbuf, &string_size)) {
+            werr("cmp_read_str: %s", cmp_strerror(&cmp));
+            return;
+          }
+
+          id_str = strdup(sbuf);
+          wsyserr(id_str == NULL, "strdup");
+        } else if (strncmp(sbuf, "data", 4) == 0) {
+          string_size = sizeof(sbuf);
+          if (!cmp_read_str(&cmp, sbuf, &string_size)) {
+            werr("cmp_read_str: %s", cmp_strerror(&cmp));
+            return;
+          }
+
+          data_str = strdup(sbuf);
+          wsyserr(data_str == NULL, "strdup");
+        } else {
+          werr("Unknown key: %s", sbuf);
+        }
+      }
+    #else
+      port = strchr(r->element[2]->str, ':');
+      if (port == NULL) {
+        werr("There should be a \":\" in channel %s", r->element[2]->str);
+        return;
+      }
+      port = strdup((const char *)port + 1);
+      wsyserr(port == NULL, "strdup");
+
+      json_t *json_message;
+      json_error_t json_error;
+
+      /* Get json message */
+      json_message = json_loads(r->element[3]->str, 0, &json_error);
+      if(json_message == NULL) {
+        werr("Message received on subscription is not a valid json: %s", r->element[3]->str);
+        return;
+      }
+
+      /* Get id */
+      json_t *id_json_obj = json_object_get(json_message, "id");
+      if (id_json_obj == NULL) {
+        werr("No id field in received json");
+        return;
+      }
+      if (!json_is_string(id_json_obj)) {
+        werr("Field id is not a string");
+        return;
+      }
+      id_str = json_string_value(id_json_obj);
+
+      /* Get data */
+      json_t *data_json_obj = json_object_get(json_message, "data");
+      if (data_json_obj == NULL) {
+        werr("No data field in received json");
+        return;
+      }
+      if (!json_is_string(data_json_obj)) {
+        werr("Field data is not a string");
+        return;
+      }
+      data_str = json_string_value(data_json_obj);
+    #endif
 
     /* Encode data_str in base64 */
     char *encoded_data = malloc(BASE64_SIZE(strlen(data_str)));
@@ -158,9 +237,8 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
   if (reply == NULL) return;
 
   if (r->type == REDIS_REPLY_ARRAY) {
-    if (strncmp (r->element[0]->str, "subscribe", 9)==0)
-    {
-      wlog ("Subscribed to wyliodrin");
+    if (strncmp (r->element[0]->str, "subscribe", 9) == 0) {
+      wlog("Subscribed to wyliodrin");
       return;
     }
 
@@ -407,7 +485,6 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
     cmp_ctx_t cmp;
     char storage[STORAGESIZE] = {0};
 
-    reader_offset = 0;
     writer_offset = 0;
 
     cmp_init(&cmp, storage, string_reader, string_writer);
