@@ -1,6 +1,5 @@
-wtalk
 *.o
 mnt/*
 build/*
-wyliodrin.json
+docs/build/*
 .Trash*
