@@ -32,6 +32,7 @@
 
 extern const char *build_file_str; /* build_file_str from init.c */
 extern const char *board_str;      /* board name */
+extern const char *jid_str;        /* jid */
 
 // char *userid_signal = NULL;  /* userid  received in make user for siganls */
 // char *request_signal = NULL; /* request received in make user for siganls */
@@ -225,8 +226,6 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
       char wyliodrin_jid_env[64];
       sprintf(wyliodrin_jid_env, "wyliodrin_jid=%s", jid_str);
-
-      char wyliodrin_board
 
       #ifdef USEMSGPACK
         char wyliodrin_usemsgpack_env[64];
