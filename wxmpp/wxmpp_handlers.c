@@ -218,7 +218,7 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
   }
 
   /* This stanza is received once when the board is first added. Stanza example:
-   * <presence to=<jid> type="subscribe" from=owner/>
+   * <presence to=<jid> type="subscribe" from=<owner>/>
    */
   else if (strcmp(type, "subscribe") == 0) {
     /* Send subscribed:
