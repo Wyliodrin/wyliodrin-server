@@ -1,0 +1,5 @@
+*************
+Logs handling
+*************
+
+.. highlight:: c

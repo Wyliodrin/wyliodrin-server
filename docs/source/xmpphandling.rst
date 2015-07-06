@@ -1,0 +1,5 @@
+*************
+XMPP handling
+*************
+
+.. highlight:: c

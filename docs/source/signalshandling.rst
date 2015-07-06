@@ -1,0 +1,5 @@
+****************
+Signals handling
+****************
+
+.. highlight:: c

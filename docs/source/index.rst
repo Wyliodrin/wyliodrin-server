@@ -1,16 +1,29 @@
-.. wyliodrin-server documentation master file, created by
-   sphinx-quickstart on Sat Jul  4 15:06:25 2015.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+wyliodrin-server Documentation
+==============================
 
-wyliodrin-server's documentation!
-=================================
+This is the documentation for wyliodrin-server, last updated |today|.
 
-Contents:
+Introduction
+------------
+
+TODO
+
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2
 
+   gettingstarted
+   xmpphandling
+   jsonhandling
+   shellsmodule
+   filesmodule
+   makemodule
+   psmodule
+   communicationmodule
+   signalshandling
+   logshandling
 
 
 Indices and tables
@@ -19,4 +32,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

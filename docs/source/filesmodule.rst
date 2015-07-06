@@ -1,0 +1,5 @@
+************
+Files module
+************
+
+.. highlight:: c
