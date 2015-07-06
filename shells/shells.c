@@ -212,27 +212,31 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       char *make_run[] = {"make", "-f", makefile_name, "run", NULL};
 
       char wyliodrin_project_env[64];
-      sprintf(wyliodrin_project_env,"wyliodrin_project=%s",projectid_attr);
+      sprintf(wyliodrin_project_env,"wyliodrin_project=%s", projectid_attr);
 
       char wyliodrin_userid_env[64];
-      sprintf(wyliodrin_userid_env,"wyliodrin_userid=%s",userid_attr);
+      sprintf(wyliodrin_userid_env,"wyliodrin_userid=%s", userid_attr);
 
       char wyliodrin_session_env[64];
-      sprintf(wyliodrin_session_env,"wyliodrin_session=%s",request_attr);
+      sprintf(wyliodrin_session_env,"wyliodrin_session=%s", request_attr);
 
       char wyliodrin_board_env[64];
-      sprintf(wyliodrin_board_env, "wyliodrin_board=%s",board_str);
+      sprintf(wyliodrin_board_env, "wyliodrin_board=%s", board_str);
+
+      char wyliodrin_jid_env[64];
+      sprintf(wyliodrin_jid_env, "wyliodrin_jid=%s", jid_str);
+
+      char wyliodrin_board
 
       #ifdef USEMSGPACK
         char wyliodrin_usemsgpack_env[64];
         sprintf(wyliodrin_usemsgpack_env, "wyliodrin_usemsgpack=1");
         char *env[] = {wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
-          wyliodrin_board_env, wyliodrin_usemsgpack_env, NULL};
+          wyliodrin_board_env, wyliodrin_jid_env, wyliodrin_usemsgpack_env, NULL};
       #else
         char *env[] = {wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
-          wyliodrin_board_env, NULL};
+          wyliodrin_board_env, wyliodrin_jid_env, NULL};
       #endif
-
 
       execvpe(make_run[0], make_run, env);
     } else {
