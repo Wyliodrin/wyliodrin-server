@@ -34,7 +34,7 @@ extern xmpp_conn_t *conn; /* Connection */
 extern const char *owner_str; /* owner_str from init.c */
 extern const char *mount_file_str; /* mount file */
 
-extern bool_t is_user_online; /* connection checker from wxmpp_handlers.c */
+extern bool_t is_owner_online; /* connection checker from wxmpp_handlers.c */
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; /* mutex      */
 pthread_cond_t  cond  = PTHREAD_COND_INITIALIZER;  /* condition  */
@@ -80,7 +80,7 @@ static void files_read(xmpp_stanza_t *stanza);
 static int wfuse_getattr(const char *path, struct stat *stbuf) {
   wlog("wfuse_getattr path = %s\n", path);
 
-  if (!is_user_online) {
+  if (!is_owner_online) {
     return -ENOENT;
   }
 
@@ -160,7 +160,7 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 {
   wlog("wfuse_readdir path = %s\n", path);
 
-  if (!is_user_online) {
+  if (!is_owner_online) {
     return -ENOENT;
   }
 
@@ -236,7 +236,7 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 static int wfuse_open(const char *path, struct fuse_file_info *fi) {
   wlog("wfuse_open path = %s\n", path);
 
-  if (!is_user_online) {
+  if (!is_owner_online) {
     return -ENOENT;
   }
 
@@ -251,7 +251,7 @@ static int wfuse_read(const char *path, char *buf, size_t size, off_t offset,
 {
   wlog("wfuse_read path = %s\n", path);
 
-  if (!is_user_online) {
+  if (!is_owner_online) {
     return -ENOENT;
   }
 

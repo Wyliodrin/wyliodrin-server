@@ -1,141 +1,83 @@
 /**************************************************************************************************
  * XMPP connection
  *
- * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
- * Date last modified: April 2015
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
+ * Date last modified: July 2015
  *************************************************************************************************/
 
 #include <unistd.h>                   /* usleep */
-#include <strophe.h>                  /* Strophe XMPP stuff */
 
 #include "../winternals/winternals.h" /* logs and errs */
-#include "../libds/ds.h"              /* hashmap */
-#include "wxmpp.h"                    /* wxmpp api */
-#include "wxmpp_handlers.h"           /* handlers */
+#include "wxmpp.h"                    /* XMPP stuff    */
 
-#ifdef SHELLS
-  #include "../shells/shells.h"         /* shells module */
-#endif
 
-#ifdef FILES
-  #define FUSE_USE_VERSION 30
-  #include <fuse.h>                     /* fuse */
-  #include "../files/files.h"           /* files module */
-#endif
 
-#ifdef PS
-  #include "../ps/ps.h"                 /* ps module */
-#endif
+xmpp_ctx_t *ctx;   /* Strophe Context */
+xmpp_conn_t *conn; /* Strophe Connection */
 
-#ifdef MAKE
-  #include "../make/make.h"             /* make module */
-#endif
 
-#ifdef COMMUNICATION
-  #include "../communication/communication.h"
-#endif
 
-hashmap_p tags = NULL; /* tags hashmap */
+/* Connection handler from wxmpp/wxmpp_handlers.h */
+extern void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
+                         xmpp_stream_error_t * const stream_error, void * const userdata);
 
-xmpp_ctx_t *ctx;   /* Context    */
-xmpp_conn_t *conn; /* Connection */
 
-int8_t wxmpp_connect(const char *jid, const char *pass) {
+
+/* Connect to XMPP */
+void xmpp_connect(const char *jid, const char *pass) {
   wlog("wxmpp_connect(%s, %s)", jid, pass);
 
-  /* Initialize the Strophe library */
   xmpp_initialize();
 
-  /* Get Strophe logger, context and connection */
   #ifdef LOG
     xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_DEBUG); /* Strophe logger */
   #else
-    xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_WARN); /* Strophe logger */
+    xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_WARN);  /* Strophe logger */
   #endif
 
   ctx  = xmpp_ctx_new(NULL, log); /* Strophe context */
   if(ctx == NULL) {
     xmpp_shutdown();
 
-    wlog("Return -1 due to NULL Strophe context");
-    return -1;
+    wlog("Could not get Strophe context");
+    return;
   }
+
   conn = xmpp_conn_new(ctx); /* Strophe connection */
   if(conn == NULL) {
     xmpp_ctx_free(ctx);
     xmpp_shutdown();
 
-    wlog("Return -2 due to NULL Strophe connection");
-    return -2;
+    wlog("Could not get Strophe connection");
+    return;
   }
 
   /* Setup authentication information */
   xmpp_conn_set_jid(conn, jid);
   xmpp_conn_set_pass(conn, pass);
 
-  /* Initiate connection */
-  // if(xmpp_connect_client(conn, NULL, WXMPP_PORT, wconn_handler, ctx) < 0) {
-  //   xmpp_conn_release(conn);
-  //   xmpp_ctx_free(ctx);
-  //   xmpp_shutdown();
-
-  //   wlog("Return -3 due to connection error to XMPP server");
-  //   return -3;
-  // }
-
   /* Initiate connection in loop */
   int conn_rc;
   while (1) {
-    conn_rc = xmpp_connect_client(conn, NULL, WXMPP_PORT, wconn_handler, ctx);
+    conn_rc = xmpp_connect_client(conn, NULL, XMPP_PORT, conn_handler, ctx);
     if (conn_rc < 0) {
-      usleep(1000000); /* sleep 1 second */
+      usleep(1000000);
     } else {
       break;
     }
   }
 
-  /* Create tags hashmap */
-  tags = create_hashmap();
-
-  /* Add modules */
-  #ifdef SHELLS
-    wadd_tag("shells", shells);
-  #endif
-
-  #ifdef FILES
-    wadd_tag("files", files);
-  #endif
-
-  #ifdef PS
-    wadd_tag("ps", ps);
-  #endif
-
-  #ifdef MAKE
-    wadd_tag("make", make);
-  #endif
-
-  #ifdef COMMUNICATION
-    wadd_tag("communication", communication);
-  #endif
-
   /* Enter the event loop */
   xmpp_run(ctx);
+
+  /* Event loop should run forever */
+  werr("XMPP event loop completed. Retrying to connect...");
 
   /* Cleaning */
   xmpp_conn_release(conn);
   xmpp_ctx_free(ctx);
   xmpp_shutdown();
-  destroy_hashmap(tags);
-  tags = NULL;
 
   /* Retry to connect */
-  wlog("Retry to connect");
-  wxmpp_connect(jid, pass);
-
-  wlog("Retun 0 on success");
-  return 0;
-}
-
-void wadd_tag(char *tag, tag_function f) {
-  hashmap_put(tags, tag, &f, sizeof(void *));
+  return xmpp_connect(jid, pass);
 }

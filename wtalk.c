@@ -35,6 +35,8 @@ const char *board_str;      /* board name  */
 
 bool_t privacy = false;
 
+extern void xmpp_connect(const char *jid, const char *pass); /* implemented in wxmpp.c */
+
 /**
  * Get the string value of the key <key> in the json object <json>.
  *
@@ -198,8 +200,8 @@ void wtalk() {
     waitpid(wifi_pid, NULL, 0);
   }
 
-  /* Connect to Wyliodrin XMPP server */
-  wxmpp_connect(jid_str, password_str);
+  /* Connect to XMPP server */
+  xmpp_connect(jid_str, password_str);
 
   /* Cleaning */
   json_decref(config_json);
