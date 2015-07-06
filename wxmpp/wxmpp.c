@@ -79,5 +79,6 @@ void xmpp_connect(const char *jid, const char *pass) {
   xmpp_shutdown();
 
   /* Retry to connect */
+  usleep(1000000);
   return xmpp_connect(jid, pass);
 }
