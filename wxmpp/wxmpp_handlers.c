@@ -50,6 +50,12 @@ extern const char *owner_str; /* from wtalk.c */
 
 
 
+/* Module function signature */
+typedef void (*module_fct)(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
+                           xmpp_conn_t *const conn, void *const userdata);
+
+
+
 /* Handlers */
 int ping_handler     (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
 int presence_handler (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
