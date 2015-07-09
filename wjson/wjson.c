@@ -1,60 +1,56 @@
 /**************************************************************************************************
- * Working with JSONs
+ * JSON handling
  *
- * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
- * Date last modified: June 2015
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
+ * Date last modified: July 2015
  *************************************************************************************************/
 
 #include <fcntl.h>   /* open            */
+#include <errno.h>   /* errno           */
+#include <string.h>  /* strerror        */
 #include <unistd.h>  /* read, close     */
 #include <jansson.h> /* json_t handling */
 
-#include "wjson.h"                    /* declarations  */
 #include "../winternals/winternals.h" /* logs and errs */
+
 
 
 #define BUFFER_SIZE (1 * 1024) /* Maximum size for <filename> */
 
 
-json_t* file_to_json_t(const char *filename) {
-	json_t *ret = NULL; /* return value       */
-	json_error_t error; /* Error information  */
-	int rc_int; /* Return code od interger type */
 
+json_t* file_to_json_t(const char *filename) {
 	/* Open file containing the JSON */
 	int filename_fd = open(filename, O_RDONLY);
 	if (filename_fd < 0) {
-		werr("open %s", filename);
-		perror("open");
-		goto _exit;
+		werr("Failed to open %s because %s", filename, strerror(errno));
+		return NULL;
 	}
 
 	/* Allocate memory for buffer */
-	char *buffer = (char*) calloc(BUFFER_SIZE, 1); /* buffer used in read */
+	char *buffer = calloc(BUFFER_SIZE, sizeof(char)); /* buffer used in read */
 	wsyserr(buffer == NULL, "calloc");
 
 	/* Read JSON buffer */
-	rc_int = read(filename_fd, buffer, BUFFER_SIZE);
+	int rc_int = read(filename_fd, buffer, BUFFER_SIZE); /* return code of integer type */
+	close(filename_fd);
 	wsyserr(rc_int < 0, "read");
 
 	/* Convert JSON buffer */
-	ret = json_loads(buffer, 0, &error);
-	if(ret == NULL) {
+	json_error_t error_json; /* json error information */
+	json_t * ret = json_loads(buffer, 0, &error_json); /* return value */
+	free(buffer);
+	if (ret == NULL) {
 		werr("Undecodable JSON in %s\n", filename);
-		goto _cleaning;
+		return NULL;
 	}
 
 	/* Check whether ret is object */
-	if(!json_is_object(ret)) {
+	if (!json_is_object(ret)) {
 		werr("JSON in %s\n is not an object", filename);
 		json_decref(ret);
-		ret = NULL;
+		return NULL;
 	}
 
-_cleaning:
-	free(buffer);
-	close(filename_fd);
-
-_exit:
 	return ret;
 }
