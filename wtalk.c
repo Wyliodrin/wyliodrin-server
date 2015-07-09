@@ -2,19 +2,19 @@
  * WTalk
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: June 2015
+ * Date last modified: July 2015
  *************************************************************************************************/
 
+#include <string.h>   /* strlen, strdup */
+#include <unistd.h>   /* read, write    */
+#include <fcntl.h>    /* open           */
+#include <ctype.h>    /* tolower        */
+#include <sys/wait.h> /* waitpid        */
+#include <jansson.h>  /* json_t handling */
 
-#include <string.h>                /* strlen, strdup */
-#include <unistd.h>                /* read, write    */
-#include <fcntl.h>                 /* open           */
-#include <ctype.h>                 /* tolower        */
-#include <sys/wait.h>              /* waitpid        */
+#include "winternals/winternals.h" /* logs and errs */
+#include "wxmpp/wxmpp.h"           /* xmpp stuff    */
 
-#include "winternals/winternals.h" /* logs and errs  */
-#include "wjson/wjson.h"           /* json handling  */
-#include "wxmpp/wxmpp.h"           /* xmpp handling  */
 
 
 #define BOARDTYPE_PATH "/etc/wyliodrin/boardtype" /* File path of the file named boardtype.
@@ -26,6 +26,7 @@
                                                      Example: settings_edison.json */
 
 
+
 /* Variables to be used by all the modules */
 const char *jid_str;        /* jid         */
 const char *owner_str;      /* owner       */
@@ -35,7 +36,12 @@ const char *board_str;      /* board name  */
 
 bool_t privacy = false;
 
+
+
 extern void xmpp_connect(const char *jid, const char *pass); /* implemented in wxmpp.c */
+extern json_t* file_to_json_t(const char *filename);         /* implemented in wjson.c */
+
+
 
 /**
  * Get the string value of the key <key> in the json object <json>.
