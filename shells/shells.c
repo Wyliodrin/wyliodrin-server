@@ -1,8 +1,8 @@
 /**************************************************************************************************
  * Shells module
  *
- * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
- * Date last modified: April 2015
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
+ * Date last modified: July 2015
  *************************************************************************************************/
 
 #ifdef SHELLS
@@ -33,6 +33,7 @@
 extern const char *build_file_str; /* build_file_str from init.c */
 extern const char *board_str;      /* board name */
 extern const char *jid_str;        /* jid */
+extern const char *owner_str;      /* owner_str */
 
 // char *userid_signal = NULL;  /* userid  received in make user for siganls */
 // char *request_signal = NULL; /* request received in make user for siganls */

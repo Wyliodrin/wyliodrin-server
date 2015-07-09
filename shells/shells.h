@@ -1,8 +1,8 @@
 /**************************************************************************************************
  * Shells module
  *
- * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
- * Date last modified: April 2015
+ * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
+ * Date last modified: July 2015
  *************************************************************************************************/
 
 #ifndef _SHELLS_H
@@ -10,9 +10,7 @@
 
 #ifdef SHELLS
 
-extern const char *owner_str; /* owner_str from init.c */
-
-#define MAX_SHELLS 256 /* Maximum number of shells allowed */
+#define MAX_SHELLS 256 /* Maximum number of shells */
 
 typedef struct {
   int pid;           /* PID */
@@ -24,47 +22,31 @@ typedef struct {
   int close_request; /* close request */
 } shell_t;
 
-/**
- * Initialize with NULL shells_vector
- */
+/* Initialize with NULL shells_vector */
 void init_shells();
 
-/**
- * Parse shells commands
- */
+/* Parse shells commands */
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
             xmpp_conn_t *const conn, void *const userdata);
 
-/**
- * Open shell
- */
+/* Open shell */
 void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 
-/**
- * Send shells open response
- */
+/* Send shells open response */
 void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
     void *const userdata, int8_t success, int8_t id);
 
-/**
- * Close shell
- */
+/* Close shell */
 void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 
-/**
- * Keys from shell
- */
+/* Keys from shell */
 void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 
-/**
- * Keys response
- */
+/* Keys response */
 void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
     char *data_str, int data_len, int shell_id);
 
-/**
- * List
- */
+/* List */
 void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 
 #endif /* SHELLS */
