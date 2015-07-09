@@ -3,11 +3,6 @@ wyliodrin-server Documentation
 
 This is the documentation for wyliodrin-server, last updated |today|.
 
-Introduction
-------------
-
-TODO
-
 Contents
 --------
 
