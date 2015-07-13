@@ -220,6 +220,9 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       #ifdef PS
         add_module("ps", ps);
       #endif
+      #ifdef UPLOAD
+        add_module("upload", ps);
+      #endif
     }
   }
 
