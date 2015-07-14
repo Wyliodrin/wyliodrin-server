@@ -10,6 +10,10 @@
 #include <stdio.h>  /* fprintf */
 #include <string.h> /* memcpy  */
 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "../winternals/winternals.h" /* logs and errs   */
 #include "../wxmpp/wxmpp.h"           /* nameserver      */
 #include "../base64/base64.h"         /* base64 encoding */
@@ -19,18 +23,32 @@
 
 
 
+#define STORAGESIZE 1024
 #define PATHSIZE 128
 
 
 
-static unsigned int storagesize = 0;
+typedef enum {
+  ATTRIBUTES = 1,
+  LIST       = 2,
+  READ       = 3
+} action_code_t;
+
+typedef enum {
+  DIRECTORY = 0,
+  REGULAR   = 1,
+  OTHER     = 2
+} filetype_t;
+
+
+
 static unsigned int reader_offset = 0;
 static unsigned int writer_offset = 0;
 
 
 
 static bool string_reader(cmp_ctx_t *ctx, void *data, size_t limit) {
-  if (reader_offset + limit > storagesize) {
+  if (reader_offset + limit > STORAGESIZE) {
     fprintf(stderr, "No more space available in string_reader\n");
     return false;
   }
@@ -42,7 +60,7 @@ static bool string_reader(cmp_ctx_t *ctx, void *data, size_t limit) {
 }
 
 static size_t string_writer(cmp_ctx_t *ctx, const void *data, size_t count) {
-  if (writer_offset + count > storagesize) {
+  if (writer_offset + count > STORAGESIZE) {
     fprintf(stderr, "No more space available in string_writer\n");
     return 0;
   }
@@ -84,8 +102,11 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     }
 
     cmp_ctx_t cmp;
-    storagesize = rc_int;
-    cmp_init(&cmp, decoded, string_reader, string_writer);
+    char storage[STORAGESIZE];
+
+    memcpy(storage, decoded, rc_int);
+
+    cmp_init(&cmp, storage, string_reader, string_writer);
     reader_offset = 0;
 
     uint32_t array_size;
@@ -94,8 +115,8 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
       return;
     }
 
-    int16_t code;
-    if (!cmp_read_short(&cmp, &code)) {
+    int16_t action_code;
+    if (!cmp_read_short(&cmp, &action_code)) {
       werr("cmp_read_short error: %s", cmp_strerror(&cmp));
       return;
     }
@@ -107,12 +128,57 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
       return;
     }
 
-    wlog("code = %d, path = %s", code, path);
+    writer_offset = 0;
+
+    if ((action_code_t) action_code == ATTRIBUTES) {
+      struct stat file_stat;
+      wlog()
+      int stat_rc = stat(path, &file_stat);
+      int num_elem;
+      if (stat_rc == -1) {
+        num_elem = 2;
+      } else {
+        num_elem = 4;
+      }
+
+      if (!cmp_write_array(&cmp, num_elem)) {
+        werr("cmp_write_array: %s", cmp_strerror(&cmp));
+        return;
+      }
+      if (!cmp_write_integer(&cmp, ATTRIBUTES)) {
+        werr("cmp_write_short: %s", cmp_strerror(&cmp));
+        return;
+      }
+      if (!cmp_write_str(&cmp, path, path_size)) {
+        werr("cmp_write_short: %s", cmp_strerror(&cmp));
+        return;
+      }
+      if (num_elem == 4) {
+        filetype_t filetype;
+        if (S_ISDIR(file_stat.st_mode)) {
+          filetype = DIRECTORY;
+        } else if (S_ISREG(file_stat.st_mode)) {
+          filetype = REGULAR;
+        } else {
+          filetype = OTHER;
+        }
+
+        if (!cmp_write_integer(&cmp, filetype)) {
+          werr("cmp_write_integer: %s", cmp_strerror(&cmp));
+          return;
+        }
+
+        if (!cmp_write_integer(&cmp, (uint64_t)(file_stat.st_size))) {
+          werr("cmp_write_integer: %s", cmp_strerror(&cmp));
+          return;
+        }
+      }
+    }
 
     /* Send back the stanza */
-    char *encoded_data = malloc(BASE64_SIZE(rc_int));
-    encoded_data = base64_encode(encoded_data, BASE64_SIZE(rc_int),
-    (const uint8_t *)decoded, rc_int);
+    char *encoded_data = malloc(BASE64_SIZE(writer_offset));
+    encoded_data = base64_encode(encoded_data, BASE64_SIZE(writer_offset),
+    (const uint8_t *)storage, writer_offset);
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
     xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);

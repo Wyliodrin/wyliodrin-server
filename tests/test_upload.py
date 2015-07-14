@@ -89,7 +89,7 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
 
     # action = {"attributes":1, "list":2, "read":3}
     msg['upload']['msgpack'] = base64.b64encode(msgpack.packb(
-      [1, '/home/matei/Dropbox/Wyliodrin/Work/wyliodrin-server/build/wyliodrind']))
+      [1, '/home/matei/Dropbox/Wyliodrin/Work/wyliodrin-server/build']))
     msg.send()
 
 
@@ -98,9 +98,7 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
-    logging.error("message")
-
-    if msg['upload']['msgpack'] is not None:
+    if msg['upload']['msgpack'] != '':
       logging.info(msgpack.unpackb(base64.b64decode(msg['upload']['msgpack'])))
 
     self.disconnect(wait=True)
