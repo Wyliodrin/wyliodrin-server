@@ -19,6 +19,7 @@ Contents
    communicationmodule
    signalshandling
    logshandling
+   uploadmodule
 
 
 Indices and tables
