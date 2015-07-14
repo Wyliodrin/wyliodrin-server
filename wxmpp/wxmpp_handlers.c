@@ -270,6 +270,10 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
 int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
   wlog("message_handler()");
 
+  if (!is_owner_online) {
+    werr("Ignore message because owner is offline");
+  }
+
   /* Sanity checks */
   char *from_attr = xmpp_stanza_get_attribute(stanza, "from");
   if (from_attr == NULL) {
