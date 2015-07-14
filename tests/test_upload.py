@@ -14,6 +14,13 @@ import sleekxmpp
 from sleekxmpp import Message
 from sleekxmpp.xmlstream import ElementBase
 from sleekxmpp.xmlstream import register_stanza_plugin
+from sleekxmpp.xmlstream.handler import Callback
+from sleekxmpp.xmlstream.matcher import StanzaPath
+
+import msgpack
+import binascii
+import base64
+import collections
 
 
 
@@ -55,6 +62,15 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
 
     self.add_event_handler("session_start", self.start, threaded=True)
 
+    self.register_handler(
+      Callback('Some custom message',
+        StanzaPath('message/upload'),
+        self._handle_action))
+
+    self.add_event_handler('custom_action',
+      self._handle_action_event,
+      threaded=True)
+
     register_stanza_plugin(Message, Upload)
 
 
@@ -70,11 +86,23 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
     msg = self.Message()
     msg['lang'] = None
     msg['to'] = self.recipient
-    msg['upload']['msgpack'] = "X"
+
+    # action = {"attributes":1, "list":2, "read":3}
+    msg['upload']['msgpack'] = base64.b64encode(msgpack.packb(
+      [1, '/home/matei/Dropbox/Wyliodrin/Work/wyliodrin-server/build/wyliodrind']))
     msg.send()
 
-    # Using wait=True ensures that the send queue will be
-    # emptied before ending the session.
+
+  def _handle_action(self, msg):
+    self.event('custom_action', msg)
+
+
+  def _handle_action_event(self, msg):
+    logging.error("message")
+
+    if msg['upload']['msgpack'] is not None:
+      logging.info(msgpack.unpackb(base64.b64decode(msg['upload']['msgpack'])))
+
     self.disconnect(wait=True)
 
 
