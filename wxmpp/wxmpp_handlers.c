@@ -32,6 +32,11 @@
   #include "../ps/ps.h"
 #endif
 
+#ifdef UPLOAD
+  void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
+  xmpp_conn_t *const conn, void *const userdata);
+#endif
+
 
 
 bool_t is_owner_online = false;
@@ -221,7 +226,7 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
         add_module("ps", ps);
       #endif
       #ifdef UPLOAD
-        add_module("upload", ps);
+        add_module("upload", upload);
       #endif
     }
   }
