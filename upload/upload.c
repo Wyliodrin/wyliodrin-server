@@ -23,15 +23,15 @@
 
 
 
-#define STORAGESIZE 1024
-#define PATHSIZE 128
+#define STORAGESIZE 1024 /* msgpack buffer size */
+#define PATHSIZE 128     /* msgpack size */
 
 
 
 typedef enum {
-  ATTRIBUTES = 1,
-  LIST       = 2,
-  READ       = 3
+  ATTRIBUTES = 0,
+  LIST       = 1,
+  READ       = 2
 } action_code_t;
 
 typedef enum {
@@ -72,6 +72,7 @@ static size_t string_writer(cmp_ctx_t *ctx, const void *data, size_t count) {
 }
 
 
+
 /**
  *  <message to="<jid"> from="<owner>">
  *    <upload xmlns="wyliodrin">
@@ -92,6 +93,7 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
       return;
     }
 
+    /* Decode msgpack_text */
     int dec_size = strlen(msgpack_text) * 3 / 4 + 1;
     uint8_t *decoded = calloc(dec_size, sizeof(uint8_t));
     int rc_int = base64_decode(decoded, msgpack_text, dec_size);
@@ -101,26 +103,24 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
       return;
     }
 
+    /* Init msgpack */
     cmp_ctx_t cmp;
     char storage[STORAGESIZE];
-
     memcpy(storage, decoded, rc_int);
-
     cmp_init(&cmp, storage, string_reader, string_writer);
     reader_offset = 0;
 
+    /* Read action code and path */
     uint32_t array_size;
     if (!cmp_read_array(&cmp, &array_size)) {
       werr("cmp_read_array: %s", cmp_strerror(&cmp));
       return;
     }
-
     int16_t action_code;
     if (!cmp_read_short(&cmp, &action_code)) {
       werr("cmp_read_short error: %s", cmp_strerror(&cmp));
       return;
     }
-
     char path[PATHSIZE];
     uint32_t path_size = PATHSIZE;
     if (!cmp_read_str(&cmp, path, &path_size)) {
@@ -128,12 +128,14 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
       return;
     }
 
+    /* Send response */
     writer_offset = 0;
-
     if ((action_code_t) action_code == ATTRIBUTES) {
+      /* Get file stat */
       struct stat file_stat;
-      wlog()
       int stat_rc = stat(path, &file_stat);
+
+      /* Set number of elements of the response array */
       int num_elem;
       if (stat_rc == -1) {
         num_elem = 2;

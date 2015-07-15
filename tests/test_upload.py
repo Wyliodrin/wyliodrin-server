@@ -10,6 +10,7 @@ import logging
 import getpass
 import ssl
 from optparse import OptionParser
+
 import sleekxmpp
 from sleekxmpp import Message
 from sleekxmpp.xmlstream import ElementBase
@@ -18,9 +19,7 @@ from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import StanzaPath
 
 import msgpack
-import binascii
 import base64
-import collections
 
 
 
@@ -33,6 +32,13 @@ if sys.version_info < (3, 0):
   setdefaultencoding('utf8')
 else:
   raw_input = input
+
+
+
+class ActionCode(object):
+  ATTRIBUTES = 0
+  LIST       = 1
+  READ       = 2
 
 
 
@@ -54,11 +60,11 @@ class Upload(ElementBase):
 
 class TestUploadBot(sleekxmpp.ClientXMPP):
 
-  def __init__(self, jid, password, recipient):
+  def __init__(self, jid, password, recipient, path):
     sleekxmpp.ClientXMPP.__init__(self, jid, password)
 
-    # The JID that will receive the message.
     self.recipient = recipient
+    self.path = path
 
     self.add_event_handler("session_start", self.start, threaded=True)
 
@@ -87,9 +93,8 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
     msg['lang'] = None
     msg['to'] = self.recipient
 
-    # action = {"attributes":1, "list":2, "read":3}
     msg['upload']['msgpack'] = base64.b64encode(msgpack.packb(
-      [1, '/home/matei/Dropbox/Wyliodrin/Work/wyliodrin-server/build']))
+      [ActionCode.ATTRIBUTES, self.path]))
     msg.send()
 
 
@@ -127,6 +132,8 @@ if __name__ == '__main__':
           help="password to use")
   optp.add_option("-t", "--to", dest="to",
           help="JID to send the message to")
+  optp.add_option("--path", dest="path",
+          help="file path to get from device")
 
   opts, args = optp.parse_args()
 
@@ -140,8 +147,10 @@ if __name__ == '__main__':
     opts.password = getpass.getpass("Password: ")
   if opts.to is None:
     opts.to = raw_input("Send To: ")
+  if opts.path is None:
+    opts.path = raw_input("Path: ")
 
-  xmpp = TestUploadBot(opts.jid, opts.password, opts.to)
+  xmpp = TestUploadBot(opts.jid, opts.password, opts.to, opts.path)
   xmpp.register_plugin('xep_0030') # Service Discovery
   xmpp.register_plugin('xep_0199') # XMPP Ping
 
