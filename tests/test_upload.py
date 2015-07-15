@@ -42,6 +42,13 @@ class ActionCode(object):
 
 
 
+class FileType(object):
+  DIRECTORY = 0
+  REGULAR   = 1
+  OTHER     = 2
+
+
+
 class Upload(ElementBase):
 
     """
@@ -84,11 +91,13 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
     self.send_presence()
     self.get_roster()
 
-    # <message to="wyliodrin_test@wyliodrin.org">
-    #   <upload xmlns="wyliodrin">
-    #     <msgpack>X</msgpack>
-    #   </upload>
-    # </message>
+    """
+    <message to="<self.recipient>">
+      <upload xmlns="wyliodrin">
+        <msgpack>X</msgpack>
+      </upload>
+    </message>
+    """
     msg = self.Message()
     msg['lang'] = None
     msg['to'] = self.recipient
@@ -103,10 +112,23 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
-    if msg['upload']['msgpack'] != '':
-      logging.info(msgpack.unpackb(base64.b64decode(msg['upload']['msgpack'])))
+    if msg['upload']['msgpack'] == '':
+      self.disconnect(wait=True)
+      return
 
-    self.disconnect(wait=True)
+    decoded = msgpack.unpackb(base64.b64decode(msg['upload']['msgpack']))
+    logging.info(decoded)
+    if decoded[0] == ActionCode.ATTRIBUTES:
+      if len(decoded) == 4:
+        if (decoded[2] == FileType.DIRECTORY):
+          msg = self.Message()
+          msg['lang'] = None
+          msg['to'] = self.recipient
+          msg['upload']['msgpack'] = base64.b64encode(msgpack.packb(
+            [ActionCode.LIST, self.path]))
+          msg.send()
+
+          # self.disconnect(wait=True)
 
 
 

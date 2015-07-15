@@ -10,9 +10,11 @@
 #include <stdio.h>  /* fprintf */
 #include <string.h> /* memcpy  */
 
+/* file operations */
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include "../winternals/winternals.h" /* logs and errs   */
 #include "../wxmpp/wxmpp.h"           /* nameserver      */
@@ -44,8 +46,6 @@ typedef enum {
 
 static unsigned int reader_offset = 0;
 static unsigned int writer_offset = 0;
-
-
 
 static bool string_reader(cmp_ctx_t *ctx, void *data, size_t limit) {
   if (reader_offset + limit > STORAGESIZE) {
@@ -130,6 +130,8 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 
     /* Send response */
     writer_offset = 0;
+
+    /* Attributes response */
     if ((action_code_t) action_code == ATTRIBUTES) {
       /* Get file stat */
       struct stat file_stat;
@@ -143,6 +145,7 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
         num_elem = 4;
       }
 
+      /* Write response */
       if (!cmp_write_array(&cmp, num_elem)) {
         werr("cmp_write_array: %s", cmp_strerror(&cmp));
         return;
@@ -175,6 +178,66 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
           return;
         }
       }
+    }
+
+    /* List response */
+    else if ((action_code_t) action_code == LIST) {
+      DIR *d;
+      struct dirent *dir;
+      int num_elem;
+
+      d = opendir(path);
+      if (d == NULL) {
+        num_elem = 2;
+      } else {
+        num_elem = 2;
+        while ((dir = readdir(d)) != NULL) {
+          if (strcmp(dir->d_name, ".")  == 0 ||
+              strcmp(dir->d_name, "..") == 0 ) {
+            continue;
+          }
+          num_elem++;
+        }
+        closedir(d);
+      }
+
+      /* Write response */
+      if (!cmp_write_array(&cmp, num_elem)) {
+        werr("cmp_write_array: %s", cmp_strerror(&cmp));
+        return;
+      }
+      if (!cmp_write_integer(&cmp, LIST)) {
+        werr("cmp_write_short: %s", cmp_strerror(&cmp));
+        return;
+      }
+      if (!cmp_write_str(&cmp, path, path_size)) {
+        werr("cmp_write_short: %s", cmp_strerror(&cmp));
+        return;
+      }
+      if (num_elem > 2) {
+        d = opendir(path);
+        while ((dir = readdir(d)) != NULL) {
+          if (strcmp(dir->d_name, ".")  == 0 ||
+              strcmp(dir->d_name, "..") == 0 ) {
+            continue;
+          }
+          if (!cmp_write_str(&cmp, dir->d_name, strlen(dir->d_name))) {
+            werr("cmp_write_short: %s", cmp_strerror(&cmp));
+            return;
+          }
+        }
+        closedir(d);
+      }
+    }
+
+    /* Read response */
+    else if ((action_code_t) action_code == READ) {
+
+    }
+
+    /* Invalid action code */
+    else {
+
     }
 
     /* Send back the stanza */
