@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <dirent.h>
 
 #include "../winternals/winternals.h" /* logs and errs   */
@@ -232,12 +233,40 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 
     /* Read response */
     else if ((action_code_t) action_code == READ) {
+      int num_elem;
+      int fd = open(path, O_RDONLY);
+      if (fd == -1) {
+        num_elem = 2;
+      } else {
+        num_elem = 3;
+      }
 
-    }
+      /* Write response */
+      if (!cmp_write_array(&cmp, num_elem)) {
+        werr("cmp_write_array: %s", cmp_strerror(&cmp));
+        return;
+      }
+      if (!cmp_write_integer(&cmp, READ)) {
+        werr("cmp_write_short: %s", cmp_strerror(&cmp));
+        return;
+      }
+      if (!cmp_write_str(&cmp, path, path_size)) {
+        werr("cmp_write_short: %s", cmp_strerror(&cmp));
+        return;
+      }
+      if (num_elem == 3) {
+        /* Get file stat */
+        struct stat file_stat;
+        stat(path, &file_stat);
+        char read_buffer[file_stat.st_size];
+        read(fd, read_buffer, file_stat.st_size);
+        close(fd);
 
-    /* Invalid action code */
-    else {
-
+        if (!cmp_write_str(&cmp, read_buffer, file_stat.st_size)) {
+          werr("cmp_write_short: %s", cmp_strerror(&cmp));
+          return;
+        }
+      }
     }
 
     /* Send back the stanza */

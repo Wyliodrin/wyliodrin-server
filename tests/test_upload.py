@@ -120,15 +120,44 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
     logging.info(decoded)
     if decoded[0] == ActionCode.ATTRIBUTES:
       if len(decoded) == 4:
-        if (decoded[2] == FileType.DIRECTORY):
+        if decoded[2] == FileType.DIRECTORY:
           msg = self.Message()
           msg['lang'] = None
           msg['to'] = self.recipient
           msg['upload']['msgpack'] = base64.b64encode(msgpack.packb(
             [ActionCode.LIST, self.path]))
           msg.send()
+        elif decoded[2] == FileType.REGULAR:
+          msg = self.Message()
+          msg['lang'] = None
+          msg['to'] = self.recipient
+          msg['upload']['msgpack'] = base64.b64encode(msgpack.packb(
+            [ActionCode.READ, self.path]))
+          msg.send()
+        else:
+          logging.error("Invalid file type")
+      else:
+        logging.error("Invalid path")
+        self.disconnect(wait=True)
 
-          # self.disconnect(wait=True)
+    elif decoded[0] == ActionCode.LIST:
+      if len(decoded) == 2:
+        logging.error("Invalid path")
+      else:
+        logging.info("List of files")
+      self.disconnect(wait=True)
+
+    elif decoded[0] == ActionCode.READ:
+      if len(decoded) == 3:
+        f = open(decoded[1] + "_", "w+")
+        f.write(decoded[2])
+        f.close()
+      else:
+        logging.error("Not a valid file")
+      self.disconnect(wait=True)
+
+    else:
+      logging.error("Not a valid code")
 
 
 
