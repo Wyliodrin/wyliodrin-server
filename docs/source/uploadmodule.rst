@@ -55,3 +55,8 @@ List response:
 ::
   [1, "<path>"] when path is a valid directory
   [1, "<path>", "<filename_1>", "<filename_2>", ... ,"<filename_n>"] when path is a valid directory
+
+Read response:
+::
+  [2, "<path>"] when path is not a valid regular file
+  [2, "<path>", "<file_content>"] when path is a valid regular file
