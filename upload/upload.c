@@ -26,8 +26,8 @@
 
 
 
-#define STORAGESIZE 1024 /* msgpack buffer size */
-#define PATHSIZE 128     /* msgpack size */
+#define STORAGESIZE 256 * 1024 /* msgpack buffer size */
+#define PATHSIZE 128           /* msgpack size */
 
 
 
@@ -262,8 +262,8 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
         read(fd, read_buffer, file_stat.st_size);
         close(fd);
 
-        if (!cmp_write_str(&cmp, read_buffer, file_stat.st_size)) {
-          werr("cmp_write_short: %s", cmp_strerror(&cmp));
+        if (!cmp_write_bin(&cmp, (const void *)read_buffer, file_stat.st_size)) {
+          werr("cmp_write_bin: %s", cmp_strerror(&cmp));
           return;
         }
       }
