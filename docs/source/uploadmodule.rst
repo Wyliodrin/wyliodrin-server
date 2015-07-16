@@ -59,4 +59,8 @@ List response:
 Read response:
 ::
   [2, "<path>"] when path is not a valid regular file
-  [2, "<path>", "<file_content>"] when path is a valid regular file
+  [2, "<path>", "<file_content>", <offset>, <done>] when path is a valid regular file
+
+``<done>`` values:
+  - 0: file transfer in progress
+  - 1: file transfer finished

@@ -26,7 +26,7 @@
 
 
 
-#define STORAGESIZE 256 * 1024 /* msgpack buffer size */
+#define STORAGESIZE 128 * 1024 /* msgpack buffer size */
 #define PATHSIZE 128           /* msgpack size */
 
 
@@ -70,6 +70,94 @@ static size_t string_writer(cmp_ctx_t *ctx, const void *data, size_t count) {
   writer_offset += count;
 
   return count;
+}
+
+
+
+static void read_response(int fd, int offset, size_t size, char *path,
+  cmp_ctx_t *cmp, char *storage,
+  xmpp_conn_t *const conn, void *const userdata)
+{
+  int num_elem;
+  char done = 0;
+  int num_bytes_read;
+
+  if (fd == -1) {
+    num_elem = 2;
+  } else {
+    num_elem = 5;
+  }
+
+  /* Write response */
+  writer_offset = 0;
+  if (!cmp_write_array(cmp, num_elem)) {
+    werr("cmp_write_array: %s", cmp_strerror(cmp));
+    return;
+  }
+  if (!cmp_write_integer(cmp, READ)) {
+    werr("cmp_write_short: %s", cmp_strerror(cmp));
+    return;
+  }
+  if (!cmp_write_str(cmp, path, strlen(path))) {
+    werr("cmp_write_short: %s", cmp_strerror(cmp));
+    return;
+  }
+  if (num_elem == 5) {
+    /* Get file stat */
+    char read_buffer[STORAGESIZE - 2 * PATHSIZE];
+    num_bytes_read = read(fd, read_buffer, STORAGESIZE - 2 * PATHSIZE);
+
+    if (!cmp_write_bin(cmp, (const void *)read_buffer, num_bytes_read)) {
+      werr("cmp_write_bin: %s", cmp_strerror(cmp));
+      return;
+    }
+
+    if (!cmp_write_integer(cmp, offset)) {
+      werr("cmp_write_integer: %s", cmp_strerror(cmp));
+      return;
+    }
+
+    if (offset + num_bytes_read == size) {
+      done = 1;
+    }
+
+    if (!cmp_write_integer(cmp, done)) {
+      werr("cmp_write_short: %s", cmp_strerror(cmp));
+      return;
+    }
+  }
+
+  /* Send back the stanza */
+  char *encoded_data = malloc(BASE64_SIZE(writer_offset));
+  encoded_data = base64_encode(encoded_data, BASE64_SIZE(writer_offset),
+  (const uint8_t *)storage, writer_offset);
+
+  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
+  xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
+  xmpp_stanza_set_name(message_stz, "message");
+  xmpp_stanza_set_attribute(message_stz, "to", "wyliodrin_test@wyliodrin.org");
+  xmpp_stanza_t *upload_stz = xmpp_stanza_new(ctx);
+  xmpp_stanza_set_name(upload_stz, "upload");
+  xmpp_stanza_set_ns(upload_stz, "wyliodrin");
+  xmpp_stanza_t *msgpack_stz = xmpp_stanza_new(ctx);
+  xmpp_stanza_set_name(msgpack_stz, "msgpack");
+  xmpp_stanza_t *text_stz = xmpp_stanza_new(ctx);
+  xmpp_stanza_set_text(text_stz, encoded_data);
+  xmpp_stanza_add_child(msgpack_stz, text_stz);
+  xmpp_stanza_add_child(upload_stz, msgpack_stz);
+  xmpp_stanza_add_child(message_stz, upload_stz);
+  xmpp_send(conn, message_stz);
+  xmpp_stanza_release(text_stz);
+  xmpp_stanza_release(msgpack_stz);
+  xmpp_stanza_release(upload_stz);
+  xmpp_stanza_release(message_stz);
+
+  free(encoded_data);
+
+  if (num_elem == 5 && done == 0) {
+    usleep(500000);
+    return read_response(fd, offset + num_bytes_read, size, path, cmp, storage, conn, userdata);
+  }
 }
 
 
@@ -233,40 +321,16 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 
     /* Read response */
     else if ((action_code_t) action_code == READ) {
-      int num_elem;
       int fd = open(path, O_RDONLY);
       if (fd == -1) {
-        num_elem = 2;
+        read_response(-1, -1, -1, path, &cmp, storage, conn, userdata);
       } else {
-        num_elem = 3;
-      }
-
-      /* Write response */
-      if (!cmp_write_array(&cmp, num_elem)) {
-        werr("cmp_write_array: %s", cmp_strerror(&cmp));
-        return;
-      }
-      if (!cmp_write_integer(&cmp, READ)) {
-        werr("cmp_write_short: %s", cmp_strerror(&cmp));
-        return;
-      }
-      if (!cmp_write_str(&cmp, path, path_size)) {
-        werr("cmp_write_short: %s", cmp_strerror(&cmp));
-        return;
-      }
-      if (num_elem == 3) {
-        /* Get file stat */
         struct stat file_stat;
         stat(path, &file_stat);
-        char read_buffer[file_stat.st_size];
-        read(fd, read_buffer, file_stat.st_size);
+        read_response(fd, 0, file_stat.st_size, path, &cmp, storage, conn, userdata);
         close(fd);
-
-        if (!cmp_write_bin(&cmp, (const void *)read_buffer, file_stat.st_size)) {
-          werr("cmp_write_bin: %s", cmp_strerror(&cmp));
-          return;
-        }
       }
+      return;
     }
 
     /* Send back the stanza */
