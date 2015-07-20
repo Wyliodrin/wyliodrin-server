@@ -34,7 +34,12 @@
 
 #ifdef UPLOAD
   void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-  xmpp_conn_t *const conn, void *const userdata);
+    xmpp_conn_t *const conn, void *const userdata);
+#endif
+
+#ifdef DOWNLOAD
+  void download(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
+    xmpp_conn_t *const conn, void *const userdata);
 #endif
 
 
@@ -227,6 +232,9 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       #endif
       #ifdef UPLOAD
         add_module("upload", upload);
+      #endif
+      #ifdef DOWNLOAD
+        add_module("download", download);
       #endif
     }
   }
