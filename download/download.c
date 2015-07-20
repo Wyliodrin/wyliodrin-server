@@ -7,6 +7,8 @@
 
 #ifdef DOWNLOAD
 
+#include "../wxmpp/wxmpp.h"           /* nameserver      */
+
 /**
  *  <message to="<jid"> from="<owner>">
  *    <download xmlns="wyliodrin">
@@ -15,7 +17,8 @@
  *  </message>
  */
 void download(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-  xmpp_conn_t *const conn, void *const userdata)
-{
+  xmpp_conn_t *const conn, void *const userdata) {
+
+}
 
 #endif /* DOWNLOAD */
