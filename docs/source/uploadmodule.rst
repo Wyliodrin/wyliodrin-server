@@ -9,9 +9,9 @@ XMPP Protocol
 Request:
 ::
   <message to="<jid>" from="<owner>">
-    <upload xmlns="wyliodrin">
-      <msgpack>X</msgpack>
-    </upload>
+    <x xmlns="wyliodrin" "session"=<id>>
+      msgpack stuff
+    </x>
   </message>
 
 Response:

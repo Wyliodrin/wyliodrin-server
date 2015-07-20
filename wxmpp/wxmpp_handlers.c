@@ -74,6 +74,10 @@ int message_handler  (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
 /* Add the module_name and corresponding function in the modules hashmap */
 void add_module(char *module_name, module_fct f);
 
+/* MSGPACK decoder */
+void msgpack_decoder(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
+  xmpp_conn_t *const conn, void *const userdata);
+
 
 
 /* Connection handler */
@@ -236,6 +240,7 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       #ifdef DOWNLOAD
         add_module("download", download);
       #endif
+      add_module("w", msgpack_decoder);
     }
   }
 

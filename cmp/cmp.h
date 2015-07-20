@@ -25,6 +25,9 @@ THE SOFTWARE.
 #ifndef CMP_H__
 #define CMP_H__
 
+#define STORAGESIZE 128 * 1024 /* msgpack buffer size */
+#define BINSIZE     127 * 1024 /* binary size data    */
+
 struct cmp_ctx_s;
 
 typedef bool   (*cmp_reader)(struct cmp_ctx_s *ctx, void *data, size_t limit);
@@ -98,6 +101,8 @@ typedef struct cmp_ctx_s {
   void       *buf;
   cmp_reader  read;
   cmp_writer  write;
+  unsigned int reader_offset;
+  unsigned int writer_offset;
 } cmp_ctx_t;
 
 typedef struct cmp_object_s {
@@ -116,7 +121,7 @@ extern "C" {
  */
 
 /* Initializes a CMP context */
-void cmp_init(cmp_ctx_t *ctx, void *buf, cmp_reader read, cmp_writer write);
+void cmp_init(cmp_ctx_t *ctx, void *buf);
 
 /* Returns CMP's version */
 uint32_t cmp_version(void);

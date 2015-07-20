@@ -49,19 +49,16 @@ class FileType(object):
 
 
 
-class Upload(ElementBase):
+class W(ElementBase):
 
     """
-    <upload xmlns="wyliodrin">
-      <msgpack>X</msgpack>
-    </upload>
+    <w xmlns="wyliodrin" d="<msgpack_data>"/>
     """
 
-    name = 'upload'
+    name = 'w'
     namespace = 'wyliodrin'
-    plugin_attrib = 'upload'
-    interfaces = set(('msgpack',))
-    sub_interfaces = interfaces
+    plugin_attrib = 'w'
+    interfaces = set(('d',))
 
 
 
@@ -77,14 +74,14 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
 
     self.register_handler(
       Callback('Some custom message',
-        StanzaPath('message/upload'),
+        StanzaPath('message/w'),
         self._handle_action))
 
     self.add_event_handler('custom_action',
       self._handle_action_event,
       threaded=True)
 
-    register_stanza_plugin(Message, Upload)
+    register_stanza_plugin(Message, W)
 
 
   def start(self, event):
@@ -93,17 +90,19 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
 
     """
     <message to="<self.recipient>">
-      <upload xmlns="wyliodrin">
-        <msgpack>X</msgpack>
-      </upload>
+      <w xmlns="wyliodrin" d="<msgpack_data>"/>
     </message>
     """
     msg = self.Message()
     msg['lang'] = None
     msg['to'] = self.recipient
 
-    msg['upload']['msgpack'] = base64.b64encode(msgpack.packb(
-      [ActionCode.ATTRIBUTES, self.path]))
+    # f = function
+    # u = upload
+    # c = code
+    # p = path
+    msg['w']['d'] = base64.b64encode(msgpack.packb(
+      {'sf':'u', 'nc':ActionCode.ATTRIBUTES, 'sp':self.path}))
     msg.send()
 
 
@@ -112,56 +111,49 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
-    if msg['upload']['msgpack'] == '':
+    if msg['w']['d'] == '':
+      logging.error("No data")
       self.disconnect(wait=True)
       return
 
-    decoded = msgpack.unpackb(base64.b64decode(msg['upload']['msgpack']))
+    decoded = msgpack.unpackb(base64.b64decode(msg['w']['d']))
     # logging.info(decoded)
-    if decoded[0] == ActionCode.ATTRIBUTES:
-      if len(decoded) == 4:
-        if decoded[2] == FileType.DIRECTORY:
-          msg = self.Message()
-          msg['lang'] = None
-          msg['to'] = self.recipient
-          msg['upload']['msgpack'] = base64.b64encode(msgpack.packb(
-            [ActionCode.LIST, self.path]))
-          msg.send()
-        elif decoded[2] == FileType.REGULAR:
-          msg = self.Message()
-          msg['lang'] = None
-          msg['to'] = self.recipient
-          msg['upload']['msgpack'] = base64.b64encode(msgpack.packb(
-            [ActionCode.READ, self.path]))
-          msg.send()
+
+    if decoded['c'] == ActionCode.ATTRIBUTES:
+      logging.info(decoded)
+      if decoded['t'] == FileType.DIRECTORY:
+        msg = self.Message()
+        msg['lang'] = None
+        msg['to'] = self.recipient
+        msg['w']['d'] = base64.b64encode(msgpack.packb(
+          {"nc":ActionCode.LIST, "sp":self.path}))
+        msg.send()
+      elif decoded['t'] == FileType.REGULAR:
+        msg = self.Message()
+        msg['lang'] = None
+        msg['to'] = self.recipient
+        msg['w']['d'] = base64.b64encode(msgpack.packb(
+          {"nc":ActionCode.READ, "sp":self.path}))
+        msg.send()
+
+    elif decoded['c'] == ActionCode.READ:
+      logging.info("READ")
+      if decoded['o'] != '':
+        if decoded['o'] == 0:
+          f = open(decoded['p'] + "_", "w")
         else:
-          logging.error("Invalid file type")
-      else:
-        logging.error("Invalid path")
-        self.disconnect(wait=True)
-
-    elif decoded[0] == ActionCode.LIST:
-      if len(decoded) == 2:
-        logging.error("Invalid path")
-      else:
-        logging.info("List of files")
-      self.disconnect(wait=True)
-
-    elif decoded[0] == ActionCode.READ:
-      if len(decoded) == 5:
-        f = open(decoded[1] + "_", "a")
-        f.seek(decoded[3], 0)
-        f.write(decoded[2])
+          f = open(decoded['p'] + "_", "a")
+        f.seek(decoded['o'], 0)
+        f.write(decoded['d'])
         f.close()
-        if (decoded[4] == 1):
+        if (decoded['e'] == 1):
           self.disconnect(wait=True)
       else:
         logging.error("Not a valid file")
         self.disconnect(wait=True)
 
     else:
-      logging.error("Not a valid code")
-
+      self.disconnect(wait=True)
 
 
 if __name__ == '__main__':

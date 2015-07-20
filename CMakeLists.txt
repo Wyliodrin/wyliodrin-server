@@ -45,6 +45,7 @@ set (wyliodrind_SRCS
   ${PROJECT_SOURCE_DIR}/cmp/cmp.c
   ${PROJECT_SOURCE_DIR}/upload/upload.c
   ${PROJECT_SOURCE_DIR}/download/download.c
+  ${PROJECT_SOURCE_DIR}/msgpack/msgpack.c
 )
 
 add_library (dbs STATIC

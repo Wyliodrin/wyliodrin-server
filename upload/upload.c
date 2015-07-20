@@ -24,9 +24,10 @@
 #include <stdbool.h>                  /* true and false  */
 #include "../cmp/cmp.h"               /* msgpack         */
 
+#include "../libds/ds.h"              /* hashmaps        */
 
 
-#define STORAGESIZE 128 * 1024 /* msgpack buffer size */
+
 #define PATHSIZE 128           /* msgpack size */
 
 
@@ -45,35 +46,6 @@ typedef enum {
 
 
 
-static unsigned int reader_offset = 0;
-static unsigned int writer_offset = 0;
-
-static bool string_reader(cmp_ctx_t *ctx, void *data, size_t limit) {
-  if (reader_offset + limit > STORAGESIZE) {
-    fprintf(stderr, "No more space available in string_reader\n");
-    return false;
-  }
-
-  memcpy(data, ctx->buf + reader_offset, limit);
-  reader_offset += limit;
-
-  return true;
-}
-
-static size_t string_writer(cmp_ctx_t *ctx, const void *data, size_t count) {
-  if (writer_offset + count > STORAGESIZE) {
-    fprintf(stderr, "No more space available in string_writer\n");
-    return 0;
-  }
-
-  memcpy(ctx->buf + writer_offset, data, count);
-  writer_offset += count;
-
-  return count;
-}
-
-
-
 static void read_response(int fd, int offset, size_t size, char *path,
   cmp_ctx_t *cmp, char *storage,
   xmpp_conn_t *const conn, void *const userdata)
@@ -89,7 +61,7 @@ static void read_response(int fd, int offset, size_t size, char *path,
   }
 
   /* Write response */
-  writer_offset = 0;
+  cmp->writer_offset = 0;
   if (!cmp_write_array(cmp, num_elem)) {
     werr("cmp_write_array: %s", cmp_strerror(cmp));
     return;
@@ -128,9 +100,9 @@ static void read_response(int fd, int offset, size_t size, char *path,
   }
 
   /* Send back the stanza */
-  char *encoded_data = malloc(BASE64_SIZE(writer_offset));
-  encoded_data = base64_encode(encoded_data, BASE64_SIZE(writer_offset),
-  (const uint8_t *)storage, writer_offset);
+  char *encoded_data = malloc(BASE64_SIZE(cmp->writer_offset));
+  encoded_data = base64_encode(encoded_data, BASE64_SIZE(cmp->writer_offset),
+  (const uint8_t *)storage, cmp->writer_offset);
 
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
   xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
@@ -157,6 +129,114 @@ static void read_response(int fd, int offset, size_t size, char *path,
   if (num_elem == 5 && done == 0) {
     usleep(500000);
     return read_response(fd, offset + num_bytes_read, size, path, cmp, storage, conn, userdata);
+  }
+}
+
+
+
+static void read_response2(int fd, int offset, size_t size, char *path,
+  xmpp_conn_t *const conn, void *const userdata,
+  hashmap_p hm)
+{
+  int num_elem;
+  char done = 0;
+  int num_bytes_read;
+
+  if (fd == -1) {
+    num_elem = 2;
+  } else {
+    num_elem = 5;
+  }
+
+  /* Init msgpack */
+  cmp_ctx_t cmp;
+  char storage[STORAGESIZE];
+  cmp_init(&cmp, storage);
+
+  /* Write response */
+  if (!cmp_write_map(&cmp, num_elem)) {
+    werr("cmp_write_map: %s", cmp_strerror(&cmp));
+    return;
+  }
+
+  if (!cmp_write_str(&cmp, "c", 1)) {
+    werr("cmp_write_str: %s", cmp_strerror(&cmp));
+    return;
+  }
+  if (!cmp_write_integer(&cmp, READ)) {
+    werr("cmp_write_integer: %s", cmp_strerror(&cmp));
+    return;
+  }
+
+  if (!cmp_write_str(&cmp, "p", 1)) {
+    werr("cmp_write_str: %s", cmp_strerror(&cmp));
+    return;
+  }
+  if (!cmp_write_str(&cmp, path, strlen(path))) {
+    werr("cmp_write_str: %s", cmp_strerror(&cmp));
+    return;
+  }
+
+  if (num_elem == 5) {
+    /* Get file stat */
+    char read_buffer[BINSIZE];
+    num_bytes_read = read(fd, read_buffer, BINSIZE);
+
+    if (!cmp_write_str(&cmp, "d", 1)) {
+      werr("cmp_write_str: %s", cmp_strerror(&cmp));
+      return;
+    }
+    if (!cmp_write_bin(&cmp, (const void *)read_buffer, num_bytes_read)) {
+      werr("cmp_write_bin: %s", cmp_strerror(&cmp));
+      return;
+    }
+
+    if (!cmp_write_str(&cmp, "o", 1)) {
+      werr("cmp_write_str: %s", cmp_strerror(&cmp));
+      return;
+    }
+    if (!cmp_write_integer(&cmp, offset)) {
+      werr("cmp_write_integer: %s", cmp_strerror(&cmp));
+      return;
+    }
+
+    if (offset + num_bytes_read == size) {
+      done = 1;
+    }
+
+    if (!cmp_write_str(&cmp, "e", 1)) {
+      werr("cmp_write_str: %s", cmp_strerror(&cmp));
+      return;
+    }
+    if (!cmp_write_integer(&cmp, done)) {
+      werr("cmp_write_short: %s", cmp_strerror(&cmp));
+      return;
+    }
+  }
+
+  /* Send back the stanza */
+  char *encoded_data = malloc(BASE64_SIZE(cmp.writer_offset));
+  encoded_data = base64_encode(encoded_data, BASE64_SIZE(cmp.writer_offset),
+  (const uint8_t *)storage, cmp.writer_offset);
+
+  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
+  xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
+  xmpp_stanza_set_name(message_stz, "message");
+  xmpp_stanza_set_attribute(message_stz, "to", "wyliodrin_test@wyliodrin.org");
+  xmpp_stanza_t *upload_stz = xmpp_stanza_new(ctx);
+  xmpp_stanza_set_name(upload_stz, "w");
+  xmpp_stanza_set_ns(upload_stz, "wyliodrin");
+  xmpp_stanza_set_attribute(upload_stz, "d", encoded_data);
+  xmpp_stanza_add_child(message_stz, upload_stz);
+  xmpp_send(conn, message_stz);
+  xmpp_stanza_release(upload_stz);
+  xmpp_stanza_release(message_stz);
+
+  free(encoded_data);
+
+  if (num_elem == 5 && done == 0) {
+    usleep(500000);
+    return read_response2(fd, offset + num_bytes_read, size, path, conn, userdata, hm);
   }
 }
 
@@ -196,8 +276,8 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     cmp_ctx_t cmp;
     char storage[STORAGESIZE];
     memcpy(storage, decoded, rc_int);
-    cmp_init(&cmp, storage, string_reader, string_writer);
-    reader_offset = 0;
+    cmp_init(&cmp, storage);
+    cmp.reader_offset = 0;
 
     /* Read action code and path */
     uint32_t array_size;
@@ -218,7 +298,7 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     }
 
     /* Send response */
-    writer_offset = 0;
+    cmp.writer_offset = 0;
 
     /* Attributes response */
     if ((action_code_t) action_code == ATTRIBUTES) {
@@ -334,9 +414,9 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     }
 
     /* Send back the stanza */
-    char *encoded_data = malloc(BASE64_SIZE(writer_offset));
-    encoded_data = base64_encode(encoded_data, BASE64_SIZE(writer_offset),
-    (const uint8_t *)storage, writer_offset);
+    char *encoded_data = malloc(BASE64_SIZE(cmp.writer_offset));
+    encoded_data = base64_encode(encoded_data, BASE64_SIZE(cmp.writer_offset),
+    (const uint8_t *)storage, cmp.writer_offset);
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
     xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
@@ -363,6 +443,168 @@ void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   else {
     werr("Upload processing without msgpack not implemented yet");
   }
+}
+
+void upload2(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
+  xmpp_conn_t *const conn, void *const userdata, hashmap_p hm)
+{
+  wlog("upload2");
+  char *path = (char *)(hashmap_get(hm, "sp"));
+  int64_t action_code = *((int64_t *)(hashmap_get(hm, "nc")));
+
+  /* Init msgpack */
+  cmp_ctx_t cmp;
+  char storage[STORAGESIZE];
+  cmp_init(&cmp, storage);
+
+  /* Attributes response */
+  if ((action_code_t) action_code == ATTRIBUTES) {
+    /* Get file stat */
+    struct stat file_stat;
+    int stat_rc = stat(path, &file_stat);
+
+    /* Set number of elements of the response array */
+    int num_elem;
+    if (stat_rc == -1) {
+      num_elem = 2;
+    } else {
+      num_elem = 4;
+    }
+
+    if (!cmp_write_map(&cmp, num_elem)) {
+      werr("cmp_write_map error: %s", cmp_strerror(&cmp));
+      return;
+    }
+
+    if (!cmp_write_str(&cmp, "p", 1)) {
+      werr("cmp_write_short: %s", cmp_strerror(&cmp));
+      return;
+    }
+    if (!cmp_write_str(&cmp, path, strlen(path))) {
+      werr("cmp_write_short: %s", cmp_strerror(&cmp));
+      return;
+    }
+
+    if (!cmp_write_str(&cmp, "c", 1)) {
+      werr("cmp_write_str: %s", cmp_strerror(&cmp));
+      return;
+    }
+    if (!cmp_write_integer(&cmp, ATTRIBUTES)) {
+      werr("cmp_write_integer: %s", cmp_strerror(&cmp));
+      return;
+    }
+
+    if (num_elem == 4) {
+      filetype_t filetype;
+      if (S_ISDIR(file_stat.st_mode)) {
+        filetype = DIRECTORY;
+      } else if (S_ISREG(file_stat.st_mode)) {
+        filetype = REGULAR;
+      } else {
+        filetype = OTHER;
+      }
+
+      if (!cmp_write_str(&cmp, "t", 1)) {
+        werr("cmp_write_str: %s", cmp_strerror(&cmp));
+        return;
+      }
+      if (!cmp_write_integer(&cmp, filetype)) {
+        werr("cmp_write_integer: %s", cmp_strerror(&cmp));
+        return;
+      }
+
+      if (!cmp_write_str(&cmp, "s", 1)) {
+        werr("cmp_write_str: %s", cmp_strerror(&cmp));
+        return;
+      }
+      if (!cmp_write_integer(&cmp, (uint64_t)(file_stat.st_size))) {
+        werr("cmp_write_integer: %s", cmp_strerror(&cmp));
+        return;
+      }
+    }
+  }
+
+  /* List response */
+  else if ((action_code_t) action_code == LIST) {
+    // DIR *d;
+    // struct dirent *dir;
+    // int num_elem;
+
+    // d = opendir(path);
+    // if (d == NULL) {
+    //   num_elem = 2;
+    // } else {
+    //   num_elem = 2;
+    //   while ((dir = readdir(d)) != NULL) {
+    //     if (strcmp(dir->d_name, ".")  == 0 ||
+    //         strcmp(dir->d_name, "..") == 0 ) {
+    //       continue;
+    //     }
+    //     num_elem++;
+    //   }
+    //   closedir(d);
+    // }
+
+    // /* Write response */
+    // if (!cmp_write_array(&cmp, num_elem)) {
+    //   werr("cmp_write_array: %s", cmp_strerror(&cmp));
+    //   return;
+    // }
+    // if (!cmp_write_integer(&cmp, LIST)) {
+    //   werr("cmp_write_short: %s", cmp_strerror(&cmp));
+    //   return;
+    // }
+    // if (!cmp_write_str(&cmp, path, path_size)) {
+    //   werr("cmp_write_short: %s", cmp_strerror(&cmp));
+    //   return;
+    // }
+    // if (num_elem > 2) {
+    //   d = opendir(path);
+    //   while ((dir = readdir(d)) != NULL) {
+    //     if (strcmp(dir->d_name, ".")  == 0 ||
+    //         strcmp(dir->d_name, "..") == 0 ) {
+    //       continue;
+    //     }
+    //     if (!cmp_write_str(&cmp, dir->d_name, strlen(dir->d_name))) {
+    //       werr("cmp_write_short: %s", cmp_strerror(&cmp));
+    //       return;
+    //     }
+    //   }
+    //   closedir(d);
+    // }
+  }
+
+  /* Read response */
+  else if ((action_code_t) action_code == READ) {
+    int fd = open(path, O_RDONLY);
+    if (fd == -1) {
+      read_response2(-1, -1, -1, path, conn, userdata, NULL);
+    } else {
+      struct stat file_stat;
+      stat(path, &file_stat);
+      read_response2(fd, 0, file_stat.st_size, path, conn, userdata, hm);
+      close(fd);
+    }
+    return;
+  }
+
+  /* Send back the stanza */
+  char *encoded_data = malloc(BASE64_SIZE(cmp.writer_offset));
+  encoded_data = base64_encode(encoded_data, BASE64_SIZE(cmp.writer_offset),
+  (const uint8_t *)storage, cmp.writer_offset);
+
+  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
+  xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
+  xmpp_stanza_set_name(message_stz, "message");
+  xmpp_stanza_set_attribute(message_stz, "to", "wyliodrin_test@wyliodrin.org");
+  xmpp_stanza_t *upload_stz = xmpp_stanza_new(ctx);
+  xmpp_stanza_set_name(upload_stz, "w");
+  xmpp_stanza_set_ns(upload_stz, "wyliodrin");
+  xmpp_stanza_set_attribute(upload_stz, "d", encoded_data);
+  xmpp_stanza_add_child(message_stz, upload_stz);
+  xmpp_send(conn, message_stz);
+  xmpp_stanza_release(upload_stz);
+  xmpp_stanza_release(message_stz);
 }
 
 #endif /* UPLOAD */

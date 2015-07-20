@@ -25,6 +25,8 @@ THE SOFTWARE.
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "cmp.h"
 
@@ -253,11 +255,39 @@ static bool write_fixed_value(cmp_ctx_t *ctx, uint8_t value) {
   return false;
 }
 
-void cmp_init(cmp_ctx_t *ctx, void *buf, cmp_reader read, cmp_writer write) {
+/*************************************************************************************************/
+static bool string_reader(cmp_ctx_t *ctx, void *data, size_t limit) {
+  if (ctx->reader_offset + limit > STORAGESIZE) {
+    fprintf(stderr, "No more space available in string_reader\n");
+    return false;
+  }
+
+  memcpy(data, ctx->buf + ctx->reader_offset, limit);
+  ctx->reader_offset += limit;
+
+  return true;
+}
+
+static size_t string_writer(cmp_ctx_t *ctx, const void *data, size_t count) {
+  if (ctx->writer_offset + count > STORAGESIZE) {
+    fprintf(stderr, "No more space available in string_writer\n");
+    return 0;
+  }
+
+  memcpy(ctx->buf + ctx->writer_offset, data, count);
+  ctx->writer_offset += count;
+
+  return count;
+}
+/*************************************************************************************************/
+
+void cmp_init(cmp_ctx_t *ctx, void *buf) {
   ctx->error = ERROR_NONE;
   ctx->buf = buf;
-  ctx->read = read;
-  ctx->write = write;
+  ctx->read = string_reader;
+  ctx->write = string_writer;
+  ctx->reader_offset = 0;
+  ctx->writer_offset = 0;
 }
 
 uint32_t cmp_version(void) {
