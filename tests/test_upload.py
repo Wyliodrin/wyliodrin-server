@@ -97,12 +97,12 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
     msg['lang'] = None
     msg['to'] = self.recipient
 
-    # f = function
+    # m = module
     # u = upload
     # c = code
     # p = path
     msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {'sf':'u', 'nc':ActionCode.ATTRIBUTES, 'sp':self.path}))
+      {'sm':'u', 'nc':ActionCode.ATTRIBUTES, 'sp':self.path}))
     msg.send()
 
 
@@ -117,27 +117,24 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
       return
 
     decoded = msgpack.unpackb(base64.b64decode(msg['w']['d']))
-    # logging.info(decoded)
 
     if decoded['c'] == ActionCode.ATTRIBUTES:
-      logging.info(decoded)
       if decoded['t'] == FileType.DIRECTORY:
         msg = self.Message()
         msg['lang'] = None
         msg['to'] = self.recipient
         msg['w']['d'] = base64.b64encode(msgpack.packb(
-          {"nc":ActionCode.LIST, "sp":self.path}))
+          {'sm':'u', "nc":ActionCode.LIST, "sp":self.path}))
         msg.send()
       elif decoded['t'] == FileType.REGULAR:
         msg = self.Message()
         msg['lang'] = None
         msg['to'] = self.recipient
         msg['w']['d'] = base64.b64encode(msgpack.packb(
-          {"nc":ActionCode.READ, "sp":self.path}))
+          {'sm':'u', "nc":ActionCode.READ, "sp":self.path}))
         msg.send()
 
     elif decoded['c'] == ActionCode.READ:
-      logging.info("READ")
       if decoded['o'] != '':
         if decoded['o'] == 0:
           f = open(decoded['p'] + "_", "w")
@@ -152,8 +149,13 @@ class TestUploadBot(sleekxmpp.ClientXMPP):
         logging.error("Not a valid file")
         self.disconnect(wait=True)
 
+    elif decoded['c'] == ActionCode.LIST:
+      logging.info(decoded['l'])
+      self.disconnect(wait=True)
+
     else:
       self.disconnect(wait=True)
+
 
 
 if __name__ == '__main__':
