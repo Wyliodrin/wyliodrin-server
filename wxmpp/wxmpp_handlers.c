@@ -32,13 +32,8 @@
   #include "../ps/ps.h"
 #endif
 
-#ifdef UPLOAD
-  void upload(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-    xmpp_conn_t *const conn, void *const userdata);
-#endif
-
-#ifdef DOWNLOAD
-  void download(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
+#ifdef USEMSGPACK
+  void msgpack_decoder(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     xmpp_conn_t *const conn, void *const userdata);
 #endif
 
@@ -73,10 +68,6 @@ int message_handler  (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
 
 /* Add the module_name and corresponding function in the modules hashmap */
 void add_module(char *module_name, module_fct f);
-
-/* MSGPACK decoder */
-void msgpack_decoder(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-  xmpp_conn_t *const conn, void *const userdata);
 
 
 
@@ -234,13 +225,9 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       #ifdef PS
         add_module("ps", ps);
       #endif
-      #ifdef UPLOAD
-        add_module("upload", upload);
+      #ifdef USEMSGPACK
+        add_module("w", msgpack_decoder);
       #endif
-      #ifdef DOWNLOAD
-        add_module("download", download);
-      #endif
-      add_module("w", msgpack_decoder);
     }
   }
 
