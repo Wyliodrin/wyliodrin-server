@@ -33,23 +33,25 @@ void hashmap_put(hashmap_p m, char* key, void* val, size_t len){
 	size_t h = hash_func(key) % m->num_buckets;
 	item_t* itm = m->buckets[h];
 	item_t* last = NULL;
-	
+
 	while(itm!=NULL){
 		if(strcmp(key, itm->key)==0){
 		if(itm->val!=NULL) m->destructor(itm->val);
-		itm->val = malloc(len);
+		itm->val = malloc(len+1);
 		memcpy(itm->val, val, len);
+		memset(itm->val + len, 0, 1);
 			return;
 		}
 		if(itm->next==NULL) last = itm;
 		itm = itm->next;
 	}
-	
+
 	itm = (item_t*)malloc(sizeof(item_t));
 	itm->key = malloc(keylen+1);
 	memcpy(itm->key, key, keylen+1);
-	itm->val = malloc(len);
+	itm->val = malloc(len+1);
 	memcpy(itm->val, val, len);
+	memset(itm->val + len, 0, 1);
 	itm->next = NULL;
 	if(last==NULL) m->buckets[h] = itm;
 	else last->next = itm;
@@ -69,16 +71,16 @@ void hashmap_remove(hashmap_p m, char* key){
 		last = itm;
 		itm = itm->next;
 	}
-	
+
 	if(itm != NULL){
 		if(last==NULL)
 			m->buckets[h] = itm->next;
 		else last->next = itm->next;
-		
+
 		free(itm->key);
 		m->destructor(itm->val);
 		free(itm);
-		
+
 		keyind = vector_index(m->keys, key, n);
 		vector_remove(m->keys, keyind);
 		m->size--;
@@ -113,8 +115,8 @@ void destroy_hashmap(hashmap_p m){
 
 void hashmap_resize(hashmap_p m, size_t num_buckets){
 	int i;
-	
-	m->buckets = (item_t **)realloc(m->buckets, 
+
+	m->buckets = (item_t **)realloc(m->buckets,
 					sizeof(item_t *) * num_buckets);
 
 	for(i=0; i < m->size; i++){
