@@ -46,8 +46,7 @@ typedef enum {
 
 
 
-static void attributes_response(char *path, xmpp_conn_t *const conn, void *const userdata,
-  hashmap_p hm)
+static void attributes_response(char *path, xmpp_conn_t *const conn, void *const userdata)
 {
   /* Init msgpack */
   cmp_ctx_t cmp;
@@ -226,7 +225,7 @@ static void list_response(char *path, xmpp_conn_t *const conn, void *const userd
 
 
 static void read_response(int fd, int offset, size_t size, char *path,
-  xmpp_conn_t *const conn, void *const userdata, hashmap_p hm)
+  xmpp_conn_t *const conn, void *const userdata)
 {
   int num_elem;
   char done = 0;
@@ -326,7 +325,7 @@ static void read_response(int fd, int offset, size_t size, char *path,
 
   if (num_elem == 5 && done == 0) {
     usleep(500000);
-    return read_response(fd, offset + num_bytes_read, size, path, conn, userdata, hm);
+    return read_response(fd, offset + num_bytes_read, size, path, conn, userdata);
   }
 }
 
@@ -338,15 +337,9 @@ void upload(const char *from, const char *to, xmpp_conn_t *const conn, void *con
   char *path = (char *)(hashmap_get(hm, "sp"));
   int64_t action_code = *((int64_t *)(hashmap_get(hm, "nc")));
 
-  /* Init msgpack */
-  cmp_ctx_t cmp;
-  char storage[STORAGESIZE];
-  cmp_init(&cmp, storage);
-
   /* Attributes response */
   if ((action_code_t) action_code == ATTRIBUTES) {
-    attributes_response(path, conn, userdata, hm);
-    return;
+    attributes_response(path, conn, userdata);
   }
 
   /* List response */
@@ -359,14 +352,18 @@ void upload(const char *from, const char *to, xmpp_conn_t *const conn, void *con
   else if ((action_code_t) action_code == READ) {
     int fd = open(path, O_RDONLY);
     if (fd == -1) {
-      read_response(-1, -1, -1, path, conn, userdata, NULL);
+      read_response(-1, -1, -1, path, conn, userdata);
     } else {
       struct stat file_stat;
       stat(path, &file_stat);
-      read_response(fd, 0, file_stat.st_size, path, conn, userdata, hm);
+      read_response(fd, 0, file_stat.st_size, path, conn, userdata);
       close(fd);
     }
     return;
+  }
+
+  else {
+    werr("Unknown action code: %ld", action_code);
   }
 }
 
