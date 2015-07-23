@@ -34,16 +34,16 @@ extern xmpp_conn_t *conn; /* Connection */
 extern const char *owner_str; /* owner_str from init.c */
 extern const char *mount_file_str; /* mount file */
 
-extern bool_t is_owner_online; /* connection checker from wxmpp_handlers.c */
+extern bool is_owner_online; /* connection checker from wxmpp_handlers.c */
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; /* mutex      */
 pthread_cond_t  cond  = PTHREAD_COND_INITIALIZER;  /* condition  */
 
 /* Condition signals */
-bool_t signal_attr = false;
-bool_t signal_list = false;
-bool_t signal_read = false;
-bool_t signal_fail = false;
+bool signal_attr = false;
+bool signal_list = false;
+bool signal_read = false;
+bool signal_fail = false;
 
 /* Filetype */
 typedef enum {
@@ -326,9 +326,9 @@ void *init_files_thread(void *a) {
   return NULL;
 }
 
-bool_t files_initialized = false;
-
 void init_files() {
+  static bool files_initialized = false;
+
   if (!files_initialized) {
     pthread_t ift; /* Init files thread */
     int rc = pthread_create(&ift, NULL, init_files_thread, NULL);

@@ -21,7 +21,7 @@
 static pthread_mutex_t logs_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char **logs;
 static unsigned int logs_size = 0;
-static bool_t are_logs_sent = false;
+static bool are_logs_sent = false;
 
 extern const char *jid_str;
 

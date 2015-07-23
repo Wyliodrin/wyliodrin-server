@@ -8,29 +8,35 @@
 #ifndef _INTERNALS_H
 #define _INTERNALS_H
 
+
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #include "../logs/logs.h"
 
-typedef enum {
-  false = 0,
-  true  = 1
-} bool_t;
 
-extern bool_t privacy;
+
+extern bool privacy;
+
+
 
 #define LOG_FILE stdout
 #define ERR_FILE stderr
 
+
 #define FALSE 0
 #define TRUE  1
+
 
 #ifdef LOG
   #define wlog(msg, ...) fprintf(LOG_FILE, "[wlog in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);
 #else
   #define wlog(msg, ...) /* Do nothing */
 #endif
+
 
 #ifdef ERR
   #define werr(msg, ...)                                                                   \
@@ -44,6 +50,7 @@ extern bool_t privacy;
   #define werr(msg, ...) /* Do nothing */
 #endif
 
+
 #ifdef ERR
   #define werr2(assertion, msg, ...)                                                       \
     do {                                                                                   \
@@ -55,6 +62,7 @@ extern bool_t privacy;
   #define werr2(assertion, msg, ...) /* Do nothing */
 #endif
 
+
 #define wfatal(assertion, msg, ...)                                                        \
   do {                                                                                     \
     if (assertion) {                                                                       \
@@ -62,6 +70,7 @@ extern bool_t privacy;
       exit(EXIT_FAILURE);                                                                  \
     }                                                                                      \
   } while (0)
+
 
 #define wsyserr(assertion, msg)                                     \
   do {                                                              \
@@ -71,5 +80,7 @@ extern bool_t privacy;
       exit(EXIT_FAILURE);                                           \
     }                                                               \
   } while (0)
+
+
 
 #endif /* _INTERNALS_H */
