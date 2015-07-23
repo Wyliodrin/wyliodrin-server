@@ -345,7 +345,6 @@ void upload(const char *from, const char *to, xmpp_conn_t *const conn, void *con
   /* List response */
   else if ((action_code_t) action_code == LIST) {
     list_response(path, conn, userdata);
-    return;
   }
 
   /* Read response */
