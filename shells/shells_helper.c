@@ -63,6 +63,16 @@ void *read_thread(void *args) {
       xmpp_stanza_release(close_stz);
       xmpp_stanza_release(message_stz);
 
+      if (shell->projectid != NULL) {
+        char projectid_path[64];
+        sprintf(projectid_path, "/tmp/wyliodrin/%s", projectid_path);
+        int remove_rc = remove(projectid_path);
+        if (remove_rc != 0) {
+          werr("WTAF");
+        }
+        free(shell->projectid);
+      }
+
       return NULL;
     }
   }

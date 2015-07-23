@@ -20,6 +20,7 @@ typedef struct {
   xmpp_conn_t *conn; /* XMPP Connection */
   xmpp_ctx_t *ctx;   /* XMPP Context */
   int close_request; /* close request */
+  char *projectid;   /* projectid in case of make shell */
 } shell_t;
 
 /* Initialize with NULL shells_vector */

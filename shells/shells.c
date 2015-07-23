@@ -7,6 +7,8 @@
 
 #ifdef SHELLS
 
+
+
 #include <strophe.h> /* Strophe XMPP stuff */
 #include <strings.h> /* strncasecmp */
 
@@ -23,6 +25,8 @@
 #include <pthread.h>
 #include <sys/wait.h>
 #include <pty.h>
+#include <sys/stat.h>  /* mkdir */
+#include <sys/types.h> /* mkdir */
 
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../wxmpp/wxmpp.h"           /* WNS */
@@ -30,21 +34,24 @@
 #include "shells.h"                   /* shells module api */
 #include "shells_helper.h"            /* read routine */
 
-extern const char *build_file_str; /* build_file_str from init.c */
+
+
+/* Variables from wtalk.c */
+extern const char *build_file_str; /* build_file_str */
 extern const char *board_str;      /* board name */
 extern const char *jid_str;        /* jid */
 extern const char *owner_str;      /* owner_str */
-
-// char *userid_signal = NULL;  /* userid  received in make user for siganls */
-// char *request_signal = NULL; /* request received in make user for siganls */
 
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
 pthread_mutex_t shells_lock; /* shells mutex */
 
-bool_t shells_initialized = false;
+void init_shells()
+{
+  static bool shells_initialized = false;
 
-void init_shells() {
+  mkdir("/tmp/wyliodrin", 0700);
+
   if (!shells_initialized) {
     uint32_t i;
 
@@ -140,21 +147,37 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     return;
   }
 
-  /* Get an entry in shells_vector */
   uint32_t shell_index; /* shell_t index in shells_vector */
 
-  pthread_mutex_lock(&shells_lock);
-  for (shell_index = 0; shell_index < MAX_SHELLS; shell_index++) {
-    if (shells_vector[shell_index] == NULL) {
-      break;
+  bool projectid_running = false;
+  char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
+  if (projectid_attr != NULL) {
+    /* A make shell must be opened */
+    char projectid_filepath[64];
+    sprintf(projectid_filepath, "/tmp/wyliodrin/%s", projectid_attr);
+    int projectid_fd = open(projectid_filepath, O_RDWR);
+    if (projectid_fd != -1) {
+      read(projectid_fd, &shell_index, sizeof(uint32_t));
+      wlog("shell_index = %u", shell_index);
+      projectid_running = true;
     }
   }
-  pthread_mutex_unlock(&shells_lock);
 
-  if (shell_index == MAX_SHELLS) {
-    werr("No shells left");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-    return;
+  /* Get an entry in shells_vector */
+  if (projectid_running == false) {
+    pthread_mutex_lock(&shells_lock);
+    for (shell_index = 0; shell_index < MAX_SHELLS; shell_index++) {
+      if (shells_vector[shell_index] == NULL) {
+        break;
+      }
+    }
+    pthread_mutex_unlock(&shells_lock);
+
+    if (shell_index == MAX_SHELLS) {
+      werr("No shells left");
+      send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+      return;
+    }
   }
 
   /* Open screen in new pseudoterminal */
@@ -169,38 +192,9 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     return;
   }
 
-  if (pid != 0) { /* Parent in forkpty */
-    pthread_mutex_lock(&shells_lock);
-    shells_vector[shell_index]                = (shell_t *)malloc(sizeof(shell_t));
-    shells_vector[shell_index]->pid           = pid;
-    shells_vector[shell_index]->id            = shell_index;
-    shells_vector[shell_index]->request_id    = request;
-    shells_vector[shell_index]->fdm           = fdm;
-    shells_vector[shell_index]->conn          = conn;
-    shells_vector[shell_index]->ctx           = (xmpp_ctx_t *)userdata;
-    shells_vector[shell_index]->close_request = -1;
-    pthread_mutex_unlock(&shells_lock);
-
-    /* Create new thread for read routine */
-    pthread_t rt; /* Read thread */
-    int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]); /* Read rc */
-    if (rc < 0) {
-      werr("SYSERR pthread_create");
-      perror("pthread_create");
-      send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-      return;
-    }
-    pthread_detach(rt);
-
-    send_shells_open_response(stanza, conn, userdata, TRUE, shell_index);
-
-    wlog("Return success from shells_open");
-    return;
-  }
-
-  else { /* Child */
-    /* Check if a make shell must be open */
-    char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
+  if (pid == 0) { /* Child */
+     /* Child */
+    /* A make shell must be opened */
     if (projectid_attr != NULL) {
       char *userid_attr = xmpp_stanza_get_attribute(stanza, "userid");
       char cd_path[256];
@@ -239,7 +233,10 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       #endif
 
       execvpe(make_run[0], make_run, env);
-    } else {
+    }
+
+    /* A normal shell must be opened */
+    else {
       char shell_name[256];
       sprintf(shell_name, "shell%d", shell_index);
       char *args[] = {"bash", NULL};
@@ -255,6 +252,40 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     }
     return;
   }
+
+  /* Parent in forkpty */
+  if (projectid_running == false) {
+    pthread_mutex_lock(&shells_lock);
+    shells_vector[shell_index]                = (shell_t *)malloc(sizeof(shell_t));
+    shells_vector[shell_index]->pid           = pid;
+    shells_vector[shell_index]->id            = shell_index;
+    shells_vector[shell_index]->request_id    = request;
+    shells_vector[shell_index]->fdm           = fdm;
+    shells_vector[shell_index]->conn          = conn;
+    shells_vector[shell_index]->ctx           = (xmpp_ctx_t *)userdata;
+    shells_vector[shell_index]->close_request = -1;
+    if (projectid_attr != NULL) {
+      shells_vector[shell_index]->projectid   = strdup(projectid_attr);
+    } else {
+      shells_vector[shell_index]->projectid   = NULL;
+    }
+    pthread_mutex_unlock(&shells_lock);
+  }
+
+  /* Create new thread for read routine */
+  pthread_t rt; /* Read thread */
+  int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]); /* Read rc */
+  if (rc < 0) {
+    werr("SYSERR pthread_create");
+    perror("pthread_create");
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    return;
+  }
+  pthread_detach(rt);
+
+  send_shells_open_response(stanza, conn, userdata, TRUE, shell_index);
+
+  wlog("Return success from shells_open");
 }
 
 void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
