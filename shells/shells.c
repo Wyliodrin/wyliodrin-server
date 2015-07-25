@@ -282,18 +282,18 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       shells_vector[shell_index]->projectid   = NULL;
     }
     pthread_mutex_unlock(&shells_lock);
-  }
 
-  /* Create new thread for read routine */
-  pthread_t rt; /* Read thread */
-  int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]); /* Read rc */
-  if (rc < 0) {
-    werr("SYSERR pthread_create");
-    perror("pthread_create");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
-    return;
+    /* Create new thread for read routine */
+    pthread_t rt; /* Read thread */
+    int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]); /* Read rc */
+    if (rc < 0) {
+      werr("SYSERR pthread_create");
+      perror("pthread_create");
+      send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
+      return;
+    }
+    pthread_detach(rt);
   }
-  pthread_detach(rt);
 
   send_shells_open_response(stanza, conn, userdata, TRUE, shell_index, projectid_running);
 
@@ -522,6 +522,8 @@ void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const u
     xmpp_stanza_set_attribute(status_stz, "action", "status");
     xmpp_stanza_set_attribute(status_stz, "request",
       (const char *)xmpp_stanza_get_attribute(stanza, "request"));
+    xmpp_stanza_set_attribute(status_stz, "projectid",
+      (const char *)xmpp_stanza_get_attribute(stanza, "projectid"));
     xmpp_stanza_set_attribute(status_stz, "running",
       open(projectid_filepath, O_RDWR) != -1 ? "true" : "false");
 
