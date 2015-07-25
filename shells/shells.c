@@ -522,6 +522,8 @@ void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const u
     xmpp_stanza_set_attribute(status_stz, "action", "status");
     xmpp_stanza_set_attribute(status_stz, "request",
       (const char *)xmpp_stanza_get_attribute(stanza, "request"));
+    xmpp_stanza_set_attribute(status_stz, "projectid",
+      (const char *)xmpp_stanza_get_attribute(stanza, "projectid"));
     xmpp_stanza_set_attribute(status_stz, "running",
       open(projectid_filepath, O_RDWR) != -1 ? "true" : "false");
 
