@@ -28,6 +28,8 @@
 
 extern const char *owner_str; /* owner_str from init.c */
 
+static pthread_mutex_t projectid_lock; /* shells mutex */
+
 void *read_thread(void *args) {
   shell_t *shell = (shell_t *)args;
   int fdm = shell->fdm;
@@ -63,15 +65,20 @@ void *read_thread(void *args) {
       xmpp_stanza_release(close_stz);
       xmpp_stanza_release(message_stz);
 
+      pthread_mutex_lock(&projectid_lock);
       if (shell->projectid != NULL) {
         char projectid_path[64];
-        sprintf(projectid_path, "/tmp/wyliodrin/%s", projectid_path);
+        sprintf(projectid_path, "/tmp/wyliodrin/%s", shell->projectid);
+        free(shell->projectid);
+        shell->projectid = NULL;
+
         int remove_rc = remove(projectid_path);
         if (remove_rc != 0) {
           werr("WTAF");
+          perror("remove");
         }
-        free(shell->projectid);
       }
+      pthread_mutex_unlock(&projectid_lock);
 
       return NULL;
     }

@@ -35,7 +35,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
 /* Send shells open response */
 void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
-    void *const userdata, int8_t success, int8_t id);
+    void *const userdata, int8_t success, int8_t id, bool running);
 
 /* Close shell */
 void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
@@ -49,6 +49,9 @@ void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
 
 /* List */
 void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
+
+/* Status */
+void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 
 #endif /* SHELLS */
 
