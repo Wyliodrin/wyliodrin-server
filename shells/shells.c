@@ -282,18 +282,18 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       shells_vector[shell_index]->projectid   = NULL;
     }
     pthread_mutex_unlock(&shells_lock);
-  }
 
-  /* Create new thread for read routine */
-  pthread_t rt; /* Read thread */
-  int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]); /* Read rc */
-  if (rc < 0) {
-    werr("SYSERR pthread_create");
-    perror("pthread_create");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
-    return;
+    /* Create new thread for read routine */
+    pthread_t rt; /* Read thread */
+    int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]); /* Read rc */
+    if (rc < 0) {
+      werr("SYSERR pthread_create");
+      perror("pthread_create");
+      send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
+      return;
+    }
+    pthread_detach(rt);
   }
-  pthread_detach(rt);
 
   send_shells_open_response(stanza, conn, userdata, TRUE, shell_index, projectid_running);
 
