@@ -11,7 +11,7 @@ The communication protocol for the shells module is done via the
     <shells xmlns="wyliodrin" gadgetid=<jid> request=<id> action=<action>/>
   </message>
 
-The ``action`` attribute can be ``open``, ``keys`` or ``close``.
+The ``action`` attribute can be ``open``, ``keys``, ``close`` or ``status``.
 
 
 Open
@@ -37,6 +37,10 @@ Response stanza when a new shell could not be opened:
   <message to=<owner>>
     <shells xmlns="wyliodrin" request=<id> action="open" response="error"/>
   </message>
+
+When a the ``projectid`` atribute is provided in the ``open`` request``, the response
+will contain the ``running`` attribute with value of ``"true"`` or ``"false"``,
+corresponsing to the project state.
 
 
 
@@ -87,3 +91,18 @@ Response of ``close`` request or death of shell:
 .. note::
   The ``request`` attribute is needed only when a ``close`` request has been
   received for that shell.
+
+
+Status
+======
+Example of ``status`` request:
+::
+  <message to=<jid> from=<owner>>
+    <shells xmlns="wyliodrin" gadgetid="<jid>" request="<id>" action="status" projectid="<projectid>"/>
+  </message>
+
+Response of ``close`` request or death of shell:
+::
+  <message to=<owner>>
+    <shells xmlns="wyliodrin" action="status" request="<id>" projectid="<projectid>" "running"="<boolean>"/>
+  </message>
