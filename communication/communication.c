@@ -33,7 +33,7 @@ extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
 extern const char *jid_str;
 
-static bool_t is_connetion_in_progress = false;
+static bool is_connetion_in_progress = false;
 
 #ifdef USEMSGPACK
   #include <stdbool.h>

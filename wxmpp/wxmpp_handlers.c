@@ -34,17 +34,17 @@
 
 
 
-bool_t is_owner_online = false;
+bool is_owner_online = false;
 
 hashmap_p modules = NULL; /* modules hashmap */
 
 /* Variables from files/files.c used for files synchronization */
 extern pthread_mutex_t mutex;
 extern pthread_cond_t  cond;
-extern bool_t signal_attr;
-extern bool_t signal_list;
-extern bool_t signal_read;
-extern bool_t signal_fail;
+extern bool signal_attr;
+extern bool signal_list;
+extern bool signal_read;
+extern bool signal_fail;
 
 extern const char *owner_str; /* from wtalk.c */
 

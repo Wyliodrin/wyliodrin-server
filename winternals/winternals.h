@@ -10,15 +10,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #include "../logs/logs.h"
 
-typedef enum {
-  false = 0,
-  true  = 1
-} bool_t;
-
-extern bool_t privacy;
+extern bool privacy;
 
 #define LOG_FILE stdout
 #define ERR_FILE stderr

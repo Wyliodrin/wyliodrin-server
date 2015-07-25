@@ -34,7 +34,7 @@ const char *mount_file_str; /* mount file  */
 const char *build_file_str; /* build file  */
 const char *board_str;      /* board name  */
 
-bool_t privacy = false;
+bool privacy = false;
 
 
 
