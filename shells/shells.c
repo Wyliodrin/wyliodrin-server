@@ -7,6 +7,8 @@
 
 #ifdef SHELLS
 
+
+
 #include <strophe.h> /* Strophe XMPP stuff */
 #include <strings.h> /* strncasecmp */
 
@@ -23,6 +25,8 @@
 #include <pthread.h>
 #include <sys/wait.h>
 #include <pty.h>
+#include <sys/stat.h>  /* mkdir */
+#include <sys/types.h> /* mkdir */
 
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../wxmpp/wxmpp.h"           /* WNS */
@@ -30,21 +34,24 @@
 #include "shells.h"                   /* shells module api */
 #include "shells_helper.h"            /* read routine */
 
-extern const char *build_file_str; /* build_file_str from init.c */
+
+
+/* Variables from wtalk.c */
+extern const char *build_file_str; /* build_file_str */
 extern const char *board_str;      /* board name */
 extern const char *jid_str;        /* jid */
 extern const char *owner_str;      /* owner_str */
-
-// char *userid_signal = NULL;  /* userid  received in make user for siganls */
-// char *request_signal = NULL; /* request received in make user for siganls */
 
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
 pthread_mutex_t shells_lock; /* shells mutex */
 
-bool_t shells_initialized = false;
+void init_shells()
+{
+  static bool shells_initialized = false;
 
-void init_shells() {
+  mkdir("/tmp/wyliodrin", 0700);
+
   if (!shells_initialized) {
     uint32_t i;
 
@@ -76,6 +83,8 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     shells_keys(stanza, conn, userdata);
   } else if(strncasecmp(action_attr, "list", 4) == 0) {
     shells_list(stanza, conn, userdata);
+  } else if(strncasecmp(action_attr, "status", 6) == 0) {
+    shells_status(stanza, conn, userdata);
   } else {
     werr("Unknown action attribute: %s", action_attr);
   }
@@ -92,13 +101,13 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   char *request_attr = xmpp_stanza_get_attribute(stanza, "request"); /* request attribute */
   if(request_attr == NULL) {
     werr("Error while getting request attribute");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
     return;
   }
   long int request = strtol(request_attr, &endptr, 10); /* request value */
   if (*endptr != '\0') {
     werr("strtol error: str = %s, val = %ld", request_attr, request);
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
     return;
   }
 
@@ -106,18 +115,18 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   char *w_attr = xmpp_stanza_get_attribute(stanza, "width"); /* width attribute */
   if (w_attr == NULL) {
     werr("Error while getting width attribute");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
     return;
   }
   long int w = strtol(w_attr, &endptr, 10); /* width value */
   if (*endptr != '\0') {
     werr("strtol error: str = %s, val = %ld", w_attr, w);
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
     return;
   }
   if (w == 0) {
     werr("width is 0");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
     return;
   }
 
@@ -125,51 +134,139 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   char *h_attr = xmpp_stanza_get_attribute(stanza, "height"); /* height attribute */
   if (h_attr == NULL) {
     werr("Error while getting height attribute");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
     return;
   }
   long int h = strtol(h_attr, &endptr, 10); /* height value */
   if (*endptr != '\0') {
     werr("strtol error: str = %s, val = %ld", h_attr, h);
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
     return;
   }
   if (h == 0) {
     werr("height is 0");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
     return;
+  }
+
+  uint32_t shell_index; /* shell_t index in shells_vector */
+
+  bool projectid_running = false;
+  char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
+  char projectid_filepath[64];
+  if (projectid_attr != NULL) {
+    /* A make shell must be opened */
+    sprintf(projectid_filepath, "/tmp/wyliodrin/%s", projectid_attr);
+    int projectid_fd = open(projectid_filepath, O_RDWR);
+    if (projectid_fd != -1) {
+      read(projectid_fd, &shell_index, sizeof(uint32_t));
+      wlog("shell_index = %u", shell_index);
+      projectid_running = true;
+    }
   }
 
   /* Get an entry in shells_vector */
-  uint32_t shell_index; /* shell_t index in shells_vector */
-
-  pthread_mutex_lock(&shells_lock);
-  for (shell_index = 0; shell_index < MAX_SHELLS; shell_index++) {
-    if (shells_vector[shell_index] == NULL) {
-      break;
+  if (projectid_running == false) {
+    pthread_mutex_lock(&shells_lock);
+    for (shell_index = 0; shell_index < MAX_SHELLS; shell_index++) {
+      if (shells_vector[shell_index] == NULL) {
+        break;
+      }
     }
-  }
-  pthread_mutex_unlock(&shells_lock);
+    pthread_mutex_unlock(&shells_lock);
 
-  if (shell_index == MAX_SHELLS) {
-    werr("No shells left");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-    return;
+    if (shell_index == MAX_SHELLS) {
+      werr("No shells left");
+      send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
+      return;
+    }
   }
 
   /* Open screen in new pseudoterminal */
   int fdm;                                  /* Master part of PTY */
   struct winsize ws = {h, w, 0, 0};         /* Window size */
-  int pid = forkpty(&fdm, NULL, NULL, &ws); /* pid of parent from forkpty */
+  int pid;
 
-  if (pid == -1) { /* Error in forkpty */
-    werr("SYSERR forkpty");
-    perror("forkpty");
-    send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-    return;
+  if ((projectid_attr == NULL) ||
+      (projectid_attr != NULL && projectid_running == false)) {
+    pid = forkpty(&fdm, NULL, NULL, &ws); /* pid of parent from forkpty */
+
+    if (pid == -1) { /* Error in forkpty */
+      werr("SYSERR forkpty");
+      perror("forkpty");
+      send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
+      return;
+    }
+
+    if (pid == 0) { /* Child */
+       /* Child */
+      /* A make shell must be opened */
+      if (projectid_attr != NULL) {
+
+        int projectid_fd = open(projectid_filepath, O_CREAT | O_RDWR, 0600);
+        wsyserr(projectid_fd == -1, "open projectid_filepath");
+        write(projectid_fd, &shell_index, sizeof(uint32_t));
+
+        char *userid_attr = xmpp_stanza_get_attribute(stanza, "userid");
+        char cd_path[256];
+        sprintf(cd_path, "%s/%s", build_file_str, projectid_attr);
+        int rc = chdir(cd_path);
+        wsyserr(rc == -1, "chdir");
+
+        char makefile_name[50];
+        sprintf(makefile_name, "Makefile.%s", board_str);
+
+        char *make_run[] = {"make", "-f", makefile_name, "run", NULL};
+
+        char wyliodrin_project_env[64];
+        sprintf(wyliodrin_project_env,"wyliodrin_project=%s", projectid_attr);
+
+        char wyliodrin_userid_env[64];
+        sprintf(wyliodrin_userid_env,"wyliodrin_userid=%s", userid_attr);
+
+        char wyliodrin_session_env[64];
+        sprintf(wyliodrin_session_env,"wyliodrin_session=%s", request_attr);
+
+        char wyliodrin_board_env[64];
+        sprintf(wyliodrin_board_env, "wyliodrin_board=%s", board_str);
+
+        char wyliodrin_jid_env[64];
+        sprintf(wyliodrin_jid_env, "wyliodrin_jid=%s", jid_str);
+
+        #ifdef USEMSGPACK
+          char wyliodrin_usemsgpack_env[64];
+          sprintf(wyliodrin_usemsgpack_env, "wyliodrin_usemsgpack=1");
+          char *env[] = {wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
+            wyliodrin_board_env, wyliodrin_jid_env, wyliodrin_usemsgpack_env, NULL};
+        #else
+          char *env[] = {wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
+            wyliodrin_board_env, wyliodrin_jid_env, NULL};
+        #endif
+
+        execvpe(make_run[0], make_run, env);
+      }
+
+      /* A normal shell must be opened */
+      else {
+        char shell_name[256];
+        sprintf(shell_name, "shell%d", shell_index);
+        char *args[] = {"bash", NULL};
+
+        char wyliodrin_board_env [50];
+        sprintf(wyliodrin_board_env, "wyliodrin_board=%s",board_str);
+
+        char *env[] = {wyliodrin_board_env, NULL};
+        execvpe(args[0], args, env);
+
+        werr("bash failed");
+        exit(EXIT_FAILURE);
+      }
+      return;
+    }
   }
 
-  if (pid != 0) { /* Parent in forkpty */
+  /* Parent in forkpty */
+  if (projectid_running == false) {
     pthread_mutex_lock(&shells_lock);
     shells_vector[shell_index]                = (shell_t *)malloc(sizeof(shell_t));
     shells_vector[shell_index]->pid           = pid;
@@ -179,86 +276,32 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     shells_vector[shell_index]->conn          = conn;
     shells_vector[shell_index]->ctx           = (xmpp_ctx_t *)userdata;
     shells_vector[shell_index]->close_request = -1;
-    pthread_mutex_unlock(&shells_lock);
-
-    /* Create new thread for read routine */
-    pthread_t rt; /* Read thread */
-    int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]); /* Read rc */
-    if (rc < 0) {
-      werr("SYSERR pthread_create");
-      perror("pthread_create");
-      send_shells_open_response(stanza, conn, userdata, FALSE, -1);
-      return;
-    }
-    pthread_detach(rt);
-
-    send_shells_open_response(stanza, conn, userdata, TRUE, shell_index);
-
-    wlog("Return success from shells_open");
-    return;
-  }
-
-  else { /* Child */
-    /* Check if a make shell must be open */
-    char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
     if (projectid_attr != NULL) {
-      char *userid_attr = xmpp_stanza_get_attribute(stanza, "userid");
-      char cd_path[256];
-      sprintf(cd_path, "%s/%s", build_file_str, projectid_attr);
-      int rc = chdir(cd_path);
-      wsyserr(rc == -1, "chdir");
-
-      char makefile_name[50];
-      sprintf(makefile_name, "Makefile.%s", board_str);
-
-      char *make_run[] = {"make", "-f", makefile_name, "run", NULL};
-
-      char wyliodrin_project_env[64];
-      sprintf(wyliodrin_project_env,"wyliodrin_project=%s", projectid_attr);
-
-      char wyliodrin_userid_env[64];
-      sprintf(wyliodrin_userid_env,"wyliodrin_userid=%s", userid_attr);
-
-      char wyliodrin_session_env[64];
-      sprintf(wyliodrin_session_env,"wyliodrin_session=%s", request_attr);
-
-      char wyliodrin_board_env[64];
-      sprintf(wyliodrin_board_env, "wyliodrin_board=%s", board_str);
-
-      char wyliodrin_jid_env[64];
-      sprintf(wyliodrin_jid_env, "wyliodrin_jid=%s", jid_str);
-
-      #ifdef USEMSGPACK
-        char wyliodrin_usemsgpack_env[64];
-        sprintf(wyliodrin_usemsgpack_env, "wyliodrin_usemsgpack=1");
-        char *env[] = {wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
-          wyliodrin_board_env, wyliodrin_jid_env, wyliodrin_usemsgpack_env, NULL};
-      #else
-        char *env[] = {wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
-          wyliodrin_board_env, wyliodrin_jid_env, NULL};
-      #endif
-
-      execvpe(make_run[0], make_run, env);
+      shells_vector[shell_index]->projectid   = strdup(projectid_attr);
     } else {
-      char shell_name[256];
-      sprintf(shell_name, "shell%d", shell_index);
-      char *args[] = {"bash", NULL};
-
-      char wyliodrin_board_env [50];
-      sprintf(wyliodrin_board_env, "wyliodrin_board=%s",board_str);
-
-      char *env[] = {wyliodrin_board_env, NULL};
-      execvpe(args[0], args, env);
-
-      werr("bash failed");
-      exit(EXIT_FAILURE);
+      shells_vector[shell_index]->projectid   = NULL;
     }
+    pthread_mutex_unlock(&shells_lock);
+  }
+
+  /* Create new thread for read routine */
+  pthread_t rt; /* Read thread */
+  int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]); /* Read rc */
+  if (rc < 0) {
+    werr("SYSERR pthread_create");
+    perror("pthread_create");
+    send_shells_open_response(stanza, conn, userdata, FALSE, -1, false);
     return;
   }
+  pthread_detach(rt);
+
+  send_shells_open_response(stanza, conn, userdata, TRUE, shell_index, projectid_running);
+
+  wlog("Return success from shells_open");
 }
 
 void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
-    void *const userdata, int8_t success, int8_t id) {
+    void *const userdata, int8_t success, int8_t id, bool running) {
 
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
@@ -278,6 +321,7 @@ void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
   }
   xmpp_stanza_set_attribute(done, "request",
     (const char *)xmpp_stanza_get_attribute(stanza, "request"));
+  xmpp_stanza_set_attribute(done, "running", running ? "true" : "false");
   xmpp_stanza_add_child(message, done);
   xmpp_send(conn, message);
   xmpp_stanza_release(done);
@@ -457,6 +501,37 @@ void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   xmpp_stanza_release(message);
 
   wlog("Return from shell_list");
+}
+
+void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
+  char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid");
+
+  if (projectid_attr != NULL) {
+    char projectid_filepath[64];
+    sprintf(projectid_filepath, "/tmp/wyliodrin/%s", projectid_attr);
+
+    xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+
+    xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message with close */
+    xmpp_stanza_set_name(message_stz, "message");
+    xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+
+    xmpp_stanza_t *status_stz = xmpp_stanza_new(ctx); /* status stanza */
+    xmpp_stanza_set_name(status_stz, "shells");
+    xmpp_stanza_set_ns(status_stz, WNS);
+    xmpp_stanza_set_attribute(status_stz, "action", "status");
+    xmpp_stanza_set_attribute(status_stz, "request",
+      (const char *)xmpp_stanza_get_attribute(stanza, "request"));
+    xmpp_stanza_set_attribute(status_stz, "running",
+      open(projectid_filepath, O_RDWR) != -1 ? "true" : "false");
+
+    xmpp_stanza_add_child(message_stz, status_stz);
+    xmpp_send(conn, message_stz);
+    xmpp_stanza_release(status_stz);
+    xmpp_stanza_release(message_stz);
+  } else {
+    werr("No projectid attribute in status");
+  }
 }
 
 #endif /* SHELLS */
