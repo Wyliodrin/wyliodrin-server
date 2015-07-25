@@ -10,6 +10,8 @@
 
 #ifdef SHELLS
 
+#include "../libds/ds.h"              /* hashmaps        */
+
 #define MAX_SHELLS 256 /* Maximum number of shells */
 
 typedef struct {
@@ -26,16 +28,12 @@ typedef struct {
 /* Initialize with NULL shells_vector */
 void init_shells();
 
-/* Parse shells commands */
-void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-            xmpp_conn_t *const conn, void *const userdata);
-
 /* Open shell */
-void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
+void shells_open(xmpp_conn_t *const conn, void *const userdata, hashmap_p hm);
 
 /* Send shells open response */
-void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
-    void *const userdata, int8_t success, int8_t id, bool running);
+void send_shells_open_response(xmpp_conn_t *const conn, void *const userdata, int request_id,
+  bool success, int shell_id, bool is_project, bool is_work_in_progress);
 
 /* Close shell */
 void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);

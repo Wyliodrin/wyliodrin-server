@@ -31,20 +31,23 @@
     hashmap_p hm);
 #endif
 
+#ifdef SHELLS
+  void shells(xmpp_conn_t *const conn, void *const userdata, hashmap_p hm);
+#endif
+
 
 
 void msgpack_decoder(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   xmpp_conn_t *const conn, void *const userdata)
 {
-  wlog("msgpack_decoder");
+  wlog("msgpack_decoder()");
+
   /* Get msgpack data from d attribute */
   char *d_attr = xmpp_stanza_get_attribute(stanza, "d");
   if (d_attr == NULL) {
     werr("No attribute named d in w stanza");
     return;
   }
-
-  wlog("msgpack_decoder1");
 
   /* Decode msgpack data */
   int dec_size = strlen(d_attr) * 3 / 4 + 1;
@@ -55,8 +58,6 @@ void msgpack_decoder(const char *from, const char *to, int error, xmpp_stanza_t 
     return;
   }
 
-  wlog("msgpack_decoder2");
-
   /* Init msgpack */
   cmp_ctx_t cmp;
   char storage[STORAGESIZE];
@@ -65,8 +66,6 @@ void msgpack_decoder(const char *from, const char *to, int error, xmpp_stanza_t 
   memcpy(storage, decoded, dec_size);
   cmp_init(&cmp, storage);
 
-  wlog("msgpack_decoder3");
-
   /* Read dictionary size */
   uint32_t map_size;
   if (!cmp_read_map(&cmp, &map_size)) {
@@ -74,12 +73,8 @@ void msgpack_decoder(const char *from, const char *to, int error, xmpp_stanza_t 
     return;
   }
 
-  wlog("msgpack_decoder4");
-
   /* Init hashmap */
   hashmap_p hm = create_hashmap();
-
-  wlog("msgpack_decoder5");
 
   /* Read dictionary keys and values */
   int i;
@@ -129,25 +124,25 @@ void msgpack_decoder(const char *from, const char *to, int error, xmpp_stanza_t 
     }
   }
 
-  wlog("msgpack_decoder6");
-
   char *module_name = (char *)hashmap_get(hm, "sm");
-  if (module_name != NULL)
-  wlog("module_name = %s\n\n\n", module_name);
-  if (strcmp(module_name, "u") == 0) {
-    #ifdef UPLOAD
-      upload(from, to, conn, userdata, hm);
-    #endif
+  if (module_name != NULL) {
+    if (strcmp(module_name, "u") == 0) {
+      #ifdef UPLOAD
+        upload(from, to, conn, userdata, hm);
+      #endif
+    } else if (strcmp(module_name, "s") == 0) {
+      #ifdef UPLOAD
+        shells(conn, userdata, hm);
+      #endif
+    } else {
+      werr("Unknown module: %s", module_name);
+    }
   } else {
-    werr("Unknown module: %s", module_name);
+    werr("No sm key in msgpack data");
   }
-
-  wlog("msgpack_decoder7");
 
   clean:
     destroy_hashmap(hm);
-
-  wlog("msgpack_decoder8");
 }
 
 #endif /* USEMSGPACK */

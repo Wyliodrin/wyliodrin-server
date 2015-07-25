@@ -12,10 +12,6 @@
 #include "../libds/ds.h"              /* modules hashmap    */
 #include "wxmpp.h"                    /* module_fct and WNS */
 
-#ifdef SHELLS
-  #include "../shells/shells.h"
-#endif
-
 #ifdef FILES
   #include "../files/files.h"
 #endif
@@ -207,7 +203,6 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
 
       /* Init modules */
       #ifdef SHELLS
-        add_module("shells", shells);
         init_shells();
       #endif
       #ifdef FILES
