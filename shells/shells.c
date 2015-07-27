@@ -16,7 +16,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <termios.h>
 #include <sys/select.h>
@@ -27,6 +26,9 @@
 #include <pty.h>
 #include <sys/stat.h>  /* mkdir */
 #include <sys/types.h> /* mkdir */
+
+#define _GNU_SOURCE
+#include <unistd.h>
 
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../wxmpp/wxmpp.h"           /* WNS */

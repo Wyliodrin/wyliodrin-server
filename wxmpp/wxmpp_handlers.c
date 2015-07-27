@@ -13,6 +13,10 @@
 #include "wxmpp.h"                    /* module_fct and WNS */
 
 #ifdef FILES
+  #include "../shells/shells.h"
+#endif
+
+#ifdef FILES
   #include "../files/files.h"
 #endif
 
@@ -48,6 +52,7 @@ extern bool signal_read;
 extern bool signal_fail;
 
 extern const char *owner_str; /* from wtalk.c */
+extern const char *board_str; /* from wtalk.c */
 
 
 
@@ -207,7 +212,9 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       #endif
       #ifdef FILES
         add_module("files", files);
-        init_files();
+        if (strcmp(board_str, "server") != 0) {
+          init_files();
+        }
       #endif
       #ifdef MAKE
         add_module("make", make);

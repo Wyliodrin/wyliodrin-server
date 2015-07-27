@@ -5,6 +5,7 @@
  * Date last modified: July 2015
  *************************************************************************************************/
 
+#include <string.h>                   /* strcmp */
 #include <unistd.h>                   /* usleep */
 
 #include "../winternals/winternals.h" /* logs and errs */
@@ -15,6 +16,8 @@
 /* These variables must be set to NULL whenever there is not a connection to the XMPP server */
 xmpp_ctx_t *ctx = NULL;   /* XMPP context    */
 xmpp_conn_t *conn = NULL; /* XMPP connection */
+
+extern char *board_str;   /* board name from wtalk.c */
 
 
 
@@ -82,6 +85,8 @@ void xmpp_connect(const char *jid, const char *pass) {
   conn = NULL;
 
   /* Retry to connect */
-  usleep(1000000);
-  return xmpp_connect(jid, pass);
+  if (strcmp(board_str, "server") != 0) {
+    usleep(1000000);
+    return xmpp_connect(jid, pass);
+  }
 }
