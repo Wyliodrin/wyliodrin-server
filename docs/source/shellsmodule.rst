@@ -85,7 +85,7 @@ Example of ``close`` request:
 Response of ``close`` request or death of shell:
 ::
   <message to=<owner>>
-    <shells xmlns="wyliodrin" action="close" shellid=<shellid> code=<exit_code> request=<id>/>
+    <shells xmlns="wyliodrin" action="close" shellid=<shellid> code=<exit_code> request=<id> background="true/false"/>
   </message>
 
 .. note::
