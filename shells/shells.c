@@ -369,26 +369,28 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
   pthread_mutex_unlock(&shells_lock);
 
   /* Detach from screen session */
-  int pid = fork();
+  if (xmpp_stanza_get_attribute(stanza, "background") != NULL) {
+    int pid = fork();
 
-  /* Return if fork failed */
-  if (pid == -1) {
-    werr("SYSERR fork");
-    perror("fork");
-    return;
+    /* Return if fork failed */
+    if (pid == -1) {
+      werr("SYSERR fork");
+      perror("fork");
+      return;
+    }
+
+    /* Child from fork */
+    if (pid == 0) {
+      char screen_quit_cmd[256];
+      // sprintf(screen_quit_cmd, "screen -S shell%ld -X quit", shellid);
+      sprintf(screen_quit_cmd, "kill -9 %d", shells_vector[shellid]->pid);
+      system(screen_quit_cmd);
+      waitpid(shells_vector[shellid]->pid, NULL, 0);
+      exit(EXIT_SUCCESS);
+    }
+    waitpid(pid, NULL, 0);
   }
 
-  /* Child from fork */
-  if (pid == 0) {
-    char screen_quit_cmd[256];
-    // sprintf(screen_quit_cmd, "screen -S shell%ld -X quit", shellid);
-    sprintf(screen_quit_cmd, "kill -9 %d", shells_vector[shellid]->pid);
-    system(screen_quit_cmd);
-    waitpid(shells_vector[shellid]->pid, NULL, 0);
-    exit(EXIT_SUCCESS);
-  }
-
-  waitpid(pid, NULL, 0);
   wlog("Return from shells_close");
 }
 
