@@ -38,6 +38,7 @@ typedef struct {
   void *userdata;
   char *projectid_attr;
   char *request_attr;
+  char *address_attr;
   int fd;
 } thread_arg;
 
@@ -70,7 +71,7 @@ void *out_read_thread(void *args) {
       xmpp_stanza_set_attribute(make_stz, "source", "stdout");
 
       char *encoded_data = (char *)malloc(BASE64_SIZE(rc));
-      encoded_data = base64_encode(encoded_data, BASE64_SIZE(rc), 
+      encoded_data = base64_encode(encoded_data, BASE64_SIZE(rc),
         (const unsigned char *)buf, rc);
 
       xmpp_stanza_t *data_stz = xmpp_stanza_new(ctx); /* make stanza */
@@ -117,7 +118,7 @@ void *err_read_thread(void *args) {
       xmpp_stanza_set_attribute(make_stz, "source", "stderr");
 
       char *encoded_data = (char *)malloc(BASE64_SIZE(rc));
-      encoded_data = base64_encode(encoded_data, BASE64_SIZE(rc), 
+      encoded_data = base64_encode(encoded_data, BASE64_SIZE(rc),
         (const unsigned char *)buf, rc);
 
       xmpp_stanza_t *data_stz = xmpp_stanza_new(ctx); /* make stanza */
@@ -237,11 +238,23 @@ void *fork_thread(void *args) {
 
   if (pid == 0) {
     char cmd[1024];
-    sprintf(cmd, "rm -rf %s/%s && cp -r %s/%s %s && cd %s/%s && make -f Makefile.%s", 
-      build_file_str, projectid_attr,
-      mount_file_str, projectid_attr, build_file_str,
-      build_file_str, projectid_attr,
-      board_str);
+    if (strcmp(board_str, "server") == 0) {
+      sprintf(cmd, "rm -rf %s/%s && cd %s && wget --no-check-certificate %s &&"
+        "tar xf %s && rm -rf %s && cd %s/%s && make -f Makefile.%s",
+          build_file_str, projectid_attr,
+          build_file_str,
+          arg->address_attr,
+          strrchr(arg->address_attr, '/') + 1,
+          strrchr(arg->address_attr, '/') + 1,
+          build_file_str, projectid_attr,
+          board_str);
+    } else {
+      sprintf(cmd, "rm -rf %s/%s && cp -r %s/%s %s && cd %s/%s && make -f Makefile.%s",
+        build_file_str, projectid_attr,
+        mount_file_str, projectid_attr, build_file_str,
+        build_file_str, projectid_attr,
+        board_str);
+    }
 
     rc = dup2(out_fd[1], STDOUT_FILENO); /* Redirect output to write end of out_fd */
     wsyserr(rc < 0, "dup2");
@@ -293,7 +306,7 @@ void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     werr("No action attribute in make stanza");
     return;
   }
-  
+
   /* Treat build action */
   if (strcmp(action_attr, "build") == 0) {
     /* Get projectid request */
@@ -316,6 +329,15 @@ void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     arg->userdata = userdata;
     arg->projectid_attr = strdup(projectid_attr);
     arg->request_attr = strdup(request_attr);
+    if (strcmp(board_str, "server") == 0) {
+      char *address_attr = xmpp_stanza_get_attribute(stanza, "address"); /* address attribute */
+      if (address_attr == NULL) {
+        werr("No address attribute in make stanza");
+      }
+      arg->address_attr = strdup(address_attr);
+    } else {
+      arg->address_attr = NULL;
+    }
 
     int rc = pthread_create(&ft, NULL, fork_thread, arg); /* Read rc */
     wsyserr(rc < 0, "pthread_create");
@@ -332,7 +354,7 @@ void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     werr("Unknown action: %s", action_attr);
   }
 
-  wlog("Return from make()");  
+  wlog("Return from make()");
 }
 
 #endif /* MAKE */
