@@ -82,7 +82,7 @@ void shells(xmpp_conn_t *const conn, void *const userdata, hashmap_p hm)
     werr("Wrong module: %s. Expected s", module_v);
     return;
   }
-  char *action_v = (char *)hashmap_get(hm, "a");
+  char *action_v = (char *)hashmap_get(hm, "sa");
   if (action_v == NULL) {
     werr("No <a> key in hashmap");
     return;
@@ -108,33 +108,16 @@ void shells(xmpp_conn_t *const conn, void *const userdata, hashmap_p hm)
 void shells_open(xmpp_conn_t *const conn, void *const userdata, hashmap_p hm) {
   wlog("shells_open()");
 
-  char *request_attr = (char *)hashmap_get(hm, "r");
-  if (request_attr == NULL) {
-    werr("Error while getting request attribute");
-    goto error;
-  }
-  int request = atoi(request_attr);
+  int request = *((int *)hashmap_get(hm, "nr"));
 
-  /* Get width attribute */
-  char *w_attr = (char *)hashmap_get(hm, "w");
-  if (w_attr == NULL) {
-    werr("Error while getting width attribute");
-    goto error;
-  }
-  int w = atoi(w_attr);
+  int w = *((int *)hashmap_get(hm, "nw"));
 
-  /* Get height attribute */
-  char *h_attr = (char *)hashmap_get(hm, "h");
-  if (h_attr == NULL) {
-    werr("Error while getting height attribute");
-    goto error;
-  }
-  int h = atoi(h_attr);
+  int h = *((int *)hashmap_get(hm, "nh"));
 
   uint32_t shell_index; /* shell_t index in shells_vector */
 
   bool projectid_running = false;
-  char *projectid_attr = (char *)hashmap_get(hm, "p");
+  char *projectid_attr = (char *)hashmap_get(hm, "sp");
   char projectid_filepath[64];
   if (projectid_attr != NULL) {
     /* A make shell must be opened */
@@ -187,7 +170,7 @@ void shells_open(xmpp_conn_t *const conn, void *const userdata, hashmap_p hm) {
         wsyserr(projectid_fd == -1, "open projectid_filepath");
         write(projectid_fd, &shell_index, sizeof(uint32_t));
 
-        char *userid_attr = (char *)hashmap_get(hm, "u");
+        char *userid_attr = (char *)hashmap_get(hm, "su");
         char cd_path[256];
         sprintf(cd_path, "%s/%s", build_file_str, projectid_attr);
         int rc = chdir(cd_path);
@@ -205,7 +188,7 @@ void shells_open(xmpp_conn_t *const conn, void *const userdata, hashmap_p hm) {
         sprintf(wyliodrin_userid_env,"wyliodrin_userid=%s", userid_attr);
 
         char wyliodrin_session_env[64];
-        sprintf(wyliodrin_session_env,"wyliodrin_session=%s", request_attr);
+        sprintf(wyliodrin_session_env,"wyliodrin_session=%d", request);
 
         char wyliodrin_board_env[64];
         sprintf(wyliodrin_board_env, "wyliodrin_board=%s", board_str);
