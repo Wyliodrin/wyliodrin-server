@@ -35,6 +35,14 @@ else:
 
 
 
+class Action(object):
+  OPEN   = "o"
+  KEYS   = "k"
+  CLOSE  = "c"
+  STATUS = "s"
+
+
+
 class W(ElementBase):
 
     """
@@ -81,11 +89,11 @@ class TestShellsBot(sleekxmpp.ClientXMPP):
     msg['to'] = self.recipient
 
     # m = module
-    # u = upload
-    # c = code
+    # s = shells
+    # a = action
     # p = path
     msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {'sm':'u', 'nc':ActionCode.ATTRIBUTES, 'sp':self.path}))
+      {'sm':'s', 'sa':Action.OPEN, 'nw': }))
     msg.send()
 
 
