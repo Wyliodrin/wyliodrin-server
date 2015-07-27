@@ -101,7 +101,7 @@ Example of ``status`` request:
     <shells xmlns="wyliodrin" gadgetid="<jid>" request="<id>" action="status" projectid="<projectid>"/>
   </message>
 
-Response of ``close`` request or death of shell:
+Response of ``status`` request or death of shell:
 ::
   <message to=<owner>>
     <shells xmlns="wyliodrin" action="status" request="<id>" projectid="<projectid>" "running"="<boolean>"/>
