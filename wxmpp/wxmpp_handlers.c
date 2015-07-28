@@ -32,6 +32,8 @@
   #include "../ps/ps.h"
 #endif
 
+#include "../poweroff/poweroff.h"
+
 
 
 bool is_owner_online = false;
@@ -223,6 +225,8 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       #ifdef PS
         add_module("ps", ps);
       #endif
+
+      add_module("poweroff", poweroff);
     }
   }
 

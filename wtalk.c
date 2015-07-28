@@ -28,11 +28,12 @@
 
 
 /* Variables to be used by all the modules */
-const char *jid_str;        /* jid         */
-const char *owner_str;      /* owner       */
-const char *mount_file_str; /* mount file  */
-const char *build_file_str; /* build file  */
-const char *board_str;      /* board name  */
+const char *jid_str;        /* jid          */
+const char *owner_str;      /* owner        */
+const char *mount_file_str; /* mount file   */
+const char *build_file_str; /* build file   */
+const char *board_str;      /* board name   */
+const char *sudo_str;       /* sudo command */
 
 bool privacy = false;
 
@@ -98,6 +99,13 @@ void wtalk() {
   const char *config_file_str = get_str_value(settings_json, "config_file"); /* config_file value */
   wfatal(config_file_str == NULL || strlen(config_file_str) == 0,
     "No non-empty config_file key of type string in %s", settings_path);
+
+  /* Get sudo command */
+  sudo_str = get_str_value(settings_json, "sudo"); /* sudo */
+  if (sudo_str == NULL) {
+    sudo_str = "";
+  }
+
 
   /* Get the content from the wyliodrin.json file in a json object */
   json_t *config_json = file_to_json_t(config_file_str); /* config_file JSON */
