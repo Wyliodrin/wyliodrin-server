@@ -12,7 +12,7 @@ import ssl
 from optparse import OptionParser
 
 import sleekxmpp
-from sleekxmpp import Message
+from sleekxmpp import Message, Presence
 from sleekxmpp.xmlstream import ElementBase
 from sleekxmpp.xmlstream import register_stanza_plugin
 from sleekxmpp.xmlstream.handler import Callback
@@ -46,6 +46,8 @@ class Action(object):
 class W(ElementBase):
 
     """
+    Used in Message.
+
     <w xmlns="wyliodrin" d="<msgpack_data>"/>
     """
 
@@ -56,10 +58,25 @@ class W(ElementBase):
 
 
 
+class Status(ElementBase):
+
+    """
+    Used in Presence.
+
+    <status/>
+    """
+
+    name = 'status'
+    plugin_attrib = 'status'
+
+
+
 class TestShellsBot(sleekxmpp.ClientXMPP):
 
-  def __init__(self, jid, password):
+  def __init__(self, jid, password, recipient):
     sleekxmpp.ClientXMPP.__init__(self, jid, password)
+
+    self.recipient = recipient
 
     self.add_event_handler("session_start", self.start, threaded=True)
 
@@ -73,10 +90,17 @@ class TestShellsBot(sleekxmpp.ClientXMPP):
       threaded=True)
 
     register_stanza_plugin(Message, W)
+    register_stanza_plugin(Presence, Status)
 
 
   def start(self, event):
-    self.send_presence()
+    # Send Presence with status to recipient
+    pres = self.Presence()
+    pres['lang'] = None
+    pres['to'] = self.recipient
+    pres['status'] = 'Some data that has no meaning'
+    pres.send()
+
     self.get_roster()
 
     """
@@ -93,7 +117,7 @@ class TestShellsBot(sleekxmpp.ClientXMPP):
     # a = action
     # p = path
     msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {'sm':'s', 'sa':Action.OPEN, 'nw': }))
+      {'sm':'s', 'sa':Action.OPEN, 'nw': 10, 'nh' : 10, 'nr' : 10}))
     msg.send()
 
 
@@ -127,6 +151,8 @@ if __name__ == '__main__':
           help="JID to use")
   optp.add_option("-p", "--password", dest="password",
           help="password to use")
+  optp.add_option("-t", "--to", dest="to",
+          help="JID to send the message to")
 
   opts, args = optp.parse_args()
 
@@ -138,8 +164,10 @@ if __name__ == '__main__':
     opts.jid = raw_input("Username: ")
   if opts.password is None:
     opts.password = getpass.getpass("Password: ")
+  if opts.to is None:
+    opts.to = raw_input("Send To: ")
 
-  xmpp = TestShellsBot(opts.jid, opts.password)
+  xmpp = TestShellsBot(opts.jid, opts.password, opts.to)
   xmpp.register_plugin('xep_0030') # Service Discovery
   xmpp.register_plugin('xep_0199') # XMPP Ping
 
