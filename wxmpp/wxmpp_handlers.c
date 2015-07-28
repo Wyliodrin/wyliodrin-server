@@ -274,6 +274,7 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
 
   if (!is_owner_online) {
     werr("Ignore message because owner is offline");
+    return 1;
   }
 
   /* Sanity checks */
