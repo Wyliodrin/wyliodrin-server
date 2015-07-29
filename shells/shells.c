@@ -259,7 +259,10 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
         char wyliodrin_board_env [50];
         sprintf(wyliodrin_board_env, "wyliodrin_board=%s",board_str);
 
-        char *env[] = {wyliodrin_board_env, NULL};
+        char home_env[] = "HOME=/wyliodrin";
+        char term_env[] = "TERM=/xterm";
+
+        char *env[] = {wyliodrin_board_env, home_env, term_env, NULL};
         execvpe(args[0], args, env);
 
         werr("bash failed");
