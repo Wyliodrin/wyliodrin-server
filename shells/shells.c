@@ -234,7 +234,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
         sprintf(wyliodrin_jid_env, "wyliodrin_jid=%s", jid_str);
 
         char home_env[] = "HOME=/wyliodrin";
-        char term_env[] = "TERM=/xterm";
+        char term_env[] = "TERM=xterm";
 
         #ifdef USEMSGPACK
           char wyliodrin_usemsgpack_env[64];
@@ -260,7 +260,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
         sprintf(wyliodrin_board_env, "wyliodrin_board=%s",board_str);
 
         char home_env[] = "HOME=/wyliodrin";
-        char term_env[] = "TERM=/xterm";
+        char term_env[] = "TERM=xterm";
 
         char *env[] = {wyliodrin_board_env, home_env, term_env, NULL};
         execvpe(args[0], args, env);
