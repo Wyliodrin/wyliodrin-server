@@ -14,8 +14,7 @@ pkg_check_modules (STROPHE REQUIRED libstrophe)
 pkg_check_modules (JANSSON REQUIRED jansson)
 pkg_check_modules (FUSE REQUIRED fuse)
 pkg_check_modules (CURL REQUIRED libcurl)
-# On Edison boards, libevent is available only as a static library
-# pkg_check_modules (EVENT REQUIRED libevent)
+pkg_check_modules (EVENT REQUIRED libevent)
 
 include_directories (
   ${PROJECT_SOURCE_DIR}/libds
@@ -75,7 +74,6 @@ target_link_libraries (wyliodrind
   -lutil
   ${HIREDIS_LIBRARIES}
   ${EVENT_LIBRARIES}
-  -levent
   ${FUSE_LIBRARIES}
   ${JANSSON_LIBRARIES}
   ${STROPHE_LIBRARIES}
