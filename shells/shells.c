@@ -369,7 +369,7 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
   pthread_mutex_unlock(&shells_lock);
 
   /* Detach from screen session */
-  if (xmpp_stanza_get_attribute(stanza, "background") != NULL) {
+  if (xmpp_stanza_get_attribute(stanza, "background") == NULL) {
     int pid = fork();
 
     /* Return if fork failed */
