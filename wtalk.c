@@ -80,7 +80,10 @@ void wtalk() {
 
   /* Get the type of board from the boardtype file */
   int boardtype_fd = open(BOARDTYPE_PATH, O_RDONLY); /* File descriptor of boardtype file */
-  wsyserr(boardtype_fd == -1, "open");
+  if (boardtype_fd == -1) {
+    werr("There should be a file named boardtype in /etc/wyliodrin/");
+    return;
+  }
   char boardtype[64]; /* Content of boardtype */
   memset(boardtype, 0, 64);
   rc_int = read(boardtype_fd, boardtype, 64);
