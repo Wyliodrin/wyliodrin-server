@@ -12,6 +12,9 @@
 #include <sys/wait.h> /* waitpid        */
 #include <jansson.h>  /* json_t handling */
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "winternals/winternals.h" /* logs and errs */
 #include "wxmpp/wxmpp.h"           /* xmpp stuff    */
 
@@ -83,6 +86,8 @@ static const char *get_str_value(json_t *json, char *key) {
  * Configure wifi on edison boards.
  */
 void wtalk() {
+  mkdir("/wyliodrin", 0755);
+
   int rc_int; /* Return code of integer type */
   int wifi_pid = -1; /* Pid of fork's child in which edison's wifi configuration is done */
 
@@ -133,11 +138,53 @@ void wtalk() {
   mount_file_str = strdup(mount_file_str);
   wfatal(mount_file_str == NULL, "strdup");
 
+  if (mount_file_str[0] != '/') {
+    werr("mountFile value does not begin with \"/\": %s", mount_file_str);
+    return;
+  }
+
+  /* Create mount file */
+  if (mkdir(mount_file_str, 0755) != 0) {
+    char *aux;
+    char *p = (char *)mount_file_str;
+    while (true) {
+      p = strchr(p + 1, '/');
+      if (p == NULL) { break; }
+      aux = strdup(mount_file_str);
+      aux[p - mount_file_str] = '\0';
+      mkdir(aux, 0755);
+      wlog("Creating: %s", aux);
+      free(aux);
+    }
+    mkdir(mount_file_str, 0755);
+  }
+
   /* Get buildFile value. This value containts the path where the projects are to be mounted */
   build_file_str = get_str_value(settings_json, "buildFile");
   wfatal(build_file_str == NULL, "No non-empty buildFile key of type string in %s", settings_path);
   build_file_str = strdup(build_file_str);
   wfatal(build_file_str == NULL, "strdup");
+
+  if (build_file_str[0] != '/') {
+    werr("buildFile value does not begin with \"/\": %s", build_file_str);
+    return;
+  }
+
+  /* Create mount file */
+  if (mkdir(build_file_str, 0755) != 0) {
+    char *aux;
+    char *p = (char *)build_file_str + 1;
+    while (true) {
+      p = strchr(p + 1, '/');
+      if (p == NULL) { break; }
+      aux = strdup(build_file_str);
+      aux[p - build_file_str] = '\0';
+      mkdir(aux, 0755);
+      wlog("Creating: %s", aux);
+      free(aux);
+    }
+    mkdir(build_file_str, 0755);
+  }
 
   /* Get the board value */
   board_str = get_str_value(settings_json, "board");
