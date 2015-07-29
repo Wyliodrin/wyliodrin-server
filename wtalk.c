@@ -160,7 +160,7 @@ void wtalk() {
   /* Unmount the mountFile */
   if (strcmp(board_str, "server") != 0) {
     char umount_cmd[128];
-    rc_int = sprintf(umount_cmd, "umount %s", mount_file_str);
+    rc_int = sprintf(umount_cmd, "umount -f %s", mount_file_str);
     wsyserr(rc_int < 0, "sprintf");
     rc_int = system(umount_cmd);
     wsyserr(rc_int == -1, "system");
