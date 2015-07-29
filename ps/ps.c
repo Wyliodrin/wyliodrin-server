@@ -20,7 +20,7 @@
 #include <ctype.h>
 #include <unistd.h>
 
-#define BUF_SIZE 1024 
+#define BUF_SIZE 1024
 
 #include "ps.h"
 #include "../winternals/winternals.h" /* logs and errs */
@@ -60,7 +60,15 @@ void ps(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 
 static void ps_kill(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
   wlog("ps_kill()");
-  wlog("Return from ps_kill()");
+
+  char *pid_attr = xmpp_stanza_get_attribute(stanza, "pid");
+  if (pid_attr == NULL) {
+    werr("Got kill command without pid");
+    return;
+  }
+  char cmd[64];
+  sprintf(cmd, "kill -9 %s", pid_attr);
+  system(cmd);
 }
 
 static void ps_send(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
@@ -111,7 +119,7 @@ static void ps_send(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const 
         rc = close(fd);
         if (rc == -1) {
           perror("close");
-          exit(EXIT_FAILURE); 
+          exit(EXIT_FAILURE);
         }
 
         /* statm*/
@@ -133,7 +141,7 @@ static void ps_send(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const 
         rc = close(fd);
         if (rc == -1) {
           perror("close");
-          exit(EXIT_FAILURE); 
+          exit(EXIT_FAILURE);
         }
 
         xmpp_stanza_t *ps = xmpp_stanza_new(ctx); /* info stanza */
