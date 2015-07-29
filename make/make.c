@@ -26,10 +26,11 @@
 
 #define BUFSIZE (1 * 1024) /* 1 KB */
 
-extern const char *owner_str;      /* owner_str from init.c */
+extern const char *owner_str;      /* owner_str from wtalk.c */
 extern const char *mount_file_str; /* mount file */
 extern const char *build_file_str; /* build file */
-extern const char *board_str;      /* board name */
+
+extern bool is_fuse_available;
 
 void init_make() { }
 
@@ -238,7 +239,7 @@ void *fork_thread(void *args) {
 
   if (pid == 0) {
     char cmd[1024];
-    if (strcmp(board_str, "server") == 0) {
+    if (!is_fuse_available) {
       sprintf(cmd, "rm -rf %s/%s && cd %s && wget --no-check-certificate %s &&"
         "tar xf %s && rm -rf %s && cd %s/%s && make -f Makefile.%s",
           build_file_str, projectid_attr,
@@ -329,7 +330,7 @@ void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     arg->userdata = userdata;
     arg->projectid_attr = strdup(projectid_attr);
     arg->request_attr = strdup(request_attr);
-    if (strcmp(board_str, "server") == 0) {
+    if (!is_fuse_available) {
       char *address_attr = xmpp_stanza_get_attribute(stanza, "address"); /* address attribute */
       if (address_attr == NULL) {
         werr("No address attribute in make stanza");

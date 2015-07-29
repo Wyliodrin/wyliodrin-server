@@ -37,6 +37,14 @@ const char *sudo_str;       /* sudo command */
 
 bool privacy = false;
 
+bool is_fuse_available;
+
+
+
+static void check_for_fuse() {
+  is_fuse_available = system("stat /dev/fuse") == 0 ? true : false;
+}
+
 
 
 extern void xmpp_connect(const char *jid, const char *pass); /* implemented in wxmpp.c */
@@ -109,7 +117,6 @@ void wtalk() {
     sudo_str = "";
   }
 
-
   /* Get the content from the wyliodrin.json file in a json object */
   json_t *config_json = file_to_json_t(config_file_str); /* config_file JSON */
   wfatal(config_json == NULL, "Invalid JSON in %s", config_file_str);
@@ -160,13 +167,17 @@ void wtalk() {
     p[i] = tolower(p[i]);
   }
 
-  /* Unmount the mountFile */
+  /* Umount the mountFile */
   if (strcmp(board_str, "server") != 0) {
     char umount_cmd[128];
     rc_int = sprintf(umount_cmd, "umount -f %s", mount_file_str);
     wsyserr(rc_int < 0, "sprintf");
     rc_int = system(umount_cmd);
     wsyserr(rc_int == -1, "system");
+
+    check_for_fuse();
+  } else {
+    is_fuse_available = false;
   }
 
   /* Configure wifi of Edison boards */

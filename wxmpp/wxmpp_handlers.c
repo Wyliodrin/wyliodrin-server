@@ -47,7 +47,7 @@ extern bool signal_read;
 extern bool signal_fail;
 
 extern const char *owner_str; /* from wtalk.c */
-extern const char *board_str; /* from wtalk.c */
+extern bool is_fuse_available; /* from wtalk.c */
 
 
 
@@ -208,7 +208,7 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       #endif
       #ifdef FILES
         add_module("files", files);
-        if (strcmp(board_str, "server") != 0) {
+        if (is_fuse_available) {
           init_files();
         }
       #endif
