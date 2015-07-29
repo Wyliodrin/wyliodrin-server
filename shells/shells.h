@@ -53,6 +53,9 @@ void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 /* Status */
 void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 
+/* Poweroff */
+void shells_poweroff();
+
 #endif /* SHELLS */
 
 #endif /* _SHELLS_H */

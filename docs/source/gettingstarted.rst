@@ -31,6 +31,10 @@ Example:
   In the example above ``..`` is used as an argument for ``cmake``.
   This is the path to the project root directory.
 
+.. note::
+  In order to compile without debug messages, simply remove the ``-DLOG``
+  definition from ``add_definitions``.
+
 
 
 Configuration Files

@@ -41,6 +41,7 @@ extern const char *build_file_str; /* build_file_str */
 extern const char *board_str;      /* board name */
 extern const char *jid_str;        /* jid */
 extern const char *owner_str;      /* owner_str */
+extern const char *sudo_str;       /* sudo command from wtalk.c */
 
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
@@ -85,6 +86,8 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     shells_list(stanza, conn, userdata);
   } else if(strncasecmp(action_attr, "status", 6) == 0) {
     shells_status(stanza, conn, userdata);
+  } else if(strncasecmp(action_attr, "poweroff", 8) == 0) {
+    shells_poweroff();
   } else {
     werr("Unknown action attribute: %s", action_attr);
   }
@@ -543,6 +546,16 @@ void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const u
   } else {
     werr("No projectid attribute in status");
   }
+}
+
+void shells_poweroff() {
+  if (strcmp(board_str, "server") != 0) {
+    char cmd[64];
+    sprintf(cmd, "%s poweroff", sudo_str);
+    system(cmd);
+  }
+
+  exit(EXIT_SUCCESS);
 }
 
 #endif /* SHELLS */
