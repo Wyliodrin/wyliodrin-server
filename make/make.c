@@ -29,8 +29,8 @@
 extern const char *owner_str;      /* owner_str from wtalk.c */
 extern const char *mount_file_str; /* mount file */
 extern const char *build_file_str; /* build file */
-
-extern bool is_fuse_available;
+extern const char *board_str;      /* board_str from wtalk.c */
+extern bool is_fuse_available;     /* from wtalk.c */
 
 void init_make() { }
 
