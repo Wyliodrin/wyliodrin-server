@@ -139,6 +139,7 @@ static void *send_tasks_routine(void *args) {
 
     sleep(5);
   }
+  return NULL;
 }
 
 /**

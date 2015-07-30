@@ -94,4 +94,6 @@ void *wait_routine(void *args) {
   waitpid(pid, NULL, 0);
 
   free((int *)args);
+
+  return NULL;
 }

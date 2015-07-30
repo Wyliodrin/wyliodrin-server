@@ -49,6 +49,7 @@ shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 pthread_mutex_t shells_lock; /* shells mutex */
 
 extern char **environ;
+int execvpe(const char *file, char *const argv[], char *const envp[]);
 
 void init_shells()
 {
