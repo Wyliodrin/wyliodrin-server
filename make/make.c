@@ -240,9 +240,8 @@ void *fork_thread(void *args) {
   if (pid == 0) {
     char cmd[1024];
     if (!is_fuse_available) {
-      sprintf(cmd, "rm -rf %s/%s && cd %s && wget --no-check-certificate %s &&"
+      sprintf(cmd, "cd %s && wget --no-check-certificate %s &&"
         "tar xf %s && rm -rf %s && cd %s/%s && make -f Makefile.%s",
-          build_file_str, projectid_attr,
           build_file_str,
           arg->address_attr,
           strrchr(arg->address_attr, '/') + 1,
@@ -250,8 +249,7 @@ void *fork_thread(void *args) {
           build_file_str, projectid_attr,
           board_str);
     } else {
-      sprintf(cmd, "rm -rf %s/%s && cp -r %s/%s %s && cd %s/%s && make -f Makefile.%s",
-        build_file_str, projectid_attr,
+      sprintf(cmd, "cp -rf %s/%s %s && cd %s/%s && make -f Makefile.%s",
         mount_file_str, projectid_attr, build_file_str,
         build_file_str, projectid_attr,
         board_str);
