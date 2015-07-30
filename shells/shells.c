@@ -11,6 +11,7 @@
 
 #include <strophe.h> /* Strophe XMPP stuff */
 #include <strings.h> /* strncasecmp */
+#include <string.h>
 
 #define _XOPEN_SOURCE 600
 #include <stdlib.h>
@@ -99,6 +100,11 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 
 void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
   wlog("shells_open(...)");
+  int environ_size = 0;
+  while(environ[environ_size]) {
+    environ_size++;
+  }
+  wlog("environ_size = %d\n\n\n", environ_size);
 
   char *endptr; /* strtol endptr */
 
@@ -260,8 +266,8 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
         }
 
         char **all_env = malloc((environ_size + env_size) * sizeof(char *));
-        memcpy(all_env, environ, environ_size * sizeof(char **));
-        memcpy(all_env + environ_size * sizeof(char **), env, env_size * sizeof(char **));
+        memcpy(all_env, environ, environ_size * sizeof(char *));
+        memcpy(all_env + environ_size, env, env_size * sizeof(char *));
 
         execvpe(make_run[0], make_run, all_env);
 
