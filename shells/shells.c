@@ -287,7 +287,19 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
         char term_env[] = "TERM=xterm";
 
         char *env[] = {wyliodrin_board_env, home_env, term_env, NULL};
-        execvpe(args[0], args, env);
+
+        int env_size = sizeof(env) / sizeof(*env);
+
+        int environ_size = 0;
+        while(environ[environ_size]) {
+          environ_size++;
+        }
+
+        char **all_env = malloc((environ_size + env_size) * sizeof(char *));
+        memcpy(all_env, environ, environ_size * sizeof(char *));
+        memcpy(all_env + environ_size, env, env_size * sizeof(char *));
+
+        execvpe(args[0], args, all_env);
 
         werr("bash failed");
         exit(EXIT_FAILURE);
