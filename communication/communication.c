@@ -32,7 +32,6 @@ redisContext *c = NULL;
 extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
 extern const char *jid_str;
-extern const char *domain;
 
 static bool is_connetion_in_progress = false;
 
@@ -437,6 +436,11 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
         if (curl == NULL) {
           werr("Curl init failed");
           return;
+        }
+        char *domain = strrchr(jid_str, '.');
+        if (domain == NULL) {
+          werr("jid does not contain a dot: %s", jid_str);
+          domain = strdup(".com");
         }
         char URL[128];
         sprintf(URL, "http://projects.wyliodrin%s/signals/send", domain);
