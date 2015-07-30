@@ -38,6 +38,8 @@ const char *build_file_str; /* build file   */
 const char *board_str;      /* board name   */
 const char *sudo_str;       /* sudo command */
 
+const char *domain;         /* org vs com */
+
 bool privacy = false;
 
 bool is_fuse_available;
@@ -196,6 +198,12 @@ void wtalk() {
   jid_str = get_str_value(config_json, "jid");
   wfatal(jid_str == NULL, "No non-empty jid key of type string in %s", config_file_str);
   jid_str = strdup(jid_str);
+
+  char *domain = strrchr(jid_str, '.');
+  if (domain == NULL) {
+    werr("jid does not contain a dot: %s", jid_str);
+    return;
+  }
 
   /* Get passwork value from wyliodrin.json */
   const char* password_str = get_str_value(config_json, "password");

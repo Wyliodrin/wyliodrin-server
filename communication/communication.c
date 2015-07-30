@@ -32,6 +32,7 @@ redisContext *c = NULL;
 extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
 extern const char *jid_str;
+extern const char *domain;
 
 static bool is_connetion_in_progress = false;
 
@@ -437,7 +438,9 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
           werr("Curl init failed");
           return;
         }
-        curl_easy_setopt(curl, CURLOPT_URL, "http://projects.wyliodrin.com/signals/send");
+        char URL[128];
+        sprintf(URL, "http://projects.wyliodrin%s/signals/send", domain);
+        curl_easy_setopt(curl, CURLOPT_URL, URL);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
