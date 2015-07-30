@@ -204,6 +204,7 @@ void wtalk() {
     werr("jid does not contain a dot: %s", jid_str);
     return;
   }
+  domain = strdup(domain);
 
   /* Get passwork value from wyliodrin.json */
   const char* password_str = get_str_value(config_json, "password");
