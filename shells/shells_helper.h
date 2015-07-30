@@ -18,5 +18,7 @@
  */
 void *read_thread(void *args);
 
+void *wait_routine(void *args);
+
 
 #endif /* _SHELLS_HELPER_H */

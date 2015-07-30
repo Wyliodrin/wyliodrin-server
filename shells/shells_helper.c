@@ -18,6 +18,9 @@
 #include <string.h>
 #include <pthread.h>
 #include <strophe.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 #include "../winternals/winternals.h" /* logs and errs */
 #include "shells.h"
@@ -83,4 +86,12 @@ void *read_thread(void *args) {
       return NULL;
     }
   }
+}
+
+void *wait_routine(void *args) {
+  int pid = *((int *)args);
+
+  waitpid(pid, NULL, 0);
+
+  free((int *)args);
 }
