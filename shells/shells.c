@@ -47,6 +47,8 @@ shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
 pthread_mutex_t shells_lock; /* shells mutex */
 
+extern char **environ;
+
 void init_shells()
 {
   static bool shells_initialized = false;
@@ -247,10 +249,23 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
             NULL};
         #else
           char *env[] = {wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
-            wyliodrin_board_env, wyliodrin_jid_env, home_env, term_env,NULL};
+            wyliodrin_board_env, wyliodrin_jid_env, home_env, term_env, NULL};
         #endif
 
-        execvpe(make_run[0], make_run, env);
+        int env_size = sizeof(env) / sizeof(*env);
+
+        int environ_size = 0;
+        while(environ[environ_size]) {
+          environ_size++;
+        }
+
+        char **all_env = malloc((environ_size + env_size) * sizeof(char *));
+        memcpy(all_env, environ, environ_size * sizeof(char **));
+        memcpy(all_env + environ_size * sizeof(char **), env, env_size * sizeof(char **));
+
+        execvpe(make_run[0], make_run, all_env);
+
+        exit(EXIT_FAILURE);
       }
 
       /* A normal shell must be opened */
