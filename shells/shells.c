@@ -305,13 +305,6 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   }
 
   /* Parent in forkpty */
-  /* Wait for pid */
-  pthread_t wt; /* Wait thread */
-  int *pid_arg = malloc(1 * sizeof(int));
-  *pid_arg = pid;
-  pthread_create(&wt, NULL, &(wait_routine), pid_arg);
-  pthread_detach(wt);
-
   if (projectid_running == false) {
     pthread_mutex_lock(&shells_lock);
     shells_vector[shell_index]                = (shell_t *)malloc(sizeof(shell_t));

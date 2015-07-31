@@ -48,6 +48,11 @@ void *read_thread(void *args) {
       char shellid_str[4];
       sprintf(shellid_str, "%d", shell->id);
 
+      int status;
+      waitpid(shell->pid, &status, 0);
+      char exit_status[16];
+      sprintf(exit_status, "%d",  WEXITSTATUS(status));
+
       /* Send close stanza */
       xmpp_stanza_t *message_stz = xmpp_stanza_new(shell->ctx); /* message stanza */
       xmpp_stanza_set_name(message_stz, "message");
@@ -62,7 +67,7 @@ void *read_thread(void *args) {
       }
       xmpp_stanza_set_attribute(close_stz, "action", "close");
       xmpp_stanza_set_attribute(close_stz, "shellid", shellid_str);
-      xmpp_stanza_set_attribute(close_stz, "code", "0");
+      xmpp_stanza_set_attribute(close_stz, "code", exit_status);
       xmpp_stanza_add_child(message_stz, close_stz);
       xmpp_send(shell->conn, message_stz);
       xmpp_stanza_release(close_stz);
@@ -86,14 +91,4 @@ void *read_thread(void *args) {
       return NULL;
     }
   }
-}
-
-void *wait_routine(void *args) {
-  int pid = *((int *)args);
-
-  waitpid(pid, NULL, 0);
-
-  free((int *)args);
-
-  return NULL;
 }
