@@ -13,6 +13,8 @@
 #define REDIS_HOST "127.0.0.1"
 #define REDIS_PORT 6379
 
+#define URL_SIZE 128
+
 #define WYLIODRIN_CHANNEL "wyliodrin"
 #define PUB_CHANNEL       "communication_client"
 #define SUB_CHANNEL       "communication_server:*"
