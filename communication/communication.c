@@ -437,13 +437,18 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
           werr("Curl init failed");
           return;
         }
-        char *domain = strrchr(jid_str, '.');
+        char *domain = strrchr(jid_str, '@');
         if (domain == NULL) {
-          werr("jid does not contain a dot: %s", jid_str);
-          domain = strdup(".com");
+          werr("jid does not contain an at: %s", jid_str);
+          domain = strdup("projects.wyliodrin.com");
+          // LEAK, use free
         }
-        char URL[128];
-        sprintf(URL, "http://projects.wyliodrin%s/signals/send", domain);
+        else
+        {
+          domain++;
+        }
+        char URL[URL_SIZE];
+        snprintf(URL, URL_SIZE-1, "http://%s/signals/send", domain);
         curl_easy_setopt(curl, CURLOPT_URL, URL);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
