@@ -12,6 +12,7 @@
 #include <jansson.h> /* json_t handling */
 
 #include "../winternals/winternals.h" /* logs and errs */
+#include "wjson.h"
 
 
 
@@ -53,4 +54,15 @@ json_t* file_to_json_t(const char *filename) {
 	}
 
 	return ret;
+}
+
+const char *get_str_value(json_t *json, char *key) {
+  json_t *value_json = json_object_get(json, key); /* value as JSON value */
+
+  /* Sanity checks */
+  if (value_json == NULL || !json_is_string(value_json) || strlen(json_string_value(value_json)) == 0) {
+    return NULL;
+  } else {
+    return json_string_value(value_json);
+  }
 }

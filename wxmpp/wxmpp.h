@@ -13,4 +13,6 @@
 #define WNS       "wyliodrin"  /* Wyliodrin namespace */
 #define XMPP_PORT 5222         /* XMPP server port    */
 
+void xmpp_connect(const char *jid, const char *pass); /* from wxmpp/wxmpp.c */
+
 #endif /* _WXMPP_H */
