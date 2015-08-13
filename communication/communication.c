@@ -440,11 +440,9 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
         char *domain = strrchr(jid_str, '@');
         if (domain == NULL) {
           werr("jid does not contain an at: %s", jid_str);
-          domain = strdup("projects.wyliodrin.com");
-          // LEAK, use free
-        }
-        else
-        {
+          char static_domain[] = "projects.wyliodrin.com";
+          domain = static_domain;
+        } else {
           domain++;
         }
         char URL[URL_SIZE];

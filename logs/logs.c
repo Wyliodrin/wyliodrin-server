@@ -58,7 +58,16 @@ static void *send_logs_routine(void *args) {
         return NULL;
       }
 
-      sprintf(URL, "https://wyliodrin.com/gadgets/logs/%s", jid_str);
+      char *domain = strrchr(jid_str, '@');
+      if (domain == NULL) {
+        werr("jid does not contain an at: %s", jid_str);
+        char static_domain[] = "wyliodrin.com";
+        domain = static_domain;
+      } else {
+        domain++;
+      }
+
+      sprintf(URL, "https://%s/gadgets/logs/%s", domain, jid_str);
       curl_easy_setopt(curl, CURLOPT_URL, URL);
       curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
