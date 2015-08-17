@@ -7,7 +7,7 @@
 
 #ifdef MAKE
 
-#include <stdio.h>   /* sprintf    */
+#include <stdio.h>   /* snprintf    */
 #include <string.h>  /* strcmp     */
 #include <strophe.h> /* xmpp stuff */
 #include <stdlib.h>  /* malloc     */
@@ -240,7 +240,7 @@ void *fork_thread(void *args) {
   if (pid == 0) {
     char cmd[1024];
     if (!is_fuse_available) {
-      sprintf(cmd, "cd %s && wget --no-check-certificate %s &&"
+      snprintf(cmd, 1024, "cd %s && wget --no-check-certificate %s &&"
         "tar xf %s && rm -rf %s && cd %s/%s && make -f Makefile.%s",
           build_file_str,
           arg->address_attr,
@@ -249,7 +249,7 @@ void *fork_thread(void *args) {
           build_file_str, projectid_attr,
           board_str);
     } else {
-      sprintf(cmd, "cp -rf %s/%s %s && cd %s/%s && make -f Makefile.%s",
+      snprintf(cmd, 1024, "cp -rf %s/%s %s && cd %s/%s && make -f Makefile.%s",
         mount_file_str, projectid_attr, build_file_str,
         build_file_str, projectid_attr,
         board_str);
@@ -264,7 +264,7 @@ void *fork_thread(void *args) {
     wsyserr(rc == -1, "system");
 
     char system_exitstatus_str[8];
-    sprintf(system_exitstatus_str, "%d", rc);
+    snprintf(system_exitstatus_str, 8, "%d", rc);
 
     rc = write(status_fd[1], system_exitstatus_str, strlen(system_exitstatus_str));
 

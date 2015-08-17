@@ -22,6 +22,8 @@
 #define BOARDTYPE_MAX_LENGTH     64       /* Max length of boardtype */
 
 #define SETTINGS_PATH_MAX_LENGTH 128      /* Max length of settings file path */
+#define JSON_CONTENT_MAX_LENGTH  128      /* Used in snprintf */
+
 
 
 

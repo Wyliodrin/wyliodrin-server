@@ -46,12 +46,12 @@ void *read_thread(void *args) {
       usleep(10000);
     } else if (rc_int < 0) {
       char shellid_str[4];
-      sprintf(shellid_str, "%d", shell->id);
+      snprintf(shellid_str, 4, "%d", shell->id);
 
       int status;
       waitpid(shell->pid, &status, 0);
-      char exit_status[16];
-      sprintf(exit_status, "%d",  WEXITSTATUS(status));
+      char exit_status[4];
+      snprintf(exit_status, 4, "%d",  WEXITSTATUS(status));
 
       /* Send close stanza */
       xmpp_stanza_t *message_stz = xmpp_stanza_new(shell->ctx); /* message stanza */
@@ -62,7 +62,7 @@ void *read_thread(void *args) {
       xmpp_stanza_set_ns(close_stz, WNS);
       if (shell->close_request != -1) {
         char close_request_str[4];
-        sprintf(close_request_str, "%d", shell->close_request);
+        snprintf(close_request_str, 4, "%d", shell->close_request);
         xmpp_stanza_set_attribute(close_stz, "request", close_request_str);
       }
       xmpp_stanza_set_attribute(close_stz, "action", "close");
@@ -76,7 +76,7 @@ void *read_thread(void *args) {
       pthread_mutex_lock(&projectid_lock);
       if (shell->projectid != NULL) {
         char projectid_path[64];
-        sprintf(projectid_path, "/tmp/wyliodrin/%s", shell->projectid);
+        snprintf(projectid_path, 64, "/tmp/wyliodrin/%s", shell->projectid);
         free(shell->projectid);
         shell->projectid = NULL;
 

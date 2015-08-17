@@ -60,9 +60,9 @@ void wtalk()
 
   /* Get the path of settings_<boardtype> file */
   char settings_path[SETTINGS_PATH_MAX_LENGTH]; /* Path of the settings file */
-  int sprintf_rc = sprintf(settings_path, SETTINGS_PATH "%s.json", boardtype); /* Return code
-                                                                                   of sprintf */
-  wsyserr(sprintf_rc < 0, "sprintf");
+  int snprintf_rc = snprintf(settings_path, SETTINGS_PATH_MAX_LENGTH, SETTINGS_PATH "%s.json",
+    boardtype); /* Return code of snprintf */
+  wsyserr(snprintf_rc < 0, "snprintf");
 
   /* Get the content from the settings_<boardtype> file in a json_object */
   json_t *settings_json = file_to_json_t(settings_path); /* JSON object of settings_<boardtype> */
@@ -172,8 +172,8 @@ void wtalk()
   /* Umount the mountFile */
   if (strcmp(board_str, "server") != 0) {
     char umount_cmd[128];
-    sprintf_rc = sprintf(umount_cmd, "umount -f %s", mount_file_str);
-    wsyserr(sprintf_rc < 0, "sprintf");
+    snprintf_rc = snprintf(umount_cmd, 128, "umount -f %s", mount_file_str);
+    wsyserr(snprintf_rc < 0, "snprintf");
     int system_rc = system(umount_cmd);
     wsyserr(system_rc == -1, "system");
 
@@ -193,11 +193,11 @@ void wtalk()
         /* Set wifi type: OPEN or WPA-PSK */
         char wifi_type[16];
         if (strlen(psk_str) == 0) {
-          sprintf_rc = sprintf(wifi_type, "OPEN");
+          snprintf_rc = snprintf(wifi_type, 16, "OPEN");
         } else {
-          sprintf_rc = sprintf(wifi_type, "WPA-PSK");
+          snprintf_rc = snprintf(wifi_type, 16, "WPA-PSK");
         }
-        wsyserr(sprintf_rc < 0, "sprintf");
+        wsyserr(snprintf_rc < 0, "snprintf");
 
         /* Fork and exec configure_edison */
         wifi_pid = fork();
@@ -221,8 +221,8 @@ void wtalk()
       werr("Could not open resolv.conf");
     } else {
       char to_write[128];
-      sprintf_rc = sprintf(to_write, "nameserver %s", nameserver_str);
-      wsyserr(sprintf_rc < 0, "sprintf");
+      snprintf_rc = snprintf(to_write, 128, "nameserver %s", nameserver_str);
+      wsyserr(snprintf_rc < 0, "snprintf");
       int write_rc = write(resolv_fd, to_write, strlen(to_write));
       wsyserr(write_rc == -1, "write");
     }

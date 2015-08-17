@@ -160,10 +160,10 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
   bool projectid_running = false;
   char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
-  char projectid_filepath[64];
+  char projectid_filepath[128];
   if (projectid_attr != NULL) {
     /* A make shell must be opened */
-    sprintf(projectid_filepath, "/tmp/wyliodrin/%s", projectid_attr);
+    snprintf(projectid_filepath, 128, "/tmp/wyliodrin/%s", projectid_attr);
     int projectid_fd = open(projectid_filepath, O_RDWR);
     if (projectid_fd != -1) {
       read(projectid_fd, &shell_index, sizeof(uint32_t));
@@ -216,36 +216,36 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
         char *userid_attr = xmpp_stanza_get_attribute(stanza, "userid");
         char cd_path[256];
-        sprintf(cd_path, "%s/%s", build_file_str, projectid_attr);
+        snprintf(cd_path, 256, "%s/%s", build_file_str, projectid_attr);
         int rc = chdir(cd_path);
         wsyserr(rc == -1, "chdir");
 
-        char makefile_name[50];
-        sprintf(makefile_name, "Makefile.%s", board_str);
+        char makefile_name[64];
+        snprintf(makefile_name, 64, "Makefile.%s", board_str);
 
         char *make_run[] = {"make", "-f", makefile_name, "run", NULL};
 
         char wyliodrin_project_env[64];
-        sprintf(wyliodrin_project_env,"wyliodrin_project=%s", projectid_attr);
+        snprintf(wyliodrin_project_env, 64, "wyliodrin_project=%s", projectid_attr);
 
         char wyliodrin_userid_env[64];
-        sprintf(wyliodrin_userid_env,"wyliodrin_userid=%s", userid_attr);
+        snprintf(wyliodrin_userid_env, 64, "wyliodrin_userid=%s", userid_attr);
 
         char wyliodrin_session_env[64];
-        sprintf(wyliodrin_session_env,"wyliodrin_session=%s", request_attr);
+        snprintf(wyliodrin_session_env, 64, "wyliodrin_session=%s", request_attr);
 
         char wyliodrin_board_env[64];
-        sprintf(wyliodrin_board_env, "wyliodrin_board=%s", board_str);
+        snprintf(wyliodrin_board_env, 64, "wyliodrin_board=%s", board_str);
 
         char wyliodrin_jid_env[64];
-        sprintf(wyliodrin_jid_env, "wyliodrin_jid=%s", jid_str);
+        snprintf(wyliodrin_jid_env, 64, "wyliodrin_jid=%s", jid_str);
 
         char home_env[] = "HOME=/wyliodrin";
         char term_env[] = "TERM=xterm";
 
         #ifdef USEMSGPACK
           char wyliodrin_usemsgpack_env[64];
-          sprintf(wyliodrin_usemsgpack_env, "wyliodrin_usemsgpack=1");
+          snprintf(wyliodrin_usemsgpack_env, 64, "wyliodrin_usemsgpack=1");
           char *env[] = { wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
             wyliodrin_board_env, wyliodrin_jid_env, home_env, term_env, wyliodrin_usemsgpack_env,
             NULL};
@@ -272,12 +272,12 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
       /* A normal shell must be opened */
       else {
-        char shell_name[256];
-        sprintf(shell_name, "shell%d", shell_index);
+        char shell_name[16];
+        snprintf(shell_name, 26, "shell%d", shell_index);
         char *args[] = {"bash", NULL};
 
-        char wyliodrin_board_env [50];
-        sprintf(wyliodrin_board_env, "wyliodrin_board=%s",board_str);
+        char wyliodrin_board_env[64];
+        snprintf(wyliodrin_board_env, 64, "wyliodrin_board=%s",board_str);
 
         char home_env[] = "HOME=/wyliodrin";
         char term_env[] = "TERM=xterm";
@@ -353,7 +353,7 @@ void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
   if (success == TRUE) {
     xmpp_stanza_set_attribute(done, "response", "done");
     char id_str[4];
-    sprintf(id_str, "%d", id);
+    snprintf(id_str, 4, "%d", id);
     xmpp_stanza_set_attribute(done, "shellid", id_str);
   } else {
     xmpp_stanza_set_attribute(done, "response", "error");
@@ -420,9 +420,9 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
 
     /* Child from fork */
     if (pid == 0) {
-      char screen_quit_cmd[256];
+      char screen_quit_cmd[32];
       // sprintf(screen_quit_cmd, "screen -S shell%ld -X quit", shellid);
-      sprintf(screen_quit_cmd, "kill -9 %d", shells_vector[shellid]->pid);
+      snprintf(screen_quit_cmd, 32, "kill -9 %d", shells_vector[shellid]->pid);
       system(screen_quit_cmd);
       waitpid(shells_vector[shellid]->pid, NULL, 0);
       exit(EXIT_SUCCESS);
@@ -493,7 +493,7 @@ void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
   xmpp_stanza_set_name(keys, "shells");
   xmpp_stanza_set_ns(keys, WNS);
   char shell_id_str[4];
-  sprintf(shell_id_str, "%d", shell_id);
+  snprintf(shell_id_str, 4, "%d", shell_id);
   xmpp_stanza_set_attribute(keys, "shellid", shell_id_str);
   xmpp_stanza_set_attribute(keys, "action", "keys");
 
@@ -548,8 +548,8 @@ void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const u
   char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid");
 
   if (projectid_attr != NULL) {
-    char projectid_filepath[64];
-    sprintf(projectid_filepath, "/tmp/wyliodrin/%s", projectid_attr);
+    char projectid_filepath[128];
+    snprintf(projectid_filepath, 64, "/tmp/wyliodrin/%s", projectid_attr);
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
 
@@ -580,7 +580,7 @@ void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const u
 void shells_poweroff() {
   if (strcmp(board_str, "server") != 0) {
     char cmd[64];
-    sprintf(cmd, "%s poweroff", sudo_str);
+    snprintf(cmd, 64, "%s poweroff", sudo_str);
     system(cmd);
   }
 
