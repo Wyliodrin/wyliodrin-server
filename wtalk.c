@@ -12,6 +12,7 @@
 #include <sys/stat.h>  /* file stuff   */
 #include <sys/types.h> /* file stuff   */
 #include <sys/wait.h>  /* waitpid      */
+#include <Wyliodrin.h> /* version      */
 
 #include "winternals/winternals.h" /* logs and errs */
 #include "wxmpp/wxmpp.h"           /* xmpp stuff    */
@@ -236,7 +237,8 @@ void wtalk()
     waitpid(wifi_pid, NULL, 0);
   }
 
-  werr("Starting Wtalk v" WTALK_VERSION_MAJOR "." WTALK_VERSION_MINOR);
+  werr("Starting Wtalk v" WTALK_VERSION_MAJOR "." WTALK_VERSION_MINOR
+    " using libwyliodrin v" LIBWYLIODRIN_VERSION_MAJOR "." LIBWYLIODRIN_VERSION_MINOR);
 
   /* Connect to XMPP server */
   xmpp_connect(jid_str, password_str);
