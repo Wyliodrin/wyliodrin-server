@@ -24,6 +24,8 @@
 #define SETTINGS_PATH_MAX_LENGTH 128      /* Max length of settings file path */
 #define JSON_CONTENT_MAX_LENGTH  128      /* Used in snprintf */
 
+#define WTALK_VERSION_MAJOR "1"
+#define WTALK_VERSION_MINOR "0"
 
 
 
