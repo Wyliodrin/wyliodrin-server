@@ -160,6 +160,7 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
   bool projectid_running = false;
   char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
+  char *userid_attr = xmpp_stanza_get_attribute(stanza, "userid");
   char projectid_filepath[128];
   if (projectid_attr != NULL) {
     /* A make shell must be opened */
@@ -167,7 +168,6 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     int projectid_fd = open(projectid_filepath, O_RDWR);
     if (projectid_fd != -1) {
       read(projectid_fd, &shell_index, sizeof(uint32_t));
-      wlog("shell_index = %u", shell_index);
       projectid_running = true;
     }
   }
@@ -214,7 +214,6 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
         wsyserr(projectid_fd == -1, "open projectid_filepath");
         write(projectid_fd, &shell_index, sizeof(uint32_t));
 
-        char *userid_attr = xmpp_stanza_get_attribute(stanza, "userid");
         char cd_path[256];
         snprintf(cd_path, 256, "%s/%s", build_file_str, projectid_attr);
         int rc = chdir(cd_path);
@@ -315,10 +314,14 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     shells_vector[shell_index]->conn          = conn;
     shells_vector[shell_index]->ctx           = (xmpp_ctx_t *)userdata;
     shells_vector[shell_index]->close_request = -1;
+    shells_vector[shell_index]->w             = w;
+    shells_vector[shell_index]->h             = h;
     if (projectid_attr != NULL) {
       shells_vector[shell_index]->projectid   = strdup(projectid_attr);
+      shells_vector[shell_index]->userid      = strdup(userid_attr);
     } else {
       shells_vector[shell_index]->projectid   = NULL;
+      shells_vector[shell_index]->userid      = NULL;
     }
     pthread_mutex_unlock(&shells_lock);
 

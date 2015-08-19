@@ -13,14 +13,17 @@
 #define MAX_SHELLS 256 /* Maximum number of shells */
 
 typedef struct {
+  long int w;        /* long int */
+  long int h;        /* height */
   int pid;           /* PID */
   int id;            /* Shell id */
   int request_id;    /* open request */
   int fdm;           /* PTY file descriptor */
+  int close_request; /* close request */
   xmpp_conn_t *conn; /* XMPP Connection */
   xmpp_ctx_t *ctx;   /* XMPP Context */
-  int close_request; /* close request */
   char *projectid;   /* projectid in case of make shell */
+  char *userid;      /* userid in case of make shell */
 } shell_t;
 
 /* Initialize with NULL shells_vector */
