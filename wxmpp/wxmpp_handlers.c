@@ -205,6 +205,7 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       #ifdef SHELLS
         add_module("shells", shells);
         init_shells();
+        start_dead_projects(conn, userdata);
       #endif
       #ifdef FILES
         add_module("files", files);

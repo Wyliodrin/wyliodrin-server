@@ -12,6 +12,9 @@
 
 #define MAX_SHELLS 256 /* Maximum number of shells */
 
+#define DEFAULT_WIDTH  12
+#define DEFAULT_HEIGHT 103
+
 typedef struct {
   long int width;     /* width */
   long int height;    /* height */
@@ -58,6 +61,8 @@ void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const u
 
 /* Poweroff */
 void shells_poweroff();
+
+void start_dead_projects(xmpp_conn_t *const conn, void *const userdata);
 
 #endif /* SHELLS */
 

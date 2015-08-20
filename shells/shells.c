@@ -112,20 +112,27 @@ static bool allocate_memory_for_new_shell(xmpp_conn_t *const conn, void *const u
     werr("malloc failed");
     return false;
   }
-  shells_vector[shell_index]->conn          = conn;
-  shells_vector[shell_index]->ctx           = (xmpp_ctx_t *)userdata;
-  shells_vector[shell_index]->id            = shell_index;
-  shells_vector[shell_index]->pid           = pid;
-  shells_vector[shell_index]->fdm           = fdm;
-  shells_vector[shell_index]->width         = width;
-  shells_vector[shell_index]->height        = height;
-  shells_vector[shell_index]->request_attr  = request_attr;
-  if (projectid_attr != NULL) {
-    shells_vector[shell_index]->projectid   = strdup(projectid_attr);
-    shells_vector[shell_index]->userid      = strdup(userid_attr);
+  shells_vector[shell_index]->conn           = conn;
+  shells_vector[shell_index]->ctx            = (xmpp_ctx_t *)userdata;
+  shells_vector[shell_index]->id             = shell_index;
+  shells_vector[shell_index]->pid            = pid;
+  shells_vector[shell_index]->fdm            = fdm;
+  shells_vector[shell_index]->width          = width;
+  shells_vector[shell_index]->height         = height;
+  if (request_attr != NULL) {
+    shells_vector[shell_index]->request_attr = strdup(request_attr);
   } else {
-    shells_vector[shell_index]->projectid   = NULL;
-    shells_vector[shell_index]->userid      = NULL;
+    shells_vector[shell_index]->request_attr = NULL;
+  }
+  if (projectid_attr != NULL) {
+    shells_vector[shell_index]->projectid    = strdup(projectid_attr);
+  } else {
+    shells_vector[shell_index]->projectid    = NULL;
+  }
+  if (userid_attr != NULL) {
+    shells_vector[shell_index]->userid       = strdup(userid_attr);
+  } else {
+    shells_vector[shell_index]->userid       = NULL;
   }
   shells_vector[shell_index]->close_request = -1;
   pthread_mutex_unlock(&shells_lock);
@@ -215,11 +222,13 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
   int shell_index;
   char projectid_filepath[128];
   snprintf(projectid_filepath, 128, "/tmp/wyliodrin/%s", projectid_attr);
-  int projectid_fd = open(projectid_filepath, O_RDWR);
-  if (projectid_fd != -1) {
-    read(projectid_fd, &shell_index, sizeof(int));
-    send_shells_open_response(request_attr, conn, userdata, true, shell_index, true);
-    return;
+  if (request_attr != NULL) {
+    int projectid_fd = open(projectid_filepath, O_RDWR);
+    if (projectid_fd != -1) {
+      read(projectid_fd, &shell_index, sizeof(int));
+      send_shells_open_response(request_attr, conn, userdata, true, shell_index, true);
+      return;
+    }
   }
 
   /* Get an entry in shells_vector */
@@ -231,15 +240,19 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
 
   /* Get width and height for winsize */
   char *endptr;
-  long width = strtol(width_attr, &endptr, 10);
-  if (*endptr != '\0') {
-    werr("Wrong width attribute: %s", width_attr);
-    goto label_fail;
-  }
-  long height = strtol(height_attr, &endptr, 10);
-  if (*endptr != '\0') {
-    werr("Wrong height attribute: %s", height_attr);
-    goto label_fail;
+  long width  = DEFAULT_WIDTH;
+  long height = DEFAULT_HEIGHT;
+  if (request_attr != NULL) {
+    width = strtol(width_attr, &endptr, 10);
+    if (*endptr != '\0') {
+      werr("Wrong width attribute: %s", width_attr);
+      goto label_fail;
+    }
+    height = strtol(height_attr, &endptr, 10);
+    if (*endptr != '\0') {
+      werr("Wrong height attribute: %s", height_attr);
+      goto label_fail;
+    }
   }
   struct winsize ws = {height, width, 0, 0};
 
@@ -272,9 +285,11 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
     char wyliodrin_project_env[64];
     snprintf(wyliodrin_project_env, 64, "wyliodrin_project=%s", projectid_attr);
     char wyliodrin_userid_env[64];
-    snprintf(wyliodrin_userid_env, 64, "wyliodrin_userid=%s", userid_attr);
+    snprintf(wyliodrin_userid_env, 64, "wyliodrin_userid=%s",
+      userid_attr == NULL ? userid_attr : "null");
     char wyliodrin_session_env[64];
-    snprintf(wyliodrin_session_env, 64, "wyliodrin_session=%s", request_attr);
+    snprintf(wyliodrin_session_env, 64, "wyliodrin_session=%s",
+      request_attr == NULL ? request_attr : "null");
     char wyliodrin_board_env[64];
     snprintf(wyliodrin_board_env, 64, "wyliodrin_board=%s", board_str);
     char wyliodrin_jid_env[64];
@@ -314,15 +329,17 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
   }
 
   /* Write the project id in RUNNING_PROJECTS_PATH if a project must run */
-  int open_rc = open(RUNNING_PROJECTS_PATH, O_WRONLY|O_APPEND);
-  if (open_rc == -1) {
-    werr("Error while trying to open " RUNNING_PROJECTS_PATH);
-  } else {
-    char projectid_attr_with_colon[strlen(projectid_attr) + 2];
-    sprintf(projectid_attr_with_colon, "%s:", projectid_attr);
-    int write_rc = write(open_rc, projectid_attr_with_colon,
-        strlen(projectid_attr_with_colon));
-    werr2(write_rc == -1, "Error while writing to " RUNNING_PROJECTS_PATH);
+  if (request_attr != NULL) {
+    int open_rc = open(RUNNING_PROJECTS_PATH, O_WRONLY|O_APPEND);
+    if (open_rc == -1) {
+      werr("Error while trying to open " RUNNING_PROJECTS_PATH);
+    } else {
+      char projectid_attr_with_colon[strlen(projectid_attr) + 2];
+      sprintf(projectid_attr_with_colon, "%s:", projectid_attr);
+      int write_rc = write(open_rc, projectid_attr_with_colon,
+          strlen(projectid_attr_with_colon));
+      werr2(write_rc == -1, "Error while writing to " RUNNING_PROJECTS_PATH);
+    }
   }
 
   /* Create new thread for read routine */
@@ -335,12 +352,38 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
   pthread_detach(rt);
 
   /* Send success response */
-  send_shells_open_response(request_attr, conn, userdata, true, shell_index, false);
+  if (request_attr != NULL) {
+    send_shells_open_response(request_attr, conn, userdata, true, shell_index, false);
+  }
 
   return;
 
   label_fail:
+  if (request_attr != NULL) {
     send_shells_open_response(request_attr, conn, userdata, false, -1, false);
+  }
+}
+
+void start_dead_projects(xmpp_conn_t *const conn, void *const userdata) {
+  FILE *fp;
+
+  fp = fopen(RUNNING_PROJECTS_PATH, "r");
+  if (fp == NULL) {
+    werr("Error on open " RUNNING_PROJECTS_PATH);
+    return;
+  }
+
+  char projectid[128];
+  while (fscanf(fp, "%[^:]:", projectid) != EOF) {
+    wlog("projectid = %s\n\n\n", projectid);
+    if (strlen(projectid) > 0) {
+      open_project_shell(conn, userdata, NULL, NULL, NULL,
+        projectid, NULL);
+    }
+    sleep(1);
+  }
+
+  fclose(fp);
 }
 
 void init_shells()
