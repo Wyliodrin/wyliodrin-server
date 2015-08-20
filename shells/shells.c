@@ -506,7 +506,7 @@ void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
     (const unsigned char *)data_str, data_len);
 
   if (encoded_data == NULL) {
-    werr("Could not encode\n");
+    werr("Could not encode");
     return;
   }
 
