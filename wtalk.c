@@ -43,6 +43,19 @@ static void check_for_fuse()
   is_fuse_available = system("stat /dev/fuse") == 0 ? true : false;
 }
 
+static void create_running_projects_file_if_does_not_exist() {
+  int open_rc;
+
+  /* Try to open RUNNING_PROJECTS_PATH */
+  open_rc = open(RUNNING_PROJECTS_PATH, O_RDONLY);
+
+  /* Create RUNNING_PROJECTS_PATH if it does not exist */
+  if (open_rc == -1) {
+    open_rc = open(RUNNING_PROJECTS_PATH, O_CREAT | O_RDWR);
+    werr2(open_rc == -1, "Error while trying to create " RUNNING_PROJECTS_PATH);
+  }
+}
+
 
 void wtalk()
 {
@@ -239,6 +252,8 @@ void wtalk()
 
   werr("Starting Wtalk v" WTALK_VERSION_MAJOR "." WTALK_VERSION_MINOR
     " using libwyliodrin v" LIBWYLIODRIN_VERSION_MAJOR "." LIBWYLIODRIN_VERSION_MINOR);
+
+  create_running_projects_file_if_does_not_exist();
 
   /* Connect to XMPP server */
   xmpp_connect(jid_str, password_str);

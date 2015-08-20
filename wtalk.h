@@ -19,6 +19,8 @@
                                                      named boardtype.
                                                      Example: settings_edison.json */
 
+#define RUNNING_PROJECTS_PATH "/etc/wyliodrin/running_projects"
+
 #define BOARDTYPE_MAX_LENGTH     64       /* Max length of boardtype */
 
 #define SETTINGS_PATH_MAX_LENGTH 128      /* Max length of settings file path */

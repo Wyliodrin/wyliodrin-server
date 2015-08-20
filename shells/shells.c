@@ -32,9 +32,9 @@
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../wxmpp/wxmpp.h"           /* WNS */
 #include "../base64/base64.h"         /* encode decode */
+#include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
 #include "shells.h"                   /* shells module api */
 #include "shells_helper.h"            /* read routine */
-
 
 
 /* Variables from wtalk.c */
@@ -324,6 +324,20 @@ void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
       shells_vector[shell_index]->userid      = NULL;
     }
     pthread_mutex_unlock(&shells_lock);
+
+    /* Write the project id in RUNNING_PROJECTS_PATH if a project must run */
+    if (projectid_attr != NULL) {
+      int open_rc = open(RUNNING_PROJECTS_PATH, O_WRONLY|O_APPEND);
+      if (open_rc == -1) {
+        werr("Error while trying to open " RUNNING_PROJECTS_PATH);
+      } else {
+        char projectid_attr_with_colon[strlen(projectid_attr) + 2];
+        sprintf(projectid_attr_with_colon, "%s:", projectid_attr);
+        int write_rc = write(open_rc, projectid_attr_with_colon,
+            strlen(projectid_attr_with_colon));
+        werr2(write_rc == -1, "Error while writing to " RUNNING_PROJECTS_PATH);
+      }
+    }
 
     /* Create new thread for read routine */
     pthread_t rt; /* Read thread */

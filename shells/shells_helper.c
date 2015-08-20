@@ -27,6 +27,7 @@
 #include "shells.h"
 #include "shells_helper.h"
 #include "../wxmpp/wxmpp.h"
+#include "../wtalk.h"
 
 #define BUFSIZE (1 * 1024) /* Size of buffer used for reading */
 
@@ -39,6 +40,13 @@ static pthread_mutex_t projectid_lock; /* shells mutex */
 
 extern char **environ;
 int execvpe(const char *file, char *const argv[], char *const envp[]);
+
+static void remove_project_id_from_running_projects(char *projectid) {
+  char cmd[256];
+
+  snprintf(cmd, 256, "sed -i -e 's/%s://g' %s", projectid, RUNNING_PROJECTS_PATH);
+  system(cmd);
+}
 
 void *read_thread(void *args) {
   shell_t *shell = (shell_t *)args;
@@ -161,6 +169,8 @@ void *read_thread(void *args) {
 
       pthread_mutex_lock(&projectid_lock);
       if (shell->projectid != NULL) {
+        remove_project_id_from_running_projects(shell->projectid);
+
         char projectid_path[64];
         snprintf(projectid_path, 64, "/tmp/wyliodrin/%s", shell->projectid);
         free(shell->projectid);
@@ -168,8 +178,7 @@ void *read_thread(void *args) {
 
         int remove_rc = remove(projectid_path);
         if (remove_rc != 0) {
-          werr("WTAF");
-          perror("remove");
+          werr("Could not remove %s", projectid_path);
         }
       }
       pthread_mutex_unlock(&projectid_lock);
