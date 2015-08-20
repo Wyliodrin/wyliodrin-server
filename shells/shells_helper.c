@@ -64,7 +64,6 @@ void *read_thread(void *args) {
         werr("waitpid error");
       }
       if (shell->close_request == -1 && WIFEXITED(status) == 0) {
-        wlog("RESTART\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
         /* This calls for a restart */
         struct winsize ws = {shell->h, shell->w, 0, 0};
         int fdm;
