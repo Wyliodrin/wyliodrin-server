@@ -73,7 +73,7 @@ void *read_thread(void *args) {
       }
       if (shell->close_request == -1 && WIFEXITED(status) == 0) {
         /* This calls for a restart */
-        struct winsize ws = {shell->h, shell->w, 0, 0};
+        struct winsize ws = {shell->height, shell->width, 0, 0};
         int fdm;
         int pid = forkpty(&fdm, NULL, NULL, &ws);
         wfatal(pid == -1, "forkpty");
@@ -96,7 +96,7 @@ void *read_thread(void *args) {
           snprintf(wyliodrin_userid_env, 64, "wyliodrin_userid=%s", shell->userid);
 
           char wyliodrin_session_env[64];
-          snprintf(wyliodrin_session_env, 64, "wyliodrin_session=%d", shell->request_id);
+          snprintf(wyliodrin_session_env, 64, "wyliodrin_session=%s", shell->request_attr);
 
           char wyliodrin_board_env[64];
           snprintf(wyliodrin_board_env, 64, "wyliodrin_board=%s", board_str);

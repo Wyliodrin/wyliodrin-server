@@ -13,17 +13,17 @@
 #define MAX_SHELLS 256 /* Maximum number of shells */
 
 typedef struct {
-  long int w;        /* long int */
-  long int h;        /* height */
-  int pid;           /* PID */
-  int id;            /* Shell id */
-  int request_id;    /* open request */
-  int fdm;           /* PTY file descriptor */
-  int close_request; /* close request */
-  xmpp_conn_t *conn; /* XMPP Connection */
-  xmpp_ctx_t *ctx;   /* XMPP Context */
-  char *projectid;   /* projectid in case of make shell */
-  char *userid;      /* userid in case of make shell */
+  long int width;     /* width */
+  long int height;    /* height */
+  int pid;            /* PID */
+  int id;             /* Shell id */
+  int fdm;            /* PTY file descriptor */
+  int close_request;  /* close request */
+  xmpp_conn_t *conn;  /* XMPP Connection */
+  xmpp_ctx_t *ctx;    /* XMPP Context */
+  char *request_attr; /* open request */
+  char *projectid;    /* projectid in case of make shell */
+  char *userid;       /* userid in case of make shell */
 } shell_t;
 
 /* Initialize with NULL shells_vector */
@@ -37,8 +37,8 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 
 /* Send shells open response */
-void send_shells_open_response(xmpp_stanza_t *stanza, xmpp_conn_t *const conn,
-    void *const userdata, int8_t success, int8_t id, bool running);
+void send_shells_open_response(char *request_attr, xmpp_conn_t *const conn,
+    void *const userdata, bool success, int8_t id, bool running);
 
 /* Close shell */
 void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);

@@ -56,6 +56,11 @@ static void create_running_projects_file_if_does_not_exist() {
   }
 }
 
+static void run_dead_projects() {
+
+}
+
+
 
 void wtalk()
 {
@@ -254,6 +259,7 @@ void wtalk()
     " using libwyliodrin v" LIBWYLIODRIN_VERSION_MAJOR "." LIBWYLIODRIN_VERSION_MINOR);
 
   create_running_projects_file_if_does_not_exist();
+  run_dead_projects();
 
   /* Connect to XMPP server */
   xmpp_connect(jid_str, password_str);
