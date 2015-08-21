@@ -105,8 +105,8 @@ make
 make install
 
 # Run libwyliodrin scripts
-update_streams
 install_social
+update_streams
 
 # Install wyliodrin-server
 cd /etc/sandbox
