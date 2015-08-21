@@ -22,7 +22,8 @@ apt-get install -y git gcc g++ gcc-4.7 g++-4.7 make pkg-config libexpat1-dev  \
   libssl-dev libhiredis-dev dh-autoreconf libfuse-dev libcurl4-gnutls-dev     \
   libevent-dev redis-server python-dev libi2c-dev python-pip libjansson-dev   \
   cmake mc mplayer arduino minicom picocom bluez-utils bluez-compat           \
-  bluez-hcidump libusb-dev libbluetooth-dev bluetooth joystick python-smbus
+  bluez-hcidump libusb-dev libbluetooth-dev bluetooth joystick python-smbus   \
+  curl
 
 # Use gcc and g++ 4.7
 update-alternatives --remove-all gcc
