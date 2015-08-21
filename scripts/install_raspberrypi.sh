@@ -103,8 +103,9 @@ cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
 make
 make install
 
-# Install streams
+# Run libwyliodrin scripts
 update_streams
+install_social
 
 # Install wyliodrin-server
 cd /etc/sandbox
