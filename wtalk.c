@@ -18,6 +18,7 @@
 #include "wxmpp/wxmpp.h"           /* xmpp stuff    */
 #include "wjson/wjson.h"           /* json stuff    */
 #include "wtalk.h"                 /* file paths    */
+#include "wtalk_config.h"          /* version       */
 
 
 
@@ -251,8 +252,11 @@ void wtalk()
     waitpid(wifi_pid, NULL, 0);
   }
 
-  werr("Starting Wtalk v" WTALK_VERSION_MAJOR "." WTALK_VERSION_MINOR
-    " using libwyliodrin v" LIBWYLIODRIN_VERSION_MAJOR "." LIBWYLIODRIN_VERSION_MINOR);
+  werr("Starting Wtalk v%d.%d using libwyliodrin v"
+    LIBWYLIODRIN_VERSION_MAJOR "." LIBWYLIODRIN_VERSION_MINOR,
+    WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR);
+
+  return;
 
   create_running_projects_file_if_does_not_exist();
 

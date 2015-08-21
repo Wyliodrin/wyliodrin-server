@@ -1,6 +1,14 @@
 cmake_minimum_required (VERSION 2.8.8)
 project (wyliodrin-server)
 
+set (WTALK_VERSION_MAJOR 2)
+set (WTALK_VERSION_MINOR 0)
+
+configure_file (
+  "${PROJECT_SOURCE_DIR}/wtalk_config.h.in"
+  "${PROJECT_BINARY_DIR}/wtalk_config.h"
+)
+
 set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 include (GNUInstallDirs)
 include (FindPkgConfig)
@@ -18,6 +26,7 @@ pkg_check_modules (EVENT REQUIRED libevent)
 
 include_directories (
   ${PROJECT_SOURCE_DIR}/libds
+  ${PROJECT_BINARY_DIR}
   ${FUSE_INCLUDE_DIRS}
   ${HIREDIS_INCLUDE_DIRS}
   ${EVENT_INCLUDE_DIRS}
