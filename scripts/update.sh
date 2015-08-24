@@ -33,13 +33,9 @@ function update_raspberrypi {
   sed 's/sudo//g' build > build2
   chmod +x build2
   ./build2
-
-  apt-get install mpg123
-  pip install redis
 }
 
 function update_beagleboneblack {
-  apt-get install mpg123
 }
 
 function update_arduinogalileo {
@@ -113,22 +109,3 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
 make
 make install
-
-# Set boardtype to raspberry
-mkdir /etc/wyliodrin
-echo -n $wyliodrin_board > /etc/wyliodrin/boardtype
-
-# Create mount and build directories
-mkdir /etc/wyliodrin/mnt
-mkdir /etc/wyliodrin/build
-
-# Create settings_raspberry.json
-printf "{\n\
-  \"config_file\": \"/boot/wyliodrin.json\",\n\
-  \"mountFile\": \"/etc/wyliodrin/mnt\",\n\
-  \"buildFile\": \"/etc/wyliodrin/build\",\n\
-  \"board\": \"$wyliodrin_board\"\n\
-}\n" > /etc/wyliodrin/settings_$wyliodrin_board.json
-
-# Create running_projects file
-touch /etc/wyliodrin/running_projects
