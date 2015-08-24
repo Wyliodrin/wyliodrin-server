@@ -2,6 +2,8 @@
 
 # Raspberry Pi install script
 #
+# !!! THIS SCRIPT MUST BE RUN AS ROOT !!!
+#
 # !!! BEFORE RUNNING THIS SCRIPT !!!
 # apt-get install raspi-config
 # raspi-config
@@ -23,7 +25,7 @@ apt-get install -y git gcc g++ gcc-4.7 g++-4.7 make pkg-config libexpat1-dev  \
   libevent-dev redis-server python-dev libi2c-dev python-pip libjansson-dev   \
   cmake mc mplayer arduino minicom picocom bluez-utils bluez-compat           \
   bluez-hcidump libusb-dev libbluetooth-dev bluetooth joystick python-smbus   \
-  curl
+  curl libicu-dev
 
 # Use gcc and g++ 4.7
 update-alternatives --remove-all gcc
@@ -42,6 +44,12 @@ pip install pyfirmata
 
 # Create sandbox directory
 mkdir /etc/sandbox
+
+# Install BrickPi
+cd /etc/sandbox
+git clone https://github.com/DexterInd/BrickPi_Python.git
+cd BrickPi_Python
+python setup.py install
 
 # Install libstrophe
 cd /etc/sandbox
