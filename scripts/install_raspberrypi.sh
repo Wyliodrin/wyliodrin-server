@@ -18,7 +18,7 @@
 #
 # [1] https://www.abelectronics.co.uk/i2c-raspbian-wheezy/info.aspx
 
-SANDBOX_PATH=/etc/sandbox
+SANDBOX_PATH=/tmp/sandbox
 
 # Install some stuff
 apt-get update
