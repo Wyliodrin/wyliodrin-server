@@ -120,7 +120,6 @@ update_streams
 cd /etc/sandbox
 git clone https://github.com/alexandruradovici/wyliodrin-server.git
 cd wyliodrin-server
-git checkout clean
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
