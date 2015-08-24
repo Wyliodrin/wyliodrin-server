@@ -35,6 +35,7 @@
 #include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
 #include "shells.h"                   /* shells module api */
 #include "shells_helper.h"            /* read routine */
+#include "wtalk_config.h"
 
 
 /* Variables from wtalk.c */
@@ -176,7 +177,13 @@ static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
     /* Build local environment variables */
     char wyliodrin_board_env[64];
     snprintf(wyliodrin_board_env, 64, "wyliodrin_board=%s", board_str);
-    char *local_env[] = {wyliodrin_board_env, "HOME=/wyliodrin", "TERM=xterm", NULL};
+
+    char wyliodrin_server[64];
+    snprintf(wyliodrin_server, 64, "wyliodrin_server=%d.%d", WTALK_VERSION_MAJOR,
+      WTALK_VERSION_MINOR);
+
+    char *local_env[] = { wyliodrin_board_env, wyliodrin_server, "HOME=/wyliodrin", "TERM=xterm",
+      NULL };
     int local_env_size = sizeof(local_env) / sizeof(*local_env);
     char **all_env = concatenation_of_local_and_user_env(local_env, local_env_size);
 
@@ -294,6 +301,9 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
     snprintf(wyliodrin_board_env, 64, "wyliodrin_board=%s", board_str);
     char wyliodrin_jid_env[64];
     snprintf(wyliodrin_jid_env, 64, "wyliodrin_jid=%s", jid_str);
+    char wyliodrin_server[64];
+    snprintf(wyliodrin_server, 64, "wyliodrin_server=%d.%d", WTALK_VERSION_MAJOR,
+      WTALK_VERSION_MINOR);
 
     #ifdef USEMSGPACK
       char wyliodrin_usemsgpack_env[64];
@@ -301,10 +311,11 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
 
       char *local_env[] = { wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
         wyliodrin_board_env, wyliodrin_jid_env, "HOME=/wyliodrin", "TERM=xterm",
-        wyliodrin_usemsgpack_env, NULL };
+        wyliodrin_usemsgpack_env, wyliodrin_server, NULL };
     #else
       char *local_env[] = { wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
-        wyliodrin_board_env, wyliodrin_jid_env, "HOME=/wyliodrin", "TERM=xterm", NULL };
+        wyliodrin_board_env, wyliodrin_jid_env, wyliodrin_server, "HOME=/wyliodrin", "TERM=xterm",
+        NULL };
     #endif
 
     int local_env_size = sizeof(local_env) / sizeof(*local_env);
