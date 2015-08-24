@@ -256,8 +256,6 @@ void wtalk()
     LIBWYLIODRIN_VERSION_MAJOR "." LIBWYLIODRIN_VERSION_MINOR,
     WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR);
 
-  return;
-
   create_running_projects_file_if_does_not_exist();
 
   /* Connect to XMPP server */
