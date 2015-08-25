@@ -26,7 +26,7 @@ if [ "$wyliodrin_server" = "" ]; then
   exit 1
 fi
 
-function update_raspberrypi {
+update_raspberrypi {
   # Update wiringPi
   cd SANDBOX_PATH
   rm -rf wiringPi
@@ -37,15 +37,15 @@ function update_raspberrypi {
   ./build2
 }
 
-function update_beagleboneblack {
+update_beagleboneblack {
 }
 
-function update_arduinogalileo {
+update_arduinogalileo {
   opkg update
   opkg upgrade
 }
 
-function update_edison {
+update_edison {
   if ! echo "import setuptools" | python; then
     curl -L https://bootstrap.pypa.io/ez_setup.py | python
   fi
@@ -60,7 +60,7 @@ function update_edison {
   opkg upgrade
 }
 
-function update_redpitaya {
+update_redpitaya {
 }
 
 # Create sandbox
