@@ -27,7 +27,7 @@ if [ "$wyliodrin_server" = "" ]; then
 fi
 
 # Create sandbox
-mkdir -p SANDBOX_PATH
+mkdir -p $SANDBOX_PATH
 
 if [ "$wyliodrin_board" = "raspberrypi" ]; then
   CMAKE_PARAMS="-DRASPBERRYPI=ON"

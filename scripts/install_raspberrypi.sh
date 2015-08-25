@@ -45,16 +45,16 @@ pip install ino
 pip install pyfirmata
 
 # Create sandbox directory
-mkdir SANDBOX_PATH
+mkdir -p $SANDBOX_PATH
 
 # Install BrickPi
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 git clone https://github.com/DexterInd/BrickPi_Python.git
 cd BrickPi_Python
 python setup.py install
 
 # Install libstrophe
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 git clone https://github.com/strophe/libstrophe.git
 cd libstrophe
 ./bootstrap.sh
@@ -63,7 +63,7 @@ make
 make install
 
 # Install node
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 wget https://nodejs.org/dist/v0.10.28/node-v0.10.28.tar.gz
 tar -xzf node-v0.10.28.tar.gz
 rm node-v0.10.28.tar.gz
@@ -73,11 +73,11 @@ make
 make install
 
 # Install serialport
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 npm install voodootikigod/node-serialport
 
 # Install wiringPi
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 git clone https://github.com/Wyliodrin/wiringPi.git
 cd wiringPi
 sed 's/sudo//g' build > build2
@@ -85,7 +85,7 @@ chmod +x build2
 ./build2
 
 # Install pcre
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.36.tar.gz
 tar -xzf pcre-8.36.tar.gz
 rm pcre-8.36.tar.gz
@@ -95,7 +95,7 @@ make
 make install
 
 # Install swig 3+
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 wget http://prdownloads.sourceforge.net/swig/swig-3.0.2.tar.gz
 tar -xzf swig-3.0.2.tar.gz
 rm swig-3.0.2.tar.gz
@@ -105,7 +105,7 @@ make
 make install
 
 # Install libwyliodrin
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 git clone https://github.com/Wyliodrin/libwyliodrin.git
 cd libwyliodrin
 mkdir build
@@ -119,7 +119,7 @@ install_social
 update_streams
 
 # Install wyliodrin-server
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 git clone https://github.com/alexandruradovici/wyliodrin-server.git
 cd wyliodrin-server
 mkdir build
@@ -148,7 +148,7 @@ printf "{\n\
 touch /etc/wyliodrin/running_projects
 
 # I2C support
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 apt-get install -y python3-dev
 wget http://ftp.de.debian.org/debian/pool/main/i/i2c-tools/i2c-tools_3.1.0.orig.tar.bz2
 tar xf i2c-tools_3.1.0.orig.tar.bz2
