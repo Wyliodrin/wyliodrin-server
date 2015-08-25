@@ -33,7 +33,7 @@ if [ "$wyliodrin_board" = "raspberrypi" ]; then
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
 
   # Update wiringPi
-  cd SANDBOX_PATH
+  cd $SANDBOX_PATH
   rm -rf wiringPi
   git clone https://github.com/Wyliodrin/wiringPi.git
   cd wiringPi
@@ -64,7 +64,7 @@ else
 fi
 
 # Update libwyliodrin
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 rm -rf libwyliodrin
 git clone $LIBWYLIODRIN_PATH
 cd libwyliodrin
@@ -75,7 +75,7 @@ make
 make install
 
 # Update wyliodrin-server
-cd SANDBOX_PATH
+cd $SANDBOX_PATH
 rm -rf wyliodrin_server
 git clone $WYLIODRIN_SERVER_PATH
 cd wyliodrin-server
