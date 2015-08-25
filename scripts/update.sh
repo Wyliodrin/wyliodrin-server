@@ -26,7 +26,12 @@ if [ "$wyliodrin_server" = "" ]; then
   exit 1
 fi
 
-update_raspberrypi () {
+# Create sandbox
+mkdir -p SANDBOX_PATH
+
+if [ "$wyliodrin_board" = "raspberrypi" ]; then
+  CMAKE_PARAMS="-DRASPBERRYPI=ON"
+
   # Update wiringPi
   cd SANDBOX_PATH
   rm -rf wiringPi
@@ -35,56 +40,24 @@ update_raspberrypi () {
   sed 's/sudo//g' build > build2
   chmod +x build2
   ./build2
-}
 
-update_beagleboneblack () {
-}
-
-update_arduinogalileo () {
-  opkg update
-  opkg upgrade
-}
-
-update_edison () {
-  if ! echo "import setuptools" | python; then
-    curl -L https://bootstrap.pypa.io/ez_setup.py | python
-  fi
-
-  cd SANDBOX_PATH
-  rm -rf redis-py
-  git clone https://github.com/andymccurdy/redis-py.git
-  cd redis-py
-  python setup.py install
-
-  opkg update
-  opkg upgrade
-}
-
-update_redpitaya () {
-}
-
-# Create sandbox
-mkdir -p SANDBOX_PATH
-
-if [ "$wyliodrin_board" = "raspberrypi" ]; then
-  update_raspberrypi
-  CMAKE_PARAMS="-DRASPBERRYPI=ON"
 elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
-  update_beagleboneblack
   CMAKE_PARAMS="-DBEAGLEBONEBLACK=ON -DNODE_ROOT_DIR=/usr/include"
+
 elif [ "$wyliodrin_board" = "arduinogalileo" ]; then
-  update_arduinogalileo
   CMAKE_PARAMS="-DGALILEO=ON"
+
 elif [ "$wyliodrin_board" = "edison" ]; then
-  update_edison
   CMAKE_PARAMS="-DEDISON=ON"
+
 elif [ "$wyliodrin_board" = "redpitaya" ]; then
-  update_redpitaya
   CMAKE_PARAMS="-DREDPITAYA=ON"
+
 elif [ "$wyliodrin_board" = "" ]; then
   echo "ERROR: there is no environment variable named wyliodrin_board" \
     >/dev/stderr
   exit 2
+
 else
   echo "ERROR: unknown board: $wyliodrin_board" > /dev/stderr
   exit 3
