@@ -56,17 +56,17 @@ elif [ "$wyliodrin_board" = "redpitaya" ]; then
 elif [ "$wyliodrin_board" = "" ]; then
   echo "ERROR: there is no environment variable named wyliodrin_board" \
     >/dev/stderr
-  exit 2
+  exit 1
 
 else
   echo "ERROR: unknown board: $wyliodrin_board" > /dev/stderr
-  exit 3
+  exit 1
 fi
 
 # Update libwyliodrin
 cd SANDBOX_PATH
 rm -rf libwyliodrin
-git clone LIBWYLIODRIN_PATH
+git clone $LIBWYLIODRIN_PATH
 cd libwyliodrin
 mkdir build
 cd build
@@ -77,7 +77,7 @@ make install
 # Update wyliodrin-server
 cd SANDBOX_PATH
 rm -rf wyliodrin_server
-git clone WYLIODRIN_SERVER_PATH
+git clone $WYLIODRIN_SERVER_PATH
 cd wyliodrin-server
 mkdir build
 cd build
