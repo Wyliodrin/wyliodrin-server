@@ -3,6 +3,8 @@
 # Update libwyliodrin and wyliodrin-server script
 
 SANDBOX_PATH=/tmp/sandbox
+LIBWYLIODRIN_PATH="https://github.com/Wyliodrin/libwyliodrin.git"
+WYLIODRIN_SERVER_PATH="https://github.com/Wyliodrin/wyliodrin-server.git"
 
 # Test whether the script is run by root or not
 if [[ ! $(whoami) =~ "root" ]]; then
@@ -77,7 +79,7 @@ elif [ "$wyliodrin_board" == "redpitaya" ]; then
   update_redpitaya
   CMAKE_PARAMS="-DREDPITAYA=ON"
 elif [ "$wyliodrin_board" == "" ]; then
-  echo "ERROR: there is no environment variable named wyliodrin_board"        \
+  echo "ERROR: there is no environment variable named wyliodrin_board" \
     >/dev/stderr
   exit 2
 else
@@ -91,7 +93,7 @@ mkdir -p SANDBOX_PATH
 # Update libwyliodrin
 cd SANDBOX_PATH
 rm -rf libwyliodrin
-git clone https://github.com/Wyliodrin/libwyliodrin.git
+git clone LIBWYLIODRIN_PATH
 cd libwyliodrin
 mkdir build
 cd build
@@ -102,7 +104,7 @@ make install
 # Update wyliodrin-server
 cd SANDBOX_PATH
 rm -rf wyliodrin_server
-git clone https://github.com/alexandruradovici/wyliodrin-server.git
+git clone WYLIODRIN_SERVER_PATH
 cd wyliodrin-server
 mkdir build
 cd build
