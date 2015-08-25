@@ -7,7 +7,7 @@ LIBWYLIODRIN_PATH="https://github.com/Wyliodrin/libwyliodrin.git"
 WYLIODRIN_SERVER_PATH="https://github.com/Wyliodrin/wyliodrin-server.git"
 
 # Test whether the script is run by root or not
-if [[ ! $(whoami) =~ "root" ]]; then
+if [ ! $(whoami) =~ "root" ]; then
   echo ""
   echo "***************************************"
   echo "*** This script must be run as root ***"
@@ -63,6 +63,9 @@ function update_edison {
 function update_redpitaya {
 }
 
+# Create sandbox
+mkdir -p SANDBOX_PATH
+
 if [ "$wyliodrin_board" == "raspberrypi" ]; then
   update_raspberrypi
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
@@ -86,9 +89,6 @@ else
   echo "ERROR: unknown board: $wyliodrin_board" > /dev/stderr
   exit 3
 fi
-
-# Create sandbox
-mkdir -p SANDBOX_PATH
 
 # Update libwyliodrin
 cd SANDBOX_PATH
