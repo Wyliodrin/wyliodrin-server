@@ -7,7 +7,7 @@ LIBWYLIODRIN_PATH="https://github.com/Wyliodrin/libwyliodrin.git"
 WYLIODRIN_SERVER_PATH="https://github.com/Wyliodrin/wyliodrin-server.git"
 
 # Test whether the script is run by root or not
-if [ ! $(whoami) =~ "root" ]; then
+if [ ! "$(whoami)" = "root" ]; then
   echo ""
   echo "***************************************"
   echo "*** This script must be run as root ***"
@@ -17,7 +17,7 @@ if [ ! $(whoami) =~ "root" ]; then
 fi
 
 # Test whether the board has the new C server or not
-if [ "$wyliodrin_server" == "" ]; then
+if [ "$wyliodrin_server" = "" ]; then
   echo ""
   echo "***************************************"
   echo "*** Please upgrade to our new image ***"
@@ -66,22 +66,22 @@ function update_redpitaya {
 # Create sandbox
 mkdir -p SANDBOX_PATH
 
-if [ "$wyliodrin_board" == "raspberrypi" ]; then
+if [ "$wyliodrin_board" = "raspberrypi" ]; then
   update_raspberrypi
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
-elif [ "$wyliodrin_board" == "beagleboneblack" ]; then
+elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
   update_beagleboneblack
   CMAKE_PARAMS="-DBEAGLEBONEBLACK=ON -DNODE_ROOT_DIR=/usr/include"
-elif [ "$wyliodrin_board" == "arduinogalileo" ]; then
+elif [ "$wyliodrin_board" = "arduinogalileo" ]; then
   update_arduinogalileo
   CMAKE_PARAMS="-DGALILEO=ON"
-elif [ "$wyliodrin_board" == "edison" ]; then
+elif [ "$wyliodrin_board" = "edison" ]; then
   update_edison
   CMAKE_PARAMS="-DEDISON=ON"
-elif [ "$wyliodrin_board" == "redpitaya" ]; then
+elif [ "$wyliodrin_board" = "redpitaya" ]; then
   update_redpitaya
   CMAKE_PARAMS="-DREDPITAYA=ON"
-elif [ "$wyliodrin_board" == "" ]; then
+elif [ "$wyliodrin_board" = "" ]; then
   echo "ERROR: there is no environment variable named wyliodrin_board" \
     >/dev/stderr
   exit 2
