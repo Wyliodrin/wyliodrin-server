@@ -18,6 +18,29 @@
 #
 # [1] https://www.abelectronics.co.uk/i2c-raspbian-wheezy/info.aspx
 
+# Check whether raspi-config is installed or not
+dpkg -s raspi-config > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "**************************************************************************"
+  echo "*** Please follow the steps described above before running this script ***"
+  echo "**************************************************************************"
+  echo ""
+  exit 1
+fi
+
+# Check minimum space required
+MIN_SIZE=$((3 * 1024 * 1024))
+df_result=($(df / | tail -n 1))
+if [ ${df_result[1]} -lt $MIN_SIZE ]; then
+  echo ""
+  echo "**************************************"
+  echo "*** At least 3GB of space required ***"
+  echo "**************************************"
+  echo ""
+  exit 1
+fi
+
 SANDBOX_PATH=/tmp/sandbox
 
 # Install some stuff
