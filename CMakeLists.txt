@@ -80,6 +80,7 @@ target_link_libraries (wyliodrind
   ${CMAKE_THREAD_LIBS_INIT}
   ${CURL_LIBRARIES}
   -lutil
+  -lwyliodrin
   ${HIREDIS_LIBRARIES}
   ${EVENT_LIBRARIES}
   ${FUSE_LIBRARIES}

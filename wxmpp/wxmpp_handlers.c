@@ -205,8 +205,8 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
 
       sprintf(wmajor,  "%d", WTALK_VERSION_MAJOR);
       sprintf(wminor,  "%d", WTALK_VERSION_MINOR);
-      sprintf(lwmajor, "%d", LIBWYLIODRIN_VERSION_MAJOR);
-      sprintf(lwminor, "%d", LIBWYLIODRIN_VERSION_MINOR);
+      sprintf(lwmajor, "%d", get_version_major());
+      sprintf(lwminor, "%d", get_version_minor());
 
       xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
       xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
