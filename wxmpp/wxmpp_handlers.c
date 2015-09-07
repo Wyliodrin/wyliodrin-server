@@ -203,10 +203,10 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       char lwmajor[4];
       char lwminor[4];
 
-      sprintf(wmajor,  "%d", WTALK_VERSION_MAJOR);
-      sprintf(wminor,  "%d", WTALK_VERSION_MINOR);
-      sprintf(lwmajor, "%d", get_version_major());
-      sprintf(lwminor, "%d", get_version_minor());
+      snprintf(wmajor,  4, "%d", WTALK_VERSION_MAJOR);
+      snprintf(wminor,  4, "%d", WTALK_VERSION_MINOR);
+      snprintf(lwmajor, 4, "%d", get_version_major());
+      snprintf(lwminor, 4, "%d", get_version_minor());
 
       xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
       xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
