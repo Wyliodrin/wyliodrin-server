@@ -1,8 +1,7 @@
 #!/bin/sh
 
+###################################################################################################
 # Raspberry Pi install script
-#
-# !!! THIS SCRIPT MUST BE RUN AS ROOT !!!
 #
 # !!! BEFORE RUNNING THIS SCRIPT !!!
 # apt-get install raspi-config
@@ -11,12 +10,29 @@
 # Select 8 Advanced Options and then  A7 I2C - Enable/Disable automatic loading.
 # A prompt will appear asking "Would you like the ARM I2C interface to be
 # enabled?". Select Yes, exit the utility and reboot your raspberry pi.
-# add "dtparam=i2c1=on" and "dtparam=i2c_arm=on" in /boot/config.txt.
-# add "i2c-dev" in /etc/modules.
+# Add "dtparam=i2c1=on" and "dtparam=i2c_arm=on" in /boot/config.txt.
+# Add "i2c-dev" in /etc/modules.
 # Follow [1] for more details on how to enable I2C on your raspberry pi.
-# add "/usr/local/bin/supervisord -c /etc/supervisord.conf" in /etc/rc.local.
+# Add "/usr/local/bin/supervisord -c /etc/supervisord.conf" in /etc/rc.local.
 #
 # [1] https://www.abelectronics.co.uk/i2c-raspbian-wheezy/info.aspx
+###################################################################################################
+
+
+
+###################################################################################################
+# Sanity checks
+###################################################################################################
+
+# Test whether the script is run by root or not
+if [ ! "$(whoami)" = "root" ]; then
+  echo ""
+  echo "***************************************"
+  echo "*** This script must be run as root ***"
+  echo "***************************************"
+  echo ""
+  exit 1
+fi
 
 # Check whether raspi-config is installed or not
 dpkg -s raspi-config > /dev/null 2>&1
@@ -41,7 +57,21 @@ if [ ${df_result[1]} -lt $MIN_SIZE ]; then
   exit 1
 fi
 
-SANDBOX_PATH=/tmp/sandbox
+
+
+###################################################################################################
+# Script variables
+###################################################################################################
+
+SANDBOX_PATH=/root/sandbox
+WVERSION=v2.0
+LWVERSION=v1.14
+
+
+
+###################################################################################################
+# Actual installation
+###################################################################################################
 
 # Install some stuff
 apt-get update
@@ -131,6 +161,7 @@ make install
 cd $SANDBOX_PATH
 git clone https://github.com/Wyliodrin/libwyliodrin.git
 cd libwyliodrin
+git checkout $LWVERSION
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
@@ -145,6 +176,7 @@ update_streams
 cd $SANDBOX_PATH
 git clone https://github.com/alexandruradovici/wyliodrin-server.git
 cd wyliodrin-server
+git checkout $WVERSION
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
