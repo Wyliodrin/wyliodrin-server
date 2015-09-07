@@ -1,10 +1,25 @@
 #!/bin/sh
 
-# Update libwyliodrin and wyliodrin-server script
+###################################################################################################
+# Update libwyliodrin and wyliodrin-server
+###################################################################################################
 
-SANDBOX_PATH=/tmp/sandbox
-LIBWYLIODRIN_PATH="https://github.com/Wyliodrin/libwyliodrin.git"
-WYLIODRIN_SERVER_PATH="https://github.com/Wyliodrin/wyliodrin-server.git"
+
+
+###################################################################################################
+# Script variables
+###################################################################################################
+
+SANDBOX_PATH=/home/root/sandbox
+
+WVERSION=v2.0
+LWVERSION=v1.14
+
+
+
+###################################################################################################
+# Sanity checks
+###################################################################################################
 
 # Test whether the script is run by root or not
 if [ ! "$(whoami)" = "root" ]; then
@@ -25,6 +40,12 @@ if [ "$wyliodrin_server" = "" ]; then
   echo ""
   exit 1
 fi
+
+
+
+###################################################################################################
+# Actual update
+###################################################################################################
 
 # Create sandbox
 mkdir -p $SANDBOX_PATH
@@ -66,8 +87,9 @@ fi
 # Update libwyliodrin
 cd $SANDBOX_PATH
 rm -rf libwyliodrin
-git clone $LIBWYLIODRIN_PATH
+git clone https://github.com/Wyliodrin/libwyliodrin.git
 cd libwyliodrin
+git checkout $LWVERSION
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr $CMAKE_PARAMS ..
@@ -77,8 +99,9 @@ make install
 # Update wyliodrin-server
 cd $SANDBOX_PATH
 rm -rf wyliodrin_server
-git clone $WYLIODRIN_SERVER_PATH
+git clone https://github.com/Wyliodrin/wyliodrin-server.git
 cd wyliodrin-server
+git checkout $WVERSION
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
