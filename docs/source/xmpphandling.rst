@@ -31,12 +31,19 @@ via xmpp_handler_add_ and sends two presence stanzas:
 
 and
 ::
-  <presence type="subscribe" to=<owner>/>
+  <presence type="subscribe" to="<owner>"/>
 
 The ``<owner>`` value is retrieved from ``wyliodrin.json``.
 
 In case of a connection error, the error must be signaled to the ``files``
 module in order to avoid a deadlock.
+
+If the presence stanza has a ``status`` child, this means that the owner is
+online and the version of wtalk and libwyliodrin are sent:
+::
+  <message to="<owner>">
+    <version xmlns="wyliodrin" wmajor="2" wminor="0" lwmajor="1" lwminor="0"/>
+  </message>
 
 
 Ping handler

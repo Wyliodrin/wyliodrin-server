@@ -252,9 +252,9 @@ void wtalk()
     waitpid(wifi_pid, NULL, 0);
   }
 
-  werr("Starting Wtalk v%d.%d using libwyliodrin v"
-    LIBWYLIODRIN_VERSION_MAJOR "." LIBWYLIODRIN_VERSION_MINOR,
-    WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR);
+  werr("Starting Wtalk v%d.%d using libwyliodrin v%d.%d",
+    WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR,
+    LIBWYLIODRIN_VERSION_MAJOR, LIBWYLIODRIN_VERSION_MINOR);
 
   create_running_projects_file_if_does_not_exist();
 

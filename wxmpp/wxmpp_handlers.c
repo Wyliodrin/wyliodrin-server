@@ -5,12 +5,14 @@
  * Date last modified: July 2015
  *************************************************************************************************/
 
-#include <string.h>  /* strings handlings  */
-#include <pthread.h> /* mutex and cond     */
+#include <string.h>    /* strings handlings  */
+#include <pthread.h>   /* mutex and cond     */
+#include <Wyliodrin.h> /* version            */
 
 #include "../winternals/winternals.h" /* logs and errs      */
 #include "../libds/ds.h"              /* modules hashmap    */
 #include "wxmpp.h"                    /* module_fct and WNS */
+#include "wtalk_config.h"             /* version            */
 
 #ifdef SHELLS
   #include "../shells/shells.h"
@@ -194,6 +196,33 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       wlog("Owner is online");
 
       is_owner_online = true;
+
+      /* Send version */
+      char wmajor[4];
+      char wminor[4];
+      char lwmajor[4];
+      char lwminor[4];
+
+      sprintf(wmajor,  "%d", WTALK_VERSION_MAJOR);
+      sprintf(wminor,  "%d", WTALK_VERSION_MINOR);
+      sprintf(lwmajor, "%d", LIBWYLIODRIN_VERSION_MAJOR);
+      sprintf(lwminor, "%d", LIBWYLIODRIN_VERSION_MINOR);
+
+      xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
+      xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
+      xmpp_stanza_set_name(message_stz, "message");
+      xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+      xmpp_stanza_t *version_stz = xmpp_stanza_new(ctx);
+      xmpp_stanza_set_name(version_stz, "version");
+      xmpp_stanza_set_ns(version_stz, WNS);
+      xmpp_stanza_set_attribute(version_stz, "wmajor", wmajor);
+      xmpp_stanza_set_attribute(version_stz, "wminor", wminor);
+      xmpp_stanza_set_attribute(version_stz, "lwmajor", lwmajor);
+      xmpp_stanza_set_attribute(version_stz, "lwminor", lwminor);
+      xmpp_stanza_add_child(message_stz, version_stz);
+      xmpp_send(conn, message_stz);
+      xmpp_stanza_release(version_stz);
+      xmpp_stanza_release(message_stz);
 
       /* Create tags hashmap */
       if (modules != NULL) {
