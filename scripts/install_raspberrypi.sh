@@ -134,7 +134,7 @@ rm -rfv node-v0.10.28
 
 # Install serialport
 cd $SANDBOX_PATH
-npm install voodootikigod/node-serialport
+npm install -g serialport
 
 # Install wiringPi
 cd $SANDBOX_PATH
