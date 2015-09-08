@@ -172,6 +172,9 @@ make install
 install_social
 update_streams
 
+# Link wyliodrin module used in node-red
+ln -s /usr/lib/node_modules/wyliodrin /wyliodrin/node-red/node_modules/wyliodrin
+
 # Install wyliodrin-server
 cd $SANDBOX_PATH
 git clone https://github.com/alexandruradovici/wyliodrin-server.git
