@@ -63,7 +63,7 @@ fi
 # Script variables
 ###################################################################################################
 
-SANDBOX_PATH=/root/sandbox
+SANDBOX_PATH=/sandbox
 WVERSION=v2.0
 LWVERSION=v1.15
 
@@ -224,3 +224,6 @@ printf "\
 [program:wtalk]\n\
 command=/usr/bin/wyliodrind\n"\
 > /etc/supervisord.conf
+
+# Clean
+rm -rf $SANDBOX_PATH
