@@ -126,6 +126,8 @@ cd node-v0.10.28
 ./configure --prefix=/usr
 make
 make install
+cd ..
+rm -rfv node-v0.10.28
 
 # Install serialport
 cd $SANDBOX_PATH
