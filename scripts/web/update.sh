@@ -13,7 +13,7 @@
 SANDBOX_PATH=/home/root/sandbox
 
 WVERSION=v2.0
-LWVERSION=v1.14
+LWVERSION=v1.15
 
 
 
