@@ -81,7 +81,7 @@ apt-get install -y git gcc g++ gcc-4.7 g++-4.7 make pkg-config libexpat1-dev  \
   cmake mc mplayer arduino minicom picocom bluez-utils bluez-compat           \
   bluez-hcidump libusb-dev libbluetooth-dev bluetooth joystick python-smbus   \
   curl libicu-dev mpg123
-  
+
 apt-get clean
 
 # Use gcc and g++ 4.7
@@ -119,15 +119,18 @@ make install
 
 # Install node
 cd $SANDBOX_PATH
-wget https://nodejs.org/dist/v0.10.28/node-v0.10.28.tar.gz
-tar -xzf node-v0.10.28.tar.gz
-rm node-v0.10.28.tar.gz
-cd node-v0.10.28
-./configure --prefix=/usr
-make
-make install
-cd ..
-rm -rfv node-v0.10.28
+# wget https://nodejs.org/dist/v0.10.28/node-v0.10.28.tar.gz
+# tar -xzf node-v0.10.28.tar.gz
+# rm node-v0.10.28.tar.gz
+# cd node-v0.10.28
+# ./configure --prefix=/usr
+# make
+# make install
+# cd ..
+# rm -rfv node-v0.10.28
+wget http://node-arm.herokuapp.com/node_latest_armhf.deb
+dpkg -i node_latest_armhf.deb
+rm -rf node_latest_armhf.deb
 
 # Install serialport
 cd $SANDBOX_PATH
@@ -153,10 +156,10 @@ make install
 
 # Install swig 3+
 cd $SANDBOX_PATH
-wget http://prdownloads.sourceforge.net/swig/swig-3.0.2.tar.gz
-tar -xzf swig-3.0.2.tar.gz
-rm swig-3.0.2.tar.gz
-cd swig-3.0.2
+wget http://prdownloads.sourceforge.net/swig/swig-3.0.5.tar.gz
+tar -xzf swig-3.0.5.tar.gz
+rm swig-3.0.5.tar.gz
+cd swig-3.0.5
 ./configure --prefix=/usr
 make
 make install
