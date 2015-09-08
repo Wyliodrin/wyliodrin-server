@@ -119,18 +119,18 @@ make install
 
 # Install node
 cd $SANDBOX_PATH
-# wget https://nodejs.org/dist/v0.10.28/node-v0.10.28.tar.gz
-# tar -xzf node-v0.10.28.tar.gz
-# rm node-v0.10.28.tar.gz
-# cd node-v0.10.28
-# ./configure --prefix=/usr
-# make
-# make install
-# cd ..
-# rm -rfv node-v0.10.28
-wget http://node-arm.herokuapp.com/node_latest_armhf.deb
-dpkg -i node_latest_armhf.deb
-rm -rf node_latest_armhf.deb
+wget https://nodejs.org/dist/v0.10.28/node-v0.10.28.tar.gz
+tar -xzf node-v0.10.28.tar.gz
+rm node-v0.10.28.tar.gz
+cd node-v0.10.28
+./configure --prefix=/usr
+make
+make install
+cd ..
+rm -rfv node-v0.10.28
+# wget http://node-arm.herokuapp.com/node_latest_armhf.deb
+# dpkg -i node_latest_armhf.deb
+# rm -rf node_latest_armhf.deb
 
 # Install serialport
 cd $SANDBOX_PATH
