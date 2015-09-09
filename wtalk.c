@@ -57,6 +57,38 @@ static void create_running_projects_file_if_does_not_exist() {
   }
 }
 
+static void wifi_rpi(const char *ssid, const char *psk) {
+  int fd = open(RPI_WIFI_PATH, O_WRONLY);
+  if (fd != -1) {
+    /* Wifi already set */
+    return;
+  }
+
+  fd = open(RPI_WIFI_PATH, O_CREAT | O_WRONLY);
+  if (fd == -1) {
+    werr("Could not open %s", RPI_WIFI_PATH);
+    return;
+  }
+
+  char to_write[512];
+  snprintf(to_write, 512,
+    "network={\n"
+    "\tssid=\"%s\"\n"
+    "\tproto=WPA RSN\n"
+    "\tscan_ssid=1\n"
+    "\tkey_mgmt=WPA-PSK NONE\n"
+    "\tpsk=\"%s\"\n"
+    "}\n",
+    ssid, psk);
+
+  write(fd, to_write, strlen(to_write));
+
+  system(
+    "rm /etc/network/interfaces; "
+    "cp /etc/network/interfaces.wyliodrin /etc/network/interfaces; "
+    "/etc/init.d/networking restart");
+}
+
 
 
 void wtalk()
@@ -225,6 +257,18 @@ void wtalk()
           werr("configure_edison failed");
           exit(EXIT_FAILURE);
         }
+      }
+    }
+  }
+
+  /* Wifi for rpi */
+  if (strcmp(boardtype, "raspberrypi") == 0) {
+    const char *ssid_str = get_str_value(config_json, "ssid");
+
+    if (ssid_str != NULL && strlen(ssid_str) != 0) {
+      const char *psk_str = get_str_value(config_json, "psk");
+      if (psk_str != NULL) {
+        wifi_rpi(ssid_str, psk_str);
       }
     }
   }
