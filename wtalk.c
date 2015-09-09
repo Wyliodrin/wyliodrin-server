@@ -87,7 +87,8 @@ static void wifi_rpi(const char *ssid, const char *psk) {
   write(fd, to_write, strlen(to_write));
   close(fd);
 
-  system("/etc/init.d/networking restart");
+  // system("/etc/init.d/networking restart");
+  system("ifdown wlan0; ifup wlan0");
 }
 
 
