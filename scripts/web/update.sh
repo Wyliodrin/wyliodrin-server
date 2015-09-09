@@ -10,9 +10,8 @@
 # Script variables
 ###################################################################################################
 
-SANDBOX_PATH=/home/root/sandbox
-
-WVERSION=v2.1
+SANDBOX_PATH=/sandbox
+WVERSION=v2.2
 LWVERSION=v1.16
 
 
@@ -107,3 +106,6 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
 make
 make install
+
+# Clean
+rm -rf $SANDBOX_PATH

@@ -10,8 +10,8 @@
 # Script variables
 ###################################################################################################
 
-SANDBOX_PATH=/home/root/sandbox
-WVERSION=v2.1
+SANDBOX_PATH=/sandbox
+WVERSION=v2.2
 LWVERSION=v1.16
 
 
@@ -169,5 +169,8 @@ systemctl enable wyliodrin-server
 export wyliodrin_board=edison
 install_social
 update_streams
+
+# Clean
+rm -rf $SANDBOX_PATH
 
 reboot
