@@ -77,7 +77,7 @@ LWVERSION=v1.16
 apt-get update
 apt-get install -y git gcc g++ gcc-4.7 g++-4.7 make pkg-config libexpat1-dev  \
   libssl-dev libhiredis-dev dh-autoreconf libfuse-dev libcurl4-gnutls-dev     \
-  libevent-dev redis-server python-dev libi2c-dev python-pip libjansson-dev   \
+  libevent-dev redis-server supervisor python-dev libi2c-dev python-pip libjansson-dev   \
   cmake mc mplayer arduino minicom picocom bluez-utils bluez-compat           \
   bluez-hcidump libusb-dev libbluetooth-dev bluetooth joystick python-smbus   \
   curl libicu-dev mpg123 firmware-ralink firmware-realtek wireless-tools      \
@@ -134,7 +134,7 @@ rm -rfv node-v0.10.28
 
 # Install serialport
 cd $SANDBOX_PATH
-npm install voodootikigod/node-serialport
+npm install -g serialport
 
 # Install wiringPi
 cd $SANDBOX_PATH
@@ -225,12 +225,11 @@ python3 setup.py build
 python3 setup.py install
 
 # Startup script
-easy_install supervisor
-printf "\
+sudo sh -c 'printf "\
 [supervisord]\n\
 [program:wtalk]\n\
 command=/usr/bin/wyliodrind\n"\
-> /etc/supervisord.conf
+>> /etc/supervisord.conf'
 
 # Wifi
 cp /etc/network/interfaces /etc/network/interfaces.orig
