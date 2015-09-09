@@ -58,13 +58,7 @@ static void create_running_projects_file_if_does_not_exist() {
 }
 
 static void wifi_rpi(const char *ssid, const char *psk) {
-  int fd = open(RPI_WIFI_PATH, O_WRONLY);
-  if (fd != -1) {
-    /* Wifi already set */
-    return;
-  }
-
-  fd = open(RPI_WIFI_PATH, O_CREAT | O_WRONLY);
+  int fd = open(RPI_WIFI_PATH, O_CREAT | O_RDWR);
   if (fd == -1) {
     werr("Could not open %s", RPI_WIFI_PATH);
     return;
@@ -81,12 +75,19 @@ static void wifi_rpi(const char *ssid, const char *psk) {
     "}\n",
     ssid, psk);
 
-  write(fd, to_write, strlen(to_write));
+  char to_read[512];
+  to_read[0] = '\0';
+  read(fd, to_read, 512);
+  if (strncmp(to_write, to_read, strlen(to_write)) == 0) {
+    /* Already up to date */
+    close(fd);
+    return;
+  }
 
-  system(
-    "rm /etc/network/interfaces; "
-    "cp /etc/network/interfaces.wyliodrin /etc/network/interfaces; "
-    "/etc/init.d/networking restart");
+  write(fd, to_write, strlen(to_write));
+  close(fd);
+
+  system("/etc/init.d/networking restart");
 }
 
 

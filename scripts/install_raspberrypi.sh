@@ -233,7 +233,7 @@ command=/usr/bin/wyliodrind\n"\
 
 # Wifi
 cp /etc/network/interfaces /etc/network/interfaces.orig
-printf "# do not edit by hand\n\
+sh -c 'printf "# do not edit by hand\n\
 auto lo\n\
 \n\
 iface lo inet loopback\n\
@@ -243,7 +243,7 @@ allow-hotplug wlan0\n\
 iface wlan0 inet manual\n\
 \n\
 wpa-roam /etc/wyliodrin/wireless.conf\n\
-iface default inet dhcp\n" > /etc/network/interfaces.wyliodrin
+iface default inet dhcp\n" > /etc/network/interfaces'
 
 # Clean
 rm -rf $SANDBOX_PATH
