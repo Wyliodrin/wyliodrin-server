@@ -225,7 +225,7 @@ python3 setup.py build
 python3 setup.py install
 
 # Startup script
-sudo sh -c 'printf "\
+sh -c 'printf "\
 [supervisord]\n\
 [program:wtalk]\n\
 command=/usr/bin/wyliodrind\n"\
