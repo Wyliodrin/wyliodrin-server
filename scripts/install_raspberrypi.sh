@@ -188,23 +188,23 @@ make
 make install
 
 # Set boardtype to raspberry
-mkdir /etc/wyliodrin
-echo -n raspberrypi > /etc/wyliodrin/boardtype
+mkdir -p /wyliodrin
+echo -n raspberrypi > /wyliodrin/boardtype
 
 # Create mount and build directories
-mkdir /etc/wyliodrin/mnt
-mkdir /etc/wyliodrin/build
+mkdir /wyliodrin/mnt
+mkdir /wyliodrin/build
 
 # Create settings_raspberry.json
 printf "{\n\
   \"config_file\": \"/boot/wyliodrin.json\",\n\
-  \"mountFile\": \"/etc/wyliodrin/mnt\",\n\
-  \"buildFile\": \"/etc/wyliodrin/build\",\n\
+  \"mountFile\": \"/wyliodrin/mnt\",\n\
+  \"buildFile\": \"/wyliodrin/build\",\n\
   \"board\": \"raspberrypi\"\n\
-}\n" > /etc/wyliodrin/settings_raspberrypi.json
+}\n" > /wyliodrin/settings_raspberrypi.json
 
 # Create running_projects file
-touch /etc/wyliodrin/running_projects
+touch /wyliodrin/running_projects
 
 # I2C support
 cd $SANDBOX_PATH
@@ -236,7 +236,7 @@ iface eth0 inet dhcp\n\
 allow-hotplug wlan0\n\
 iface wlan0 inet manual\n\
 \n\
-wpa-roam /etc/wyliodrin/wireless.conf\n\
+wpa-roam /wyliodrin/wireless.conf\n\
 iface default inet dhcp\n" > /etc/network/interfaces'
 
 # Clean

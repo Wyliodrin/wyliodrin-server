@@ -54,7 +54,7 @@ running onto. The accepted values are ``arduinogalileo``, ``beagleboneblack``,
   There must be not any whitespace characters
   after the board's name.
 
-This file is located in ``/etc/wyliodrin``. The path is set in the
+This file is located in ``/wyliodrin``. The path is set in the
 ``BOARDTYPE_PATH`` directive in `wtalk.c`_.
 
 
@@ -70,7 +70,7 @@ Here ``<boardtype>`` is replaced with the type of board found in ``boardtype``.
   If ``boardtype`` contains ``edison``, then the settings file is named
   ``settings_edison.json``
 
-This file is located in ``/etc/wyliodrin``. The path is set in the
+This file is located in ``/wyliodrin``. The path is set in the
 ``SETTINGS_PATH`` directive in `wtalk.c`_.
 
 

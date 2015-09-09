@@ -97,7 +97,7 @@ void wtalk()
   /* Get the type of board from the boardtype file */
   int boardtype_fd = open(BOARDTYPE_PATH, O_RDONLY); /* File descriptor of boardtype file */
   if (boardtype_fd == -1) {
-    werr("There should be a file named boardtype in /etc/wyliodrin/");
+    werr("There should be a file named boardtype in /wyliodrin");
     return;
   }
 

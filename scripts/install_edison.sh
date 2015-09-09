@@ -128,18 +128,18 @@ cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
 make
 make install
 
-mkdir /etc/wyliodrin
-echo -n edison > /etc/wyliodrin/boardtype
+mkdir -p /wyliodrin
+echo -n edison > /wyliodrin/boardtype
 
-mkdir -p /etc/wyliodrin/mnt
-mkdir -p /etc/wyliodrin/build
+mkdir -p /wyliodrin/mnt
+mkdir -p /wyliodrin/build
 
 echo "{
 \"config_file\": \"/media/storage/wyliodrin.json\",
-\"mountFile\": \"/etc/wyliodrin/mnt\",
-\"buildFile\": \"/etc/wyliodrin/build\",
+\"mountFile\": \"/wyliodrin/mnt\",
+\"buildFile\": \"/wyliodrin/build\",
 \"board\": \"edison\"
-}" > /etc/wyliodrin/settings_edison.json
+}" > /wyliodrin/settings_edison.json
 
 echo "
 [Unit]

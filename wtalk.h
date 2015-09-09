@@ -10,17 +10,17 @@
 
 
 
-#define BOARDTYPE_PATH "/etc/wyliodrin/boardtype" /* File path of the file named boardtype.
+#define BOARDTYPE_PATH "/wyliodrin/boardtype" /* File path of the file named boardtype.
                                                      This file contains the name of the board.
                                                      Example: edison or arduinogalileo. */
 
-#define SETTINGS_PATH  "/etc/wyliodrin/settings_" /* File path of "settings_<boardtype>.json".
+#define SETTINGS_PATH  "/wyliodrin/settings_" /* File path of "settings_<boardtype>.json".
                                                      <boardtype> is the string found in the file
                                                      named boardtype.
                                                      Example: settings_edison.json */
 
-#define RUNNING_PROJECTS_PATH "/etc/wyliodrin/running_projects"
-#define RPI_WIFI_PATH "/etc/wyliodrin/wireless.conf"
+#define RUNNING_PROJECTS_PATH "/wyliodrin/running_projects"
+#define RPI_WIFI_PATH "/wyliodrin/wireless.conf"
 
 #define BOARDTYPE_MAX_LENGTH     64       /* Max length of boardtype */
 

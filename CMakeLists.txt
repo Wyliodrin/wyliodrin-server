@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.8.8)
 project (wyliodrin-server)
 
 set (WTALK_VERSION_MAJOR 2)
-set (WTALK_VERSION_MINOR 1)
+set (WTALK_VERSION_MINOR 2)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/wtalk_config.h.in"
@@ -74,7 +74,7 @@ add_executable (wyliodrind
 
 install (TARGETS wyliodrind DESTINATION bin)
 
-add_definitions ("-Wall -DLOG -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
+add_definitions ("-Wall -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
 
 target_link_libraries (wyliodrind
   ${CMAKE_THREAD_LIBS_INIT}
