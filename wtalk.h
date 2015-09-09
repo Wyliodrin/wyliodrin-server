@@ -20,7 +20,7 @@
                                                      Example: settings_edison.json */
 
 #define RUNNING_PROJECTS_PATH "/wyliodrin/running_projects"
-#define RPI_WIFI_PATH "/wyliodrin/wireless.conf"
+#define RPI_WIFI_PATH "/etc/wyliodrin/wireless.conf"
 
 #define BOARDTYPE_MAX_LENGTH     64       /* Max length of boardtype */
 

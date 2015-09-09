@@ -235,7 +235,7 @@ iface eth0 inet dhcp\n\
 allow-hotplug wlan0\n\
 auto wlan0\n\
 iface wlan0 inet manual\n\
-wpa-roam /wyliodrin/wireless.conf\n\
+wpa-roam /etc/wyliodrin/wireless.conf\n\
 iface default inet dhcp\n" > /etc/network/interfaces'
 
 # Clean
