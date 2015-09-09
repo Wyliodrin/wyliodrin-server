@@ -225,12 +225,11 @@ python3 setup.py build
 python3 setup.py install
 
 # Startup script
-easy_install supervisor
-printf "\
+sudo sh -c 'printf "\
 [supervisord]\n\
 [program:wtalk]\n\
 command=/usr/bin/wyliodrind\n"\
-> /etc/supervisord.conf
+>> /etc/supervisord.conf'
 
 # Clean
 rm -rf $SANDBOX_PATH
