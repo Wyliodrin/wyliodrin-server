@@ -227,15 +227,14 @@ command=/usr/bin/wyliodrind\n"\
 
 # Wifi
 cp /etc/network/interfaces /etc/network/interfaces.orig
-sh -c 'printf "# do not edit by hand\n\
+sh -c 'printf "\
 auto lo\n\
-\n\
 iface lo inet loopback\n\
+auto eth0\n\
 iface eth0 inet dhcp\n\
-\n\
 allow-hotplug wlan0\n\
+auto wlan0\n\
 iface wlan0 inet manual\n\
-\n\
 wpa-roam /wyliodrin/wireless.conf\n\
 iface default inet dhcp\n" > /etc/network/interfaces'
 
