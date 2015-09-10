@@ -46,13 +46,13 @@ if [ $? -ne 0 ]; then
 fi
 
 # Check minimum space required
-MIN_SIZE=$((3 * 1024 * 1024))
+MIN_SIZE=$((700 * 1024))
 df_result=($(df / | tail -n 1))
-if [ ${df_result[1]} -lt $MIN_SIZE ]; then
+if [ ${df_result[3]} -lt $MIN_SIZE ]; then
   echo ""
-  echo "**************************************"
-  echo "*** At least 3GB of space required ***"
-  echo "**************************************"
+  echo "****************************************"
+  echo "*** At least 700MB of space required ***"
+  echo "****************************************"
   echo ""
   exit 1
 fi
