@@ -12,6 +12,7 @@
 # enabled?". Select Yes, exit the utility and reboot your raspberry pi.
 # Add "dtparam=i2c1=on" and "dtparam=i2c_arm=on" in /boot/config.txt.
 # Add "i2c-dev" in /etc/modules.
+# Add "i2c-bcm2708" in /etc/modules
 # Follow [1] for more details on how to enable I2C on your raspberry pi.
 # Add "/usr/local/bin/supervisord -c /etc/supervisord.conf" in /etc/rc.local.
 #
