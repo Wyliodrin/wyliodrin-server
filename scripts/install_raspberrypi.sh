@@ -222,7 +222,7 @@ sh -c 'printf "\
 [supervisord]\n\
 [program:wtalk]\n\
 command=/usr/bin/wyliodrind\n"\
->> /etc/supervisord.conf'
+>> /etc/supervisor/supervisord.conf'
 
 # Wifi
 cp /etc/network/interfaces /etc/network/interfaces.orig
