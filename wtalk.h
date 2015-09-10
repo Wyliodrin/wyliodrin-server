@@ -10,11 +10,11 @@
 
 
 
-#define BOARDTYPE_PATH "/wyliodrin/boardtype" /* File path of the file named boardtype.
+#define BOARDTYPE_PATH "/etc/wyliodrin/boardtype" /* File path of the file named boardtype.
                                                      This file contains the name of the board.
                                                      Example: edison or arduinogalileo. */
 
-#define SETTINGS_PATH  "/wyliodrin/settings_" /* File path of "settings_<boardtype>.json".
+#define SETTINGS_PATH  "/etc/wyliodrin/settings_" /* File path of "settings_<boardtype>.json".
                                                      <boardtype> is the string found in the file
                                                      named boardtype.
                                                      Example: settings_edison.json */
