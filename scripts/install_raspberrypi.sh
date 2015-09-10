@@ -206,16 +206,16 @@ printf "{\n\
 touch /wyliodrin/running_projects
 
 # I2C support
-cd $SANDBOX_PATH
-apt-get install -y python3-dev
-wget http://ftp.de.debian.org/debian/pool/main/i/i2c-tools/i2c-tools_3.1.0.orig.tar.bz2
-tar xf i2c-tools_3.1.0.orig.tar.bz2
-rm i2c-tools_3.1.0.orig.tar.bz2
-cd i2c-tools-3.1.0/py-smbus
-mv smbusmodule.c smbusmodule.c.orig
-wget https://raw.githubusercontent.com/abelectronicsuk/ABElectronics_Python3_Libraries/master/smbusmodule.c
-python3 setup.py build
-python3 setup.py install
+# cd $SANDBOX_PATH
+# apt-get install -y python3-dev
+# wget http://ftp.de.debian.org/debian/pool/main/i/i2c-tools/i2c-tools_3.1.0.orig.tar.bz2
+# tar xf i2c-tools_3.1.0.orig.tar.bz2
+# rm i2c-tools_3.1.0.orig.tar.bz2
+# cd i2c-tools-3.1.0/py-smbus
+# mv smbusmodule.c smbusmodule.c.orig
+# wget https://raw.githubusercontent.com/abelectronicsuk/ABElectronics_Python3_Libraries/master/smbusmodule.c
+# python3 setup.py build
+# python3 setup.py install
 
 # Startup script
 sh -c 'printf "\
