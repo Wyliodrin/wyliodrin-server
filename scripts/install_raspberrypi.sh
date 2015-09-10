@@ -7,6 +7,7 @@
 # apt-get install raspi-config
 # raspi-config
 # Select 1 Expand Filesystem.
+# Select 8 Advanced Options and then  A6 SPI - Enable/Disable automatic loading.
 # Select 8 Advanced Options and then  A7 I2C - Enable/Disable automatic loading.
 # A prompt will appear asking "Would you like the ARM I2C interface to be
 # enabled?". Select Yes, exit the utility and reboot your raspberry pi.
