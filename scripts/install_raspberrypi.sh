@@ -187,8 +187,8 @@ make
 make install
 
 # Set boardtype to raspberry
-mkdir -p /wyliodrin
-echo -n raspberrypi > /wyliodrin/boardtype
+mkdir -p /etc/wyliodrin
+echo -n raspberrypi > /etc/wyliodrin/boardtype
 
 # Create mount and build directories
 mkdir /wyliodrin/mnt
@@ -200,7 +200,7 @@ printf "{\n\
   \"mountFile\": \"/wyliodrin/mnt\",\n\
   \"buildFile\": \"/wyliodrin/build\",\n\
   \"board\": \"raspberrypi\"\n\
-}\n" > /wyliodrin/settings_raspberrypi.json
+}\n" > /etc/wyliodrin/settings_raspberrypi.json
 
 # Create running_projects file
 touch /wyliodrin/running_projects
