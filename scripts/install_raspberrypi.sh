@@ -238,4 +238,5 @@ wpa-roam /etc/wyliodrin/wireless.conf\n\
 iface default inet dhcp\n" > /etc/network/interfaces'
 
 # Clean
+apt-get clean
 rm -rf $SANDBOX_PATH
