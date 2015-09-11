@@ -38,6 +38,7 @@ else:
 
 JID  = "wyliodrin_board@wyliodrin.org"
 PASS = "wyliodrin"
+loaded_projects = []
 
 
 
@@ -99,7 +100,9 @@ class SimBoard(sleekxmpp.ClientXMPP):
       return
 
     project = data[b'project'].decode("utf-8")
-    gdb.execute('file ' + project)
+    if project not in loaded_projects:
+      gdb.execute('file ' + project)
+      loaded_projects.append(project)
 
     if b'disassemble_func' in data:
       disassemble_func = data[b'disassemble_func']

@@ -10,3 +10,6 @@ sim_board: test
 
 sim_owner: test
 	/usr/bin/python3 sim_owner.py -d --jid $(JID_OWNER) --password $(PASSWORD) --to $(JID_BOARD)
+
+clean:
+	rm -rf test out.log err.log
