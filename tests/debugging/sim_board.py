@@ -10,6 +10,7 @@ import sys
 import logging
 import getpass
 import ssl
+import os
 
 import sleekxmpp
 from sleekxmpp import Message, Presence
@@ -93,25 +94,66 @@ class SimBoard(sleekxmpp.ClientXMPP):
   def _handle_action_event(self, msg):
     data = msgpack.unpackb(base64.b64decode(msg['w']['d']))
 
-    # disassemble
-    project = data[b'project']
-    dissamble_func = data[b'disassemble_func']
+    if b'project' not in data:
+      logging.info("No project in data")
+      return
 
-    result = {}
-    o = gdb.execute('file ' + project.decode("utf-8"), to_string=True)
-    for func in dissamble_func:
-      o = gdb.execute('disassemble ' + func.decode("utf-8"), to_string=True)
-      result[func.decode("utf-8")] = o
+    project = data[b'project'].decode("utf-8")
+    gdb.execute('file ' + project)
 
-    response = self.Message()
-    response['lang'] = None
-    response['to'] = msg['from']
-    response['w']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "project"          : project,
-      "disassemble_func" : result
-      })).decode("utf-8")
-    response.send()
+    if b'disassemble_func' in data:
+      disassemble_func = data[b'disassemble_func']
+
+      result = {}
+      for func in disassemble_func:
+        o = gdb.execute('disassemble ' + func.decode("utf-8"), to_string=True)
+        result[func.decode("utf-8")] = o
+
+      response = self.Message()
+      response['lang'] = None
+      response['to'] = msg['from']
+      response['w']['d'] = base64.b64encode(msgpack.packb(
+        {
+        "project"          : project,
+        "disassemble_func" : result
+        })).decode("utf-8")
+      response.send()
+
+    if b'breakpoints' in data:
+      breakpoints = data[b'breakpoints']
+
+      for breakpoint in breakpoints:
+        gdb.execute('break ' + breakpoint.decode("utf-8"))
+
+    if b'command' in data:
+      os.system("truncate -s 0 out.log")
+      os.system("truncate -s 0 err.log")
+
+      command = data[b'command'].decode("utf-8")
+      cid = data[b'id'].decode("utf-8")
+      o = ""
+      if command == "run":
+        o = gdb.execute("run > out.log 2> err.log")
+      else:
+        o = gdb.execute(command, to_string=True)
+        gdb.execute('call fflush(0)')
+
+      response = self.Message()
+      response['lang'] = None
+      response['to'] = msg['from']
+      response['w']['d'] = base64.b64encode(msgpack.packb(
+        {
+        "project" : project,
+        "id"      : cid,
+        "result"  : o,
+        "stdout"  : open("out.log").read(),
+        "stderr"  : open("err.log").read()
+        })).decode("utf-8")
+      response.send()
+
+
+
+
 
 
 if __name__ == '__main__':

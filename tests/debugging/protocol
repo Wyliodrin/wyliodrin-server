@@ -14,3 +14,26 @@
                           "<func_n>": "<result_n>"
                         }
 }
+
+=== breakpoints ===
+<--
+{
+  "project"     : "<projectid>",
+  "breakpoints" : ["<bp_1>", ... , "<bp_n>"]
+}
+
+<--
+{
+  "project" : "<projectid>",
+  "id"      : "<some_id>",
+  "command" : "<step or next>"
+}
+
+-->
+{
+  "project" : "<projectid>",
+  "id"      : "<some_id>",
+  "result"  : "<command_result>",
+  "stdout"  : "<program_output>",
+  "stderr"  : "<program_error>"
+}

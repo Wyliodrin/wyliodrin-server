@@ -10,6 +10,7 @@ import logging
 import getpass
 import ssl
 from optparse import OptionParser
+from time import sleep
 
 import sleekxmpp
 from sleekxmpp import Message, Presence
@@ -98,6 +99,34 @@ class SimOwner(sleekxmpp.ClientXMPP):
       "disassemble_func" : ["f", "main"]
       })).decode("utf-8")
     msg.send()
+    sleep(1)
+
+    # Send breakpoints
+    # msg['w']['d'] = base64.b64encode(msgpack.packb(
+    #   {
+    #   "project"     : "test",
+    #   "breakpoints" : ["main"]
+    #   })).decode("utf-8")
+    # msg.send()
+    # sleep(1)
+
+    # Send run command
+    msg['w']['d'] = base64.b64encode(msgpack.packb(
+      {
+      "project" : "test",
+      "id"      : "0",
+      "command" : "run"
+      })).decode("utf-8")
+    msg.send()
+
+    # # Send next command
+    # msg['w']['d'] = base64.b64encode(msgpack.packb(
+    #   {
+    #   "project" : "test",
+    #   "id"      : "1",
+    #   "command" : "next"
+    #   })).decode("utf-8")
+    # msg.send()
 
 
   def _handle_action(self, msg):
