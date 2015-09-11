@@ -1,0 +1,16 @@
+=== disassemble ===
+<--
+{
+  "project"          : "<projectid>",
+  "disassemble_func" : ["<func_1>", ... , "<func_n>"]
+}
+
+-->
+{
+  "project"           : "<projectid>",
+  "disassemble_func"  : {
+                          "<func_1>": "<result_1>",
+                          ...
+                          "<func_n>": "<result_n>"
+                        }
+}
