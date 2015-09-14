@@ -109,18 +109,18 @@ class SimBoard(sleekxmpp.ClientXMPP):
 
     data = msgpack.unpackb(base64.b64decode(msg['w']['d']))
 
-    if b'project' not in data:
+    if b'p' not in data:
       logging.info("No project in data")
       return
 
-    project = data[b'project'].decode("utf-8")
+    project = data[b'p'].decode("utf-8")
     PROJECT = project
     if project not in loaded_projects:
       gdb.execute('file ' + project)
       loaded_projects.append(project)
 
-    if b'disassemble_func' in data:
-      disassemble_func = data[b'disassemble_func']
+    if b'd' in data:
+      disassemble_func = data[b'd']
 
       result = {}
       for func in disassemble_func:
@@ -132,26 +132,26 @@ class SimBoard(sleekxmpp.ClientXMPP):
       response['to'] = msg['from']
       response['w']['d'] = base64.b64encode(msgpack.packb(
         {
-        "project"          : project,
-        "disassemble_func" : result
+        "p" : project,
+        "d" : result
         })).decode("utf-8")
       response.send()
 
-    if b'breakpoints' in data:
-      breakpoints = data[b'breakpoints']
+    if b'b' in data:
+      breakpoints = data[b'b']
 
       for breakpoint in breakpoints:
         gdb.execute("break " + breakpoint.decode("utf-8"))
 
-    if b'watch' in data:
-      watchpoints = data[b'watch']
+    if b'w' in data:
+      watchpoints = data[b'w']
 
       for watchpoint in watchpoints:
         gdb.execute("watch " + watchpoint.decode("utf-8"))
 
-    if b'command' in data:
-      cmd = data[b'command'].decode("utf-8")
-      cid = data[b'id'].decode("utf-8")
+    if b'c' in data:
+      cmd = data[b'c'].decode("utf-8")
+      cid = data[b'i'].decode("utf-8")
 
       self.condition.acquire()
 
@@ -194,11 +194,11 @@ class Worker(threading.Thread):
 
           MESSAGE['w']['d'] = base64.b64encode(msgpack.packb(
             {
-            "project" : PROJECT,
-            "id"      : ID,
-            "result"  : o,
-            "stdout"  : open("out.log").read(),
-            "stderr"  : open("err.log").read()
+            "p" : PROJECT,
+            "i" : ID,
+            "r" : o,
+            "o" : open("out.log").read(),
+            "e" : open("err.log").read()
             })).decode("utf-8")
           MESSAGE.send()
           COMMAND = ""

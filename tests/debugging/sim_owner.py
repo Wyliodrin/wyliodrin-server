@@ -95,8 +95,8 @@ class SimOwner(sleekxmpp.ClientXMPP):
     # Send disassemble
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
-      "project"          : "test",
-      "disassemble_func" : ["f", "main"]
+      "p" : "test",
+      "d" : ["f", "main"]
       })).decode("utf-8")
     msg.send()
     sleep(1)
@@ -104,8 +104,8 @@ class SimOwner(sleekxmpp.ClientXMPP):
     # Send breakpoints
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
-      "project"     : "test",
-      "breakpoints" : ["main", "12"]
+      "p" : "test",
+      "b" : ["main", "12"]
       })).decode("utf-8")
     msg.send()
     sleep(1)
@@ -113,9 +113,9 @@ class SimOwner(sleekxmpp.ClientXMPP):
     # Send run command
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
-      "project" : "test",
-      "id"      : "0",
-      "command" : "run"
+      "p" : "test",
+      "i" : "0",
+      "c" : "run"
       })).decode("utf-8")
     msg.send()
     sleep(1)
@@ -123,8 +123,8 @@ class SimOwner(sleekxmpp.ClientXMPP):
     # Send watchpoints
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
-      "project" : "test",
-      "watch"   : ["a", "b"]
+      "p" : "test",
+      "w" : ["a", "b"]
       })).decode("utf-8")
     msg.send()
     sleep(1)
@@ -132,18 +132,18 @@ class SimOwner(sleekxmpp.ClientXMPP):
     # Send 2 next commands
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
-      "project" : "test",
-      "id"      : "1",
-      "command" : "next"
+      "p" : "test",
+      "i" : "1",
+      "c" : "next"
       })).decode("utf-8")
     msg.send()
     sleep(1)
 
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
-      "project" : "test",
-      "id"      : "2",
-      "command" : "next"
+      "p" : "test",
+      "i" : "2",
+      "c" : "next"
       })).decode("utf-8")
     msg.send()
     sleep(1)
@@ -151,9 +151,9 @@ class SimOwner(sleekxmpp.ClientXMPP):
     # Send backtrace command
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
-      "project" : "test",
-      "id"      : "3",
-      "command" : "backtrace"
+      "p" : "test",
+      "i" : "3",
+      "c" : "backtrace"
       })).decode("utf-8")
     msg.send()
     sleep(1)

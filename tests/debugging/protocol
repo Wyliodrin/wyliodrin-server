@@ -1,18 +1,18 @@
 === disassemble ===============================================================
 <--
 {
-  "project"          : "<projectid>",
-  "disassemble_func" : ["<func_1>", ... , "<func_n>"]
+  "p" : "<projectid>",
+  "d" : ["<func_1>", ... , "<func_n>"]
 }
 
 -->
 {
-  "project"           : "<projectid>",
-  "disassemble_func"  : {
-                          "<func_1>": "<result_1>",
-                          ...
-                          "<func_n>": "<result_n>"
-                        }
+  "p" : "<projectid>",
+  "d" : {
+          "<func_1>": "<result_1>",
+          ...
+          "<func_n>": "<result_n>"
+        }
 }
 
 
@@ -20,24 +20,24 @@
 === breakpoints ===============================================================
 <--
 {
-  "project"     : "<projectid>",
-  "breakpoints" : ["<bp_1>", ... , "<bp_n>"]
+  "p" : "<projectid>",
+  "b" : ["<bp_1>", ... , "<bp_n>"]
 }
 
 <--
 {
-  "project" : "<projectid>",
-  "id"      : "<some_id>",
-  "command" : "<step or next>"
+  "p" : "<projectid>",
+  "i" : "<some_id>",
+  "c" : "<step or next>"
 }
 
 -->
 {
-  "project" : "<projectid>",
-  "id"      : "<some_id>",
-  "result"  : "<command_result>",
-  "stdout"  : "<program_output>",
-  "stderr"  : "<program_error>"
+  "p" : "<projectid>",
+  "i" : "<some_id>",
+  "r" : "<command_result>",
+  "o" : "<program_output>",
+  "e" : "<program_error>"
 }
 
 
@@ -45,6 +45,19 @@
 === watchpoints ===============================================================
 <--
 {
-  "project" : "<projectid>",
-  "watch"   : ["<wp_1>", ... , "<wp_n>"]
+  "p" : "<projectid>",
+  "w" : ["<wp_1>", ... , "<wp_n>"]
 }
+
+
+
+=== LEGEND ====================================================================
+p : project id
+d : disassemble
+b : breakpoints
+i : request id
+c : command
+r : result
+o : stdout
+e : stderr
+w : watchpoints
