@@ -1,4 +1,4 @@
-=== disassemble ===
+=== disassemble ===============================================================
 <--
 {
   "project"          : "<projectid>",
@@ -15,7 +15,9 @@
                         }
 }
 
-=== breakpoints ===
+
+
+=== breakpoints ===============================================================
 <--
 {
   "project"     : "<projectid>",
@@ -36,4 +38,13 @@
   "result"  : "<command_result>",
   "stdout"  : "<program_output>",
   "stderr"  : "<program_error>"
+}
+
+
+
+=== watchpoints ===============================================================
+<--
+{
+  "project" : "<projectid>",
+  "watch"   : ["<wp_1>", ... , "<wp_n>"]
 }

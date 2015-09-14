@@ -105,7 +105,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
       "project"     : "test",
-      "breakpoints" : ["12"]
+      "breakpoints" : ["main", "12"]
       })).decode("utf-8")
     msg.send()
     sleep(1)
@@ -120,7 +120,16 @@ class SimOwner(sleekxmpp.ClientXMPP):
     msg.send()
     sleep(1)
 
-    # Send next command
+    # Send watchpoints
+    msg['w']['d'] = base64.b64encode(msgpack.packb(
+      {
+      "project" : "test",
+      "watch"   : ["a", "b"]
+      })).decode("utf-8")
+    msg.send()
+    sleep(1)
+
+    # Send 2 next commands
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
       "project" : "test",
@@ -135,6 +144,16 @@ class SimOwner(sleekxmpp.ClientXMPP):
       "project" : "test",
       "id"      : "2",
       "command" : "next"
+      })).decode("utf-8")
+    msg.send()
+    sleep(1)
+
+    # Send backtrace command
+    msg['w']['d'] = base64.b64encode(msgpack.packb(
+      {
+      "project" : "test",
+      "id"      : "3",
+      "command" : "backtrace"
       })).decode("utf-8")
     msg.send()
     sleep(1)

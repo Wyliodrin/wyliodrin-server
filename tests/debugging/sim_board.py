@@ -46,6 +46,7 @@ PROJECT = ""
 COMMAND = ""
 MESSAGE = None
 ID = None
+QUIT = False
 
 
 
@@ -140,7 +141,13 @@ class SimBoard(sleekxmpp.ClientXMPP):
       breakpoints = data[b'breakpoints']
 
       for breakpoint in breakpoints:
-        gdb.Breakpoint(breakpoint.decode("utf-8"))
+        gdb.execute("break " + breakpoint.decode("utf-8"))
+
+    if b'watch' in data:
+      watchpoints = data[b'watch']
+
+      for watchpoint in watchpoints:
+        gdb.execute("watch " + watchpoint.decode("utf-8"))
 
     if b'command' in data:
       cmd = data[b'command'].decode("utf-8")
@@ -169,14 +176,17 @@ class Worker(threading.Thread):
     global COMMAND
     global MESSAGE
     global ID
+    global QUIT
 
     while True:
       self.condition.acquire()
       while True:
+        if QUIT == True:
+          return
         if COMMAND != "":
           if COMMAND == "run":
-            os.system("truncate -s 0 out.log")
-            os.system("truncate -s 0 err.log")
+            os.system("rm out.log")
+            os.system("rm err.log")
             o = gdb.execute("run > out.log 2> err.log")
           else:
             o = gdb.execute(COMMAND, to_string=True)
@@ -199,6 +209,8 @@ class Worker(threading.Thread):
 
 
 if __name__ == '__main__':
+  global Quit
+
   # Setup logging.
   logging.basicConfig(level=logging.DEBUG,
             format='%(levelname)-8s %(message)s')
@@ -219,3 +231,8 @@ if __name__ == '__main__':
     print("Done")
   else:
     print("Unable to connect.")
+
+  cond.acquire()
+  QUIT = True
+  cond.notify()
+  cond.release()
