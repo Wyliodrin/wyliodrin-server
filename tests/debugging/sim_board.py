@@ -42,10 +42,10 @@ JID  = "wyliodrin_board@wyliodrin.org"
 PASS = "wyliodrin"
 loaded_projects = []
 
+PROJECT = ""
 COMMAND = ""
 MESSAGE = None
 ID = None
-PROJECT = ""
 
 
 
@@ -101,6 +101,7 @@ class SimBoard(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
+    global PROJECT
     global COMMAND
     global MESSAGE
     global ID
@@ -167,6 +168,7 @@ class Worker(threading.Thread):
     self.condition = condition
 
   def run(self):
+    global PROJECT
     global COMMAND
     global MESSAGE
     global ID
