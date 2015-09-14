@@ -93,19 +93,19 @@ class SimOwner(sleekxmpp.ClientXMPP):
     msg['to'] = self.recipient
 
     # Send disassemble
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "project"          : "test",
-      "disassemble_func" : ["f", "main"]
-      })).decode("utf-8")
-    msg.send()
-    sleep(1)
+    # msg['w']['d'] = base64.b64encode(msgpack.packb(
+    #   {
+    #   "project"          : "test",
+    #   "disassemble_func" : ["f", "main"]
+    #   })).decode("utf-8")
+    # msg.send()
+    # sleep(1)
 
     # Send breakpoints
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
       "project"     : "test",
-      "breakpoints" : ["main"]
+      "breakpoints" : ["12"]
       })).decode("utf-8")
     msg.send()
     sleep(1)
@@ -121,13 +121,13 @@ class SimOwner(sleekxmpp.ClientXMPP):
     sleep(5)
 
     # Send next command
-    # msg['w']['d'] = base64.b64encode(msgpack.packb(
-    #   {
-    #   "project" : "test",
-    #   "id"      : "1",
-    #   "command" : "next"
-    #   })).decode("utf-8")
-    # msg.send()
+    msg['w']['d'] = base64.b64encode(msgpack.packb(
+      {
+      "project" : "test",
+      "id"      : "1",
+      "command" : "next"
+      })).decode("utf-8")
+    msg.send()
 
 
   def _handle_action(self, msg):

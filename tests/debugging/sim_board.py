@@ -11,6 +11,8 @@ import logging
 import getpass
 import ssl
 import os
+import signal
+import threading
 
 import sleekxmpp
 from sleekxmpp import Message, Presence
@@ -40,6 +42,11 @@ JID  = "wyliodrin_board@wyliodrin.org"
 PASS = "wyliodrin"
 loaded_projects = []
 
+COMMAND = ""
+MESSAGE = None
+ID = None
+PROJECT = ""
+
 
 
 class W(ElementBase):
@@ -61,11 +68,12 @@ class Priority(ElementBase):
 
 
 class SimBoard(sleekxmpp.ClientXMPP):
-
-  def __init__(self, jid, password):
+  def __init__(self, jid, password, condition):
     sleekxmpp.ClientXMPP.__init__(self, jid, password)
 
-    self.add_event_handler("session_start", self.start, threaded=True)
+    self.condition = condition
+
+    self.add_event_handler("session_start", self.start, threaded=False)
 
     self.register_handler(
       Callback('Some custom message',
@@ -93,6 +101,10 @@ class SimBoard(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
+    global COMMAND
+    global MESSAGE
+    global ID
+
     data = msgpack.unpackb(base64.b64decode(msg['w']['d']))
 
     if b'project' not in data:
@@ -100,6 +112,7 @@ class SimBoard(sleekxmpp.ClientXMPP):
       return
 
     project = data[b'project'].decode("utf-8")
+    PROJECT = project
     if project not in loaded_projects:
       gdb.execute('file ' + project)
       loaded_projects.append(project)
@@ -126,36 +139,61 @@ class SimBoard(sleekxmpp.ClientXMPP):
       breakpoints = data[b'breakpoints']
 
       for breakpoint in breakpoints:
-        gdb.execute('break ' + breakpoint.decode("utf-8"))
+        gdb.Breakpoint(breakpoint.decode("utf-8"))
 
     if b'command' in data:
       os.system("truncate -s 0 out.log")
       os.system("truncate -s 0 err.log")
 
-      command = data[b'command'].decode("utf-8")
+      cmd = data[b'command'].decode("utf-8")
       cid = data[b'id'].decode("utf-8")
-      o = ""
-      if command == "run":
-        o = gdb.execute("run > out.log 2> err.log")
-      else:
-        o = gdb.execute(command, to_string=True)
-        gdb.execute('call fflush(0)')
 
-      response = self.Message()
-      response['lang'] = None
-      response['to'] = msg['from']
-      response['w']['d'] = base64.b64encode(msgpack.packb(
-        {
-        "project" : project,
-        "id"      : cid,
-        "result"  : o,
-        "stdout"  : open("out.log").read(),
-        "stderr"  : open("err.log").read()
-        })).decode("utf-8")
-      response.send()
+      self.condition.acquire()
+
+      COMMAND = cmd
+      ID = cid
+      MESSAGE = self.Message()
+      MESSAGE['lang'] = None
+      MESSAGE['to'] = msg['from']
+
+      self.condition.notify()
+      self.condition.release()
 
 
 
+class Worker(threading.Thread):
+  def __init__(self, condition):
+    threading.Thread.__init__(self)
+    self.condition = condition
+
+  def run(self):
+    global COMMAND
+    global MESSAGE
+    global ID
+
+    while True:
+      self.condition.acquire()
+      while True:
+        if COMMAND != "":
+          if COMMAND == "run":
+            o = gdb.execute("run > out.log 2> err.log")
+          else:
+            o = gdb.execute(COMMAND, to_string=True)
+            gdb.execute('call fflush(0)')
+
+          MESSAGE['w']['d'] = base64.b64encode(msgpack.packb(
+            {
+            "project" : PROJECT,
+            "id"      : ID,
+            "result"  : o,
+            "stdout"  : open("out.log").read(),
+            "stderr"  : open("err.log").read()
+            })).decode("utf-8")
+          MESSAGE.send()
+          COMMAND = ""
+          break
+        self.condition.wait()
+      self.condition.release()
 
 
 
@@ -164,7 +202,11 @@ if __name__ == '__main__':
   logging.basicConfig(level=logging.DEBUG,
             format='%(levelname)-8s %(message)s')
 
-  xmpp = SimBoard(JID, PASS)
+  cond = threading.Condition()
+  worker = Worker(cond)
+  worker.start()
+
+  xmpp = SimBoard(JID, PASS, cond)
   xmpp.register_plugin('xep_0030') # Service Discovery
   xmpp.register_plugin('xep_0199') # XMPP Ping
 
