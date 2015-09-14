@@ -9,6 +9,7 @@
 #include <ctype.h>     /* string stuff */
 #include <unistd.h>    /* file stuff   */
 #include <fcntl.h>     /* file stuff   */
+#include <signal.h>    /* SIGTERM      */
 #include <sys/stat.h>  /* file stuff   */
 #include <sys/types.h> /* file stuff   */
 #include <sys/wait.h>  /* waitpid      */
@@ -88,7 +89,12 @@ static void wifi_rpi(const char *ssid, const char *psk) {
   close(fd);
 
   system("/etc/init.d/networking restart");
-  // system("ifdown wlan0; ifup wlan0");
+}
+
+static void signal_handler(int signum) {
+  if (signum == SIGTERM) {
+    exit(EXIT_SUCCESS);
+  }
 }
 
 
@@ -309,6 +315,11 @@ void wtalk()
 }
 
 int main(int argc, char *argv[]) {
+  /* Catch SIGTERM */
+  if (signal(SIGTERM, signal_handler) == SIG_ERR) {
+    werr("Unable to catch SIGTERM");
+  }
+
   wtalk();
 
   return 0;
