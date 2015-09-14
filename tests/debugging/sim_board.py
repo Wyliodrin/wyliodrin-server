@@ -143,9 +143,6 @@ class SimBoard(sleekxmpp.ClientXMPP):
         gdb.Breakpoint(breakpoint.decode("utf-8"))
 
     if b'command' in data:
-      os.system("truncate -s 0 out.log")
-      os.system("truncate -s 0 err.log")
-
       cmd = data[b'command'].decode("utf-8")
       cid = data[b'id'].decode("utf-8")
 
@@ -178,6 +175,8 @@ class Worker(threading.Thread):
       while True:
         if COMMAND != "":
           if COMMAND == "run":
+            os.system("truncate -s 0 out.log")
+            os.system("truncate -s 0 err.log")
             o = gdb.execute("run > out.log 2> err.log")
           else:
             o = gdb.execute(COMMAND, to_string=True)
