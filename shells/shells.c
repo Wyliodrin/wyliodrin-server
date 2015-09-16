@@ -44,6 +44,7 @@ extern const char *board_str;      /* board name */
 extern const char *jid_str;        /* jid */
 extern const char *owner_str;      /* owner_str */
 extern const char *sudo_str;       /* sudo command from wtalk.c */
+extern const char *shell_cmd;      /* start shell command from wtalk.c */
 
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
@@ -51,6 +52,31 @@ pthread_mutex_t shells_lock; /* shells mutex */
 
 extern char **environ;
 int execvpe(const char *file, char *const argv[], char *const envp[]);
+
+static char **string_to_array(char *str, int *size) {
+  char ** res  = NULL;
+  char *  p    = strtok (str, " ");
+  int n_spaces = 0;
+
+  while (p) {
+    res = realloc (res, sizeof (char*) * ++n_spaces);
+
+    if (res == NULL)
+      exit (-1); /* memory allocation failed */
+
+    res[n_spaces-1] = p;
+
+    p = strtok (NULL, " ");
+  }
+
+
+  n_spaces++;
+  res = realloc (res, sizeof (char*) * n_spaces);
+  res[n_spaces-1] = NULL;
+
+  *size = n_spaces;
+  return res;
+}
 
 static bool get_open_attributes(xmpp_stanza_t *stanza, char **request_attr, char **width_attr,
   char **height_attr, char **projectid_attr, char **userid_attr)
@@ -189,7 +215,8 @@ static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
 
     /* Start bash */
     chdir("/wyliodrin");
-    char *exec_argv[] = {"bash", NULL};
+    int exec_argv_size;
+    char **exec_argv = string_to_array((char *)shell_cmd, &exec_argv_size);
     execvpe(exec_argv[0], exec_argv, all_env);
 
     werr("bash failed");

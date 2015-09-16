@@ -30,6 +30,7 @@ const char *mount_file_str;
 const char *build_file_str;
 const char *board_str;
 const char *sudo_str;
+const char *shell_cmd;
 
 bool privacy = false; /* privacy value from wylliodrin.json */
 
@@ -123,6 +124,12 @@ void wtalk()
   /* Get the content from the settings_<boardtype> file in a json_object */
   json_t *settings_json = file_to_json_t(settings_path); /* JSON object of settings_<boardtype> */
   wfatal(settings_json == NULL, "Invalid JSON in %s", settings_path);
+
+  /* Get the command that should be run when starting a shell */
+  shell_cmd = get_str_value(settings_json, "shell_cmd"); /* config_file value */
+  if (shell_cmd == NULL) {
+    shell_cmd = strdup("bash");
+  }
 
   /* Get config_file value. This value contains the path to wyliodrin.json */
   const char *config_file_str = get_str_value(settings_json, "config_file"); /* config_file value */
