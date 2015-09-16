@@ -188,6 +188,7 @@ static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
     char **all_env = concatenation_of_local_and_user_env(local_env, local_env_size);
 
     /* Start bash */
+    chdir("/wyliodrin");
     char *exec_argv[] = {"bash", NULL};
     execvpe(exec_argv[0], exec_argv, all_env);
 
