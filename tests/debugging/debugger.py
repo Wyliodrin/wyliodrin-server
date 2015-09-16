@@ -31,6 +31,7 @@ if __name__ == '__main__':
   gdb_results_pipe_fd  = open(gdb_results_pipe_name,  'w')
 
   while True:
+    # Get command
     content = os.read(gdb_commands_pipe_fd.fileno(), 3 * 1024).decode("utf-8")
 
     data = msgpack.unpackb(base64.b64decode(content))

@@ -48,12 +48,6 @@ class W(ElementBase):
 
 
 
-class Priority(ElementBase):
-  name = 'priority'
-  plugin_attrib = 'priority'
-
-
-
 class SimOwner(sleekxmpp.ClientXMPP):
 
   def __init__(self, jid, password, recipient):
@@ -83,17 +77,19 @@ class SimOwner(sleekxmpp.ClientXMPP):
     prio['priority'] = '50'
     prio.send()
 
-    prio = self.Presence()
-    prio['lang'] = None
-    prio['to'] = self.recipient
-    prio['type'] = 'subscribe'
-    prio.send()
+    # Send subscription
+    sub = self.Presence()
+    sub['lang'] = None
+    sub['to'] = self.recipient
+    sub['type'] = 'subscribe'
+    sub.send()
 
-    prio = self.Presence()
-    prio['lang'] = None
-    prio['to'] = self.recipient
-    prio['status'] = 'Happy'
-    prio.send()
+    # Send status
+    stat = self.Presence()
+    stat['lang'] = None
+    stat['to'] = self.recipient
+    stat['status'] = 'Happy'
+    stat.send()
 
     """
     <message to="<self.recipient>">
@@ -185,9 +181,8 @@ class SimOwner(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
-    if msg['w']['d'] != None:
-      decoded = msgpack.unpackb(base64.b64decode(msg['w']['d']))
-      logging.info(decoded)
+    decoded = msgpack.unpackb(base64.b64decode(msg['w']['d']))
+    logging.info(decoded)
 
 
 
