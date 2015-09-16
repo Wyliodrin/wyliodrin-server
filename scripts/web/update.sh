@@ -67,6 +67,9 @@ if [ "$wyliodrin_board" = "raspberrypi" ]; then
   cd pybass
   python setup.py install
 
+  # Copy bashrc
+  cp /home/pi/.bashrc /wyliodrin
+
 elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
   CMAKE_PARAMS="-DBEAGLEBONEBLACK=ON -DNODE_ROOT_DIR=/usr/include"
 

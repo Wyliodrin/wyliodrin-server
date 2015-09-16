@@ -100,6 +100,9 @@ pip install redis
 pip install ino
 pip install pyfirmata
 
+# Copy bashrc
+cp /home/pi/.bashrc /wyliodrin
+
 # Create sandbox directory
 mkdir -p $SANDBOX_PATH
 
