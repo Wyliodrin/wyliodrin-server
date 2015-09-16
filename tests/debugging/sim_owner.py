@@ -111,7 +111,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
       "d" : ["f", "main"]
       })).decode("utf-8")
     msg.send()
-    sleep(1)
+    sleep(3)
 
     # Send breakpoints
     msg['w']['d'] = base64.b64encode(msgpack.packb(
@@ -120,7 +120,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
       "b" : ["main", "12"]
       })).decode("utf-8")
     msg.send()
-    sleep(1)
+    sleep(3)
 
     # Send run command
     msg['w']['d'] = base64.b64encode(msgpack.packb(
@@ -130,7 +130,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
       "c" : "run"
       })).decode("utf-8")
     msg.send()
-    sleep(1)
+    sleep(3)
 
     # Send watchpoints
     msg['w']['d'] = base64.b64encode(msgpack.packb(
@@ -139,7 +139,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
       "w" : ["a", "b"]
       })).decode("utf-8")
     msg.send()
-    sleep(1)
+    sleep(3)
 
     # Send 2 next commands
     msg['w']['d'] = base64.b64encode(msgpack.packb(
@@ -149,7 +149,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
       "c" : "next"
       })).decode("utf-8")
     msg.send()
-    sleep(1)
+    sleep(3)
 
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
@@ -158,17 +158,26 @@ class SimOwner(sleekxmpp.ClientXMPP):
       "c" : "next"
       })).decode("utf-8")
     msg.send()
-    sleep(1)
+    sleep(3)
+
+    msg['w']['d'] = base64.b64encode(msgpack.packb(
+      {
+      "p" : "test",
+      "i" : "3",
+      "c" : "next"
+      })).decode("utf-8")
+    msg.send()
+    sleep(3)
 
     # Send backtrace command
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
       "p" : "test",
-      "i" : "3",
+      "i" : "4",
       "c" : "backtrace"
       })).decode("utf-8")
     msg.send()
-    sleep(1)
+    sleep(3)
 
 
   def _handle_action(self, msg):
@@ -176,8 +185,9 @@ class SimOwner(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
-    decoded = msgpack.unpackb(base64.b64decode(msg['w']['d']))
-    logging.info(decoded)
+    if msg['w']['d'] != None:
+      decoded = msgpack.unpackb(base64.b64decode(msg['w']['d']))
+      logging.info(decoded)
 
 
 

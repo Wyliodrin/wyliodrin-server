@@ -184,7 +184,7 @@ class Worker(threading.Thread):
     global MESSAGE
 
     while True:
-      content = os.read(self.pipein.fileno(), 256).decode("utf-8")
+      content = os.read(self.pipein.fileno(), 3 * 1024).decode("utf-8")
 
       MESSAGE['w']['d'] = content
       MESSAGE.send()
