@@ -70,6 +70,15 @@ if [ "$wyliodrin_board" = "raspberrypi" ]; then
   # Copy bashrc
   cp /home/pi/.bashrc /wyliodrin
 
+  # Create settings_raspberry.json
+  printf "{\n\
+    \"config_file\": \"/boot/wyliodrin.json\",\n\
+    \"mountFile\": \"/wyliodrin/mnt\",\n\
+    \"buildFile\": \"/wyliodrin/build\",\n\
+    \"board\": \"raspberrypi\",\n\
+    \"shell_cmd\": \"sudo -u pi bash\"\n\
+  }\n" > /etc/wyliodrin/settings_raspberrypi.json
+
 elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
   CMAKE_PARAMS="-DBEAGLEBONEBLACK=ON -DNODE_ROOT_DIR=/usr/include"
 

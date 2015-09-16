@@ -210,7 +210,8 @@ printf "{\n\
   \"config_file\": \"/boot/wyliodrin.json\",\n\
   \"mountFile\": \"/wyliodrin/mnt\",\n\
   \"buildFile\": \"/wyliodrin/build\",\n\
-  \"board\": \"raspberrypi\"\n\
+  \"board\": \"raspberrypi\",\n\
+  \"shell_cmd\": \"sudo -u pi bash\"\n\
 }\n" > /etc/wyliodrin/settings_raspberrypi.json
 
 # Create running_projects file
