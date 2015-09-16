@@ -13,6 +13,7 @@ import ssl
 import os
 import signal
 import threading
+import time
 
 import sleekxmpp
 from sleekxmpp import Message, Presence
@@ -48,6 +49,9 @@ MESSAGE = None
 ID = None
 QUIT = False
 
+gdb_commands_pipe_name = "/tmp/gdb_commands"
+gdb_results_pipe_name  = "/tmp/gdb_results"
+
 
 
 class W(ElementBase):
@@ -69,10 +73,10 @@ class Priority(ElementBase):
 
 
 class SimBoard(sleekxmpp.ClientXMPP):
-  def __init__(self, jid, password, condition):
+  def __init__(self, jid, password, pipeout):
     sleekxmpp.ClientXMPP.__init__(self, jid, password)
 
-    self.condition = condition
+    self.pipeout = pipeout
 
     self.add_event_handler("session_start", self.start, threaded=False)
 
@@ -89,6 +93,8 @@ class SimBoard(sleekxmpp.ClientXMPP):
 
 
   def start(self, event):
+    global MESSAGE
+
     # Send priority
     prio = self.Presence()
     prio['lang'] = None
@@ -96,134 +102,119 @@ class SimBoard(sleekxmpp.ClientXMPP):
     prio['priority'] = '50'
     prio.send()
 
+    MESSAGE = self.Message()
+    MESSAGE['lang'] = None
+    MESSAGE['to'] = "wyliodrin_test@wyliodrin.org"
+
 
   def _handle_action(self, msg):
     self.event('custom_action', msg)
 
 
   def _handle_action_event(self, msg):
+
     global PROJECT
     global COMMAND
     global MESSAGE
     global ID
 
-    data = msgpack.unpackb(base64.b64decode(msg['w']['d']))
+    # data = msgpack.unpackb(base64.b64decode())
 
-    if b'p' not in data:
-      logging.info("No project in data")
-      return
+    self.pipeout.write(msg['w']['d'])
+    self.pipeout.flush()
 
-    project = data[b'p'].decode("utf-8")
-    PROJECT = project
-    if project not in loaded_projects:
-      gdb.execute('file ' + project)
-      loaded_projects.append(project)
 
-    if b'd' in data:
-      disassemble_func = data[b'd']
+    # if b'p' not in data:
+    #   logging.info("No project in data")
+    #   return
 
-      result = {}
-      for func in disassemble_func:
-        o = gdb.execute('disassemble ' + func.decode("utf-8"), to_string=True)
-        result[func.decode("utf-8")] = o
+    # project = data[b'p'].decode("utf-8")
+    # PROJECT = project
+    # if project not in loaded_projects:
+    #   gdb.execute('file ' + project)
+    #   loaded_projects.append(project)
 
-      response = self.Message()
-      response['lang'] = None
-      response['to'] = msg['from']
-      response['w']['d'] = base64.b64encode(msgpack.packb(
-        {
-        "p" : project,
-        "d" : result
-        })).decode("utf-8")
-      response.send()
+    # if b'd' in data:
+    #   disassemble_func = data[b'd']
 
-    if b'b' in data:
-      breakpoints = data[b'b']
+    #   result = {}
+    #   for func in disassemble_func:
+    #     o = gdb.execute('disassemble ' + func.decode("utf-8"), to_string=True)
+    #     result[func.decode("utf-8")] = o
 
-      for breakpoint in breakpoints:
-        gdb.execute("break " + breakpoint.decode("utf-8"))
+    #   response = self.Message()
+    #   response['lang'] = None
+    #   response['to'] = msg['from']
+    #   response['w']['d'] = base64.b64encode(msgpack.packb(
+    #     {
+    #     "p" : project,
+    #     "d" : result
+    #     })).decode("utf-8")
+    #   response.send()
 
-    if b'w' in data:
-      watchpoints = data[b'w']
+    # if b'b' in data:
+    #   breakpoints = data[b'b']
 
-      for watchpoint in watchpoints:
-        gdb.execute("watch " + watchpoint.decode("utf-8"))
+    #   for breakpoint in breakpoints:
+    #     gdb.execute("break " + breakpoint.decode("utf-8"))
 
-    if b'c' in data:
-      cmd = data[b'c'].decode("utf-8")
-      cid = data[b'i'].decode("utf-8")
+    # if b'w' in data:
+    #   watchpoints = data[b'w']
 
-      self.condition.acquire()
+    #   for watchpoint in watchpoints:
+    #     gdb.execute("watch " + watchpoint.decode("utf-8"))
 
-      COMMAND = cmd
-      ID = cid
-      MESSAGE = self.Message()
-      MESSAGE['lang'] = None
-      MESSAGE['to'] = msg['from']
+    # if b'c' in data:
+    #   cmd = data[b'c'].decode("utf-8")
+    #   cid = data[b'i'].decode("utf-8")
 
-      self.condition.notify()
-      self.condition.release()
+    #   fcntl.flock(self.fd, fcntl.LOCK_EX)
+    #   fd.write(cmd)
+    #   fcntl.flock(self.fd, fcntl.LOCK_UN)
+
 
 
 
 class Worker(threading.Thread):
-  def __init__(self, condition):
+  def __init__(self, pipein):
     threading.Thread.__init__(self)
-    self.condition = condition
+    self.pipein = pipein
 
   def run(self):
-    global PROJECT
-    global COMMAND
     global MESSAGE
-    global ID
-    global QUIT
 
     while True:
-      self.condition.acquire()
-      while True:
-        if QUIT == True:
-          return
-        if COMMAND != "":
-          if COMMAND == "run":
-            os.system("rm out.log")
-            os.system("rm err.log")
-            o = gdb.execute("run > out.log 2> err.log")
-          else:
-            o = gdb.execute(COMMAND, to_string=True)
-            gdb.execute('call fflush(0)')
+      content = os.read(self.pipein.fileno(), 256).decode("utf-8")
 
-          MESSAGE['w']['d'] = base64.b64encode(msgpack.packb(
-            {
-            "p" : PROJECT,
-            "i" : ID,
-            "r" : o,
-            "o" : open("out.log").read(),
-            "e" : open("err.log").read()
-            })).decode("utf-8")
-          MESSAGE.send()
-          COMMAND = ""
-          break
-        self.condition.wait()
-      self.condition.release()
+      MESSAGE['w']['d'] = content
+      MESSAGE.send()
 
 
 
 if __name__ == '__main__':
-  global Quit
+  # Create the commands and results pipes
+  if not os.path.exists(gdb_commands_pipe_name):
+    os.mkfifo(gdb_commands_pipe_name)
+  if not os.path.exists(gdb_results_pipe_name):
+    os.mkfifo(gdb_results_pipe_name)
+
+  gdb_commands_pipe_fd = open(gdb_commands_pipe_name, 'w')
+  gdb_results_pipe_fd  = open(gdb_results_pipe_name,  'r')
+
+  worker = Worker(gdb_results_pipe_fd)
+  worker.start()
 
   # Setup logging.
   logging.basicConfig(level=logging.DEBUG,
             format='%(levelname)-8s %(message)s')
 
-  cond = threading.Condition()
-  worker = Worker(cond)
-  worker.start()
-
-  xmpp = SimBoard(JID, PASS, cond)
+  xmpp = SimBoard(JID, PASS, gdb_commands_pipe_fd)
   xmpp.register_plugin('xep_0030') # Service Discovery
   xmpp.register_plugin('xep_0199') # XMPP Ping
 
   xmpp.ssl_version = ssl.PROTOCOL_SSLv3
+  xmpp.auto_authorize = True
+  xmpp.auto_subscribe = True
 
   # Connect to the XMPP server and start processing XMPP stanzas.
   if xmpp.connect():
@@ -231,8 +222,3 @@ if __name__ == '__main__':
     print("Done")
   else:
     print("Unable to connect.")
-
-  cond.acquire()
-  QUIT = True
-  cond.notify()
-  cond.release()

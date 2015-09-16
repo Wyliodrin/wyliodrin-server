@@ -83,6 +83,18 @@ class SimOwner(sleekxmpp.ClientXMPP):
     prio['priority'] = '50'
     prio.send()
 
+    prio = self.Presence()
+    prio['lang'] = None
+    prio['to'] = self.recipient
+    prio['type'] = 'subscribe'
+    prio.send()
+
+    prio = self.Presence()
+    prio['lang'] = None
+    prio['to'] = self.recipient
+    prio['status'] = 'Happy'
+    prio.send()
+
     """
     <message to="<self.recipient>">
       <w xmlns="wyliodrin" d="<msgpack_data>"/>
@@ -210,6 +222,8 @@ if __name__ == '__main__':
   xmpp.register_plugin('xep_0199') # XMPP Ping
 
   xmpp.ssl_version = ssl.PROTOCOL_SSLv3
+  xmpp.auto_authorize = True
+  xmpp.auto_subscribe = True
 
   # Connect to the XMPP server and start processing XMPP stanzas.
   if xmpp.connect():
