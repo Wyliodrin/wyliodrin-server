@@ -61,6 +61,12 @@ if [ "$wyliodrin_board" = "raspberrypi" ]; then
   chmod +x build2
   ./build2
 
+  # Install pybass
+  cd $SANDBOX_PATH
+  git clone https://github.com/Wyliodrin/pybass.git
+  cd pybass
+  python setup.py install
+
 elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
   CMAKE_PARAMS="-DBEAGLEBONEBLACK=ON -DNODE_ROOT_DIR=/usr/include"
 
