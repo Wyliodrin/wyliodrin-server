@@ -1,3 +1,14 @@
 v2.4
 ====
   * Catch SIGTERM
+
+
+
+TODO
+====
+  * Put wyliodrin.json variables in separate source file in order to use them
+    in every source file.
+  * Update xmpp_conn_t and xmpp_ctx_t when message is received (when board
+    lose connection and reestablish it).
+  * System error messages using strerror(errno)
+  * Ignore messages coming from other than owner

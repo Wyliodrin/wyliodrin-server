@@ -46,14 +46,14 @@ gdb_results_channel_name  = "gdb_results"
 
 
 
-class W(ElementBase):
+class D(ElementBase):
   """
-  <w xmlns="wyliodrin" d="<msgpack_data>"/>
+  <d xmlns="wyliodrin" d="<msgpack_data>"/>
   """
 
-  name = 'w'
+  name = 'd'
   namespace = 'wyliodrin'
-  plugin_attrib = 'w'
+  plugin_attrib = 'd'
   interfaces = set(('d',))
 
 
@@ -68,14 +68,14 @@ class SimBoard(sleekxmpp.ClientXMPP):
 
     self.register_handler(
       Callback('Some custom message',
-        StanzaPath('message/w'),
+        StanzaPath('message/d'),
         self._handle_action))
 
     self.add_event_handler('custom_action',
       self._handle_action_event,
       threaded=True)
 
-    register_stanza_plugin(Message, W)
+    register_stanza_plugin(Message, D)
 
 
   def start(self, event):
@@ -99,7 +99,7 @@ class SimBoard(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
-    self.r.publish(gdb_commands_channel_name, msg['w']['d'])
+    self.r.publish(gdb_commands_channel_name, msg['d']['d'])
 
 
 
@@ -117,7 +117,7 @@ class Listener(threading.Thread):
       # Get result
       for content in self.pubsub.listen():
         if MESSAGE is not None:
-          MESSAGE['w']['d'] = content['data'].decode("utf-8")
+          MESSAGE['d']['d'] = content['data'].decode("utf-8")
           MESSAGE.send()
 
 

@@ -36,14 +36,14 @@ else:
 
 
 
-class W(ElementBase):
+class D(ElementBase):
   """
-  <w xmlns="wyliodrin" d="<msgpack_data>"/>
+  <d xmlns="wyliodrin" d="<msgpack_data>"/>
   """
 
-  name = 'w'
+  name = 'd'
   namespace = 'wyliodrin'
-  plugin_attrib = 'w'
+  plugin_attrib = 'd'
   interfaces = set(('d',))
 
 
@@ -59,14 +59,14 @@ class SimOwner(sleekxmpp.ClientXMPP):
 
     self.register_handler(
       Callback('Some custom message',
-        StanzaPath('message/w'),
+        StanzaPath('message/d'),
         self._handle_action))
 
     self.add_event_handler('custom_action',
       self._handle_action_event,
       threaded=True)
 
-    register_stanza_plugin(Message, W)
+    register_stanza_plugin(Message, D)
 
 
   def start(self, event):
@@ -90,10 +90,11 @@ class SimOwner(sleekxmpp.ClientXMPP):
     stat['to'] = self.recipient
     stat['status'] = 'Happy'
     stat.send()
+    sleep(3)
 
     """
     <message to="<self.recipient>">
-      <w xmlns="wyliodrin" d="<msgpack_data>"/>
+      <d xmlns="wyliodrin" d="<msgpack_data>"/>
     </message>
     """
     msg = self.Message()
@@ -101,7 +102,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
     msg['to'] = self.recipient
 
     # Send disassemble
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
+    msg['d']['d'] = base64.b64encode(msgpack.packb(
       {
       "p" : "test",
       "d" : ["f", "main"]
@@ -110,7 +111,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
     sleep(3)
 
     # Send breakpoints
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
+    msg['d']['d'] = base64.b64encode(msgpack.packb(
       {
       "p" : "test",
       "b" : ["main", "12"]
@@ -119,7 +120,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
     sleep(3)
 
     # Send run command
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
+    msg['d']['d'] = base64.b64encode(msgpack.packb(
       {
       "p" : "test",
       "i" : "0",
@@ -129,7 +130,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
     sleep(3)
 
     # Send watchpoints
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
+    msg['d']['d'] = base64.b64encode(msgpack.packb(
       {
       "p" : "test",
       "w" : ["a", "b"]
@@ -138,7 +139,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
     sleep(3)
 
     # Send 2 next commands
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
+    msg['d']['d'] = base64.b64encode(msgpack.packb(
       {
       "p" : "test",
       "i" : "1",
@@ -147,7 +148,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
     msg.send()
     sleep(3)
 
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
+    msg['d']['d'] = base64.b64encode(msgpack.packb(
       {
       "p" : "test",
       "i" : "2",
@@ -156,7 +157,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
     msg.send()
     sleep(3)
 
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
+    msg['d']['d'] = base64.b64encode(msgpack.packb(
       {
       "p" : "test",
       "i" : "3",
@@ -166,7 +167,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
     sleep(3)
 
     # Send backtrace command
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
+    msg['d']['d'] = base64.b64encode(msgpack.packb(
       {
       "p" : "test",
       "i" : "4",
@@ -181,7 +182,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
-    decoded = msgpack.unpackb(base64.b64decode(msg['w']['d']))
+    decoded = msgpack.unpackb(base64.b64decode(msg['d']['d']))
     logging.info(decoded)
 
 

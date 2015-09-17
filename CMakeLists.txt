@@ -51,6 +51,7 @@ set (wyliodrind_SRCS
   ${PROJECT_SOURCE_DIR}/base64/base64.c
   ${PROJECT_SOURCE_DIR}/logs/logs.c
   ${PROJECT_SOURCE_DIR}/cmp/cmp.c
+  ${PROJECT_SOURCE_DIR}/debug/debug.c
 )
 
 add_library (dbs STATIC
@@ -74,7 +75,7 @@ add_executable (wyliodrind
 
 install (TARGETS wyliodrind DESTINATION bin)
 
-add_definitions ("-Wall -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
+add_definitions ("-Wall -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -DDEBUG -D_FILE_OFFSET_BITS=64")
 
 target_link_libraries (wyliodrind
   ${CMAKE_THREAD_LIBS_INIT}

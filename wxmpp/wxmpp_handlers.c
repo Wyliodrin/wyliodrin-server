@@ -34,6 +34,10 @@
   #include "../ps/ps.h"
 #endif
 
+#ifdef DEBUG
+  #include "../debug/debug.h"
+#endif
+
 
 
 bool is_owner_online = false;
@@ -252,6 +256,10 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       #endif
       #ifdef PS
         add_module("ps", ps);
+      #endif
+      #ifdef DEBUG
+        add_module("d", debug);
+        init_debug();
       #endif
     }
   }
