@@ -13,3 +13,4 @@ TODO
   * System error messages using strerror(errno)
   * Ignore messages coming from other than owner
   * Start debugger.py automatically
+  * Check whether if the message handler is threaded
