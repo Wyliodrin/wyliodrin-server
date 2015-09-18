@@ -11,3 +11,8 @@ define hook-quit
     set confirm off
 end
 ```
+
+Add to ``/etc/gdb/gdbinit`` (no user query when unrecongnized breakpoint):
+```
+set breakpoint pending off
+```

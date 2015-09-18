@@ -1,17 +1,48 @@
+=== LEGEND ====================================================================
+s : start
+p : project id
+d : disassemble
+b : breakpoints
+w : watchpoints
+i : request id
+c : command
+r : result
+o : stdout
+e : stderr
+
+
+
+=== start =====================================================================
+<--
+{
+  "s" : "<projectid>",
+  "i" : "<some_id>"
+}
+
+-->
+{
+  "s" : "<projectid>",
+  "i" : "<some_id>"
+}
+
+
+
 === disassemble ===============================================================
 <--
 {
   "p" : "<projectid>",
+  "i" : "<some_id>",
   "d" : ["<func_1>", ... , "<func_n>"]
 }
 
 -->
 {
   "p" : "<projectid>",
+  "i" : "<some_id>",
   "d" : {
-          "<func_1>": "<result_1>",
+          "<func_1>" : "<result_1>",
           ...
-          "<func_n>": "<result_n>"
+          "<func_n>" : "<result_n>"
         }
 }
 
@@ -21,14 +52,50 @@
 <--
 {
   "p" : "<projectid>",
+  "i" : "<some_id>",
   "b" : ["<bp_1>", ... , "<bp_n>"]
 }
 
+-->
+{
+  "p" : "<projectid>",
+  "i" : "<some_id>",
+  "b" : {
+          "<bp_1>" : "<result_1>",
+          ...
+          "<bp_n>" : "<result_n>"
+        }
+}
+
+
+
+=== watchpoints ===============================================================
 <--
 {
   "p" : "<projectid>",
   "i" : "<some_id>",
-  "c" : "<step or next>"
+  "w" : ["<wp_1>", ... , "<wp_n>"]
+}
+
+-->
+{
+  "p" : "<projectid>",
+  "i" : "<some_id>",
+  "w" : {
+          "<wp_1>" : "<result_1>",
+          ...
+          "<wp_n>" : "<result_n>"
+        }
+}
+
+
+
+=== commands ==================================================================
+<--
+{
+  "p" : "<projectid>",
+  "i" : "<some_id>",
+  "c" : "<run / step / next / continue / info locals / backtrace / quit>"
 }
 
 -->
@@ -39,25 +106,3 @@
   "o" : "<program_output>",
   "e" : "<program_error>"
 }
-
-
-
-=== watchpoints ===============================================================
-<--
-{
-  "p" : "<projectid>",
-  "w" : ["<wp_1>", ... , "<wp_n>"]
-}
-
-
-
-=== LEGEND ====================================================================
-p : project id
-d : disassemble
-b : breakpoints
-i : request id
-c : command
-r : result
-o : stdout
-e : stderr
-w : watchpoints

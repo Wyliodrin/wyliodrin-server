@@ -1,6 +1,5 @@
 import base64
 import gdb
-import logging
 import msgpack
 import os
 import redis
@@ -17,36 +16,54 @@ import time
 
 gdb_commands_channel_name = "gdb_commands"
 gdb_results_channel_name  = "gdb_results"
-is_project_loaded = False
 
 
 
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.DEBUG,
-            format='%(levelname)-8s %(message)s')
-
   r = redis.Redis()
   pubsub = r.pubsub()
   pubsub.subscribe([gdb_commands_channel_name])
 
-  while True:
-    # Get commands
-    for content in pubsub.listen():
-      logging.info(content)
+  my_project = None
 
+  while True:
+    for content in pubsub.listen():
       if (content['data'] is None) or (content['type'] != "message"):
         continue
 
       data = msgpack.unpackb(base64.b64decode(content['data']))
 
+      if b'i' not in data:
+        # Every message should have an id
+        continue
+
+      i = data[b'i']
+
+      # Start debugging a file
+      if my_project is None:
+        if b's' in data:
+          my_project = data[b's'].decode("utf-8")
+          gdb.execute('file ' + my_project)
+
+          to_publish = base64.b64encode(msgpack.packb(
+            {
+            "s" : my_project,
+            "i" : i
+            })).decode("utf-8")
+
+          r.publish(gdb_results_channel_name, to_publish)
+
+        continue
+
       # Get project
       if b'p' not in data:
-        logging.info("No project in data")
-        break
+        # Every message other than start should have a project
+        continue
+
       project = data[b'p'].decode("utf-8")
-      if not is_project_loaded:
-        gdb.execute('file ' + project)
-        is_project_loaded = True
+      if my_project != project:
+        # Not my project
+        continue
 
       # Disassembly
       if b'd' in data:
@@ -57,46 +74,77 @@ if __name__ == '__main__':
           o = gdb.execute('disassemble ' + func.decode("utf-8"), to_string=True)
           result[func.decode("utf-8")] = o
 
-        to_write = base64.b64encode(msgpack.packb(
+        to_publish = base64.b64encode(msgpack.packb(
           {
           "p" : project,
+          "i" : i,
           "d" : result
           })).decode("utf-8")
 
-        r.publish(gdb_results_channel_name, to_write)
+        r.publish(gdb_results_channel_name, to_publish)
 
-
+      # Breakpoints
       if b'b' in data:
         breakpoints = data[b'b']
 
+        result = {}
         for breakpoint in breakpoints:
-          gdb.execute("break " + breakpoint.decode("utf-8"))
+          o = gdb.execute("break " + breakpoint.decode("utf-8"))
+          result[breakpoint.decode('utf-8')] = o
 
+        to_publish = base64.b64encode(msgpack.packb(
+          {
+          "p" : project,
+          "i" : i,
+          "b" : result
+          })).decode("utf-8")
+
+        r.publish(gdb_results_channel_name, to_publish)
+
+      # Watchpoints
       if b'w' in data:
         watchpoints = data[b'w']
 
+        result = {}
         for watchpoint in watchpoints:
-          gdb.execute("watch " + watchpoint.decode("utf-8"))
+          o = gdb.execute("watch " + watchpoint.decode("utf-8"))
+          result[watchpoint.decode('utf-8')] = o
 
+        to_publish = base64.b64encode(msgpack.packb(
+          {
+          "p" : project,
+          "i" : i,
+          "w" : result
+          })).decode("utf-8")
+
+        r.publish(gdb_results_channel_name, to_publish)
+
+      # Commands
       if b'c' in data:
-        cmd = data[b'c'].decode("utf-8")
-        cid = data[b'i'].decode("utf-8")
+        c = data[b'c'].decode("utf-8")
 
-        if cmd == "run":
+        if c == "r":
           os.system("rm out.log")
           os.system("rm err.log")
           o = gdb.execute("run > out.log 2> err.log")
         else:
-          o = gdb.execute(cmd, to_string=True)
-          gdb.execute('call fflush(0)')
+          o = gdb.execute(c, to_string=True)
 
-        to_write = base64.b64encode(msgpack.packb(
+        gdb.execute('call fflush(0)')
+
+        out = open("out.log")
+        err = open("err.log")
+
+        to_publish = base64.b64encode(msgpack.packb(
           {
           "p" : project,
-          "i" : cid,
+          "i" : i,
           "r" : o,
-          "o" : open("out.log").read(),
-          "e" : open("err.log").read()
+          "o" : out.read(),
+          "e" : err.read()
           })).decode("utf-8")
 
-        r.publish(gdb_results_channel_name, to_write)
+        out.close()
+        err.close()
+
+        r.publish(gdb_results_channel_name, to_publish)

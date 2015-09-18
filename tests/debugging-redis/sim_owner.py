@@ -68,6 +68,56 @@ class SimOwner(sleekxmpp.ClientXMPP):
 
     register_stanza_plugin(Message, D)
 
+    self.last_id = 0
+
+    # Build messages list
+    self.messages = [
+      {
+        "s" : "test",
+        "i" : 0
+      },
+      {
+        "p" : "test",
+        "i" : 1,
+        "d" : ["f", "main"]
+      },
+      {
+        "p" : "test",
+        "i" : 2,
+        "b" : ["main", "12"]
+      },
+      {
+        "p" : "test",
+        "i" : 3,
+        "c" : "r"
+      },
+      {
+        "p" : "test",
+        "i" : 4,
+        "w" : ["a", "b"]
+      },
+      {
+        "p" : "test",
+        "i" : 5,
+        "c" : "n"
+      },
+      {
+        "p" : "test",
+        "i" : 6,
+        "c" : "n"
+      },
+      {
+        "p" : "test",
+        "i" : 7,
+        "c" : "c"
+      },
+      {
+        "p" : "test",
+        "i" : 8,
+        "c" : "q"
+      }
+    ]
+
 
   def start(self, event):
     # Send priority
@@ -97,84 +147,15 @@ class SimOwner(sleekxmpp.ClientXMPP):
       <d xmlns="wyliodrin" d="<msgpack_data>"/>
     </message>
     """
+
+    # Send first message
     msg = self.Message()
     msg['lang'] = None
     msg['to'] = self.recipient
-
-    # Send disassemble
-    msg['d']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "d" : ["f", "main"]
-      })).decode("utf-8")
+    msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
     msg.send()
-    sleep(3)
 
-    # Send breakpoints
-    msg['d']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "b" : ["main", "12"]
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    # Send run command
-    msg['d']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "i" : "0",
-      "c" : "run"
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    # Send watchpoints
-    msg['d']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "w" : ["a", "b"]
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    # Send 2 next commands
-    msg['d']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "i" : "1",
-      "c" : "next"
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    msg['d']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "i" : "2",
-      "c" : "next"
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    msg['d']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "i" : "3",
-      "c" : "next"
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    # Send backtrace command
-    msg['d']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "i" : "4",
-      "c" : "backtrace"
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
+    self.last_id += 1
 
 
   def _handle_action(self, msg):
@@ -184,6 +165,15 @@ class SimOwner(sleekxmpp.ClientXMPP):
   def _handle_action_event(self, msg):
     decoded = msgpack.unpackb(base64.b64decode(msg['d']['d']))
     logging.info(decoded)
+
+    # Send next message
+    msg = self.Message()
+    msg['lang'] = None
+    msg['to'] = self.recipient
+    msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
+    msg.send()
+
+    self.last_id += 1
 
 
 
