@@ -11,12 +11,15 @@
 
 /*** INCLUDES ************************************************************************************/
 
-#include <stdbool.h> /* bool             */
-#include <unistd.h>  /* sleep            */
-#include <signal.h>  /* signal           */
-#include <errno.h>   /* errno            */
-#include <string.h>  /* strerror, strlen */
-#include <pthread.h> /* threads          */
+#include <stdbool.h>   /* bool             */
+#include <unistd.h>    /* sleep            */
+#include <signal.h>    /* signal           */
+#include <errno.h>     /* errno            */
+#include <string.h>    /* strerror, strlen */
+#include <pthread.h>   /* threads          */
+#include <unistd.h>    /* fork and exec    */
+#include <sys/types.h> /* waitpid          */
+#include <sys/wait.h>  /* waitpid          */
 
 #include <hiredis/hiredis.h>           /* redis */
 #include <hiredis/async.h>             /* redis */
@@ -51,7 +54,8 @@ static void start_subscriber();
 static void *subscriber_routine(void *arg);
 static void connect_callback(const redisAsyncContext *rac, int status);
 static void on_message(redisAsyncContext *rac, void *reply, void *privdata);
-
+static void fork_and_exec_gdb();
+static void *wait_routine(void *arg);
 
 
 /*** IMPLEMENTATIONS *****************************************************************************/
@@ -85,15 +89,21 @@ void debug(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     return;
   }
 
+  /* New attribute */
+  char *n_attr = xmpp_stanza_get_attribute(stanza, "n");
+  if (n_attr != NULL) {
+    fork_and_exec_gdb();
+  }
+
   char *d_attr = xmpp_stanza_get_attribute(stanza, "d");
   if (d_attr == NULL) {
-    werr("There is no attribute named \"d\" in debug stanza");
+    werr("There is no attribute named d in debug stanza");
     return;
   }
 
   redisReply *reply = redisCommand(rc, "PUBLISH %s %s", GDB_COMMANDS_CHANNEL, d_attr);
   if (reply == NULL) {
-    werr("Failed to publish on channel \"%s\" the data \"%s\" because: %s",
+    werr("Failed to publish on channel %s the data %s because: %s",
       GDB_COMMANDS_CHANNEL, d_attr, rc->errstr);
   }
 }
@@ -188,6 +198,47 @@ static void on_message(redisAsyncContext *rac, void *reply, void *privdata) {
     xmpp_stanza_release(debug_stz);
     xmpp_stanza_release(message_stz);
   }
+}
+
+
+static void fork_and_exec_gdb() {
+  pid_t pid = fork();
+
+  if (pid < 0) {
+    werr("Fork for executing gdb failed: %s", strerror(errno));
+    return;
+  }
+
+  if (pid == 0) { /* Child */
+    char *const argv[] = {"gdb", "-q", "-x", "/etc/wyliodrin/debugger.py", NULL};
+    execvp(argv[0], argv);
+
+    werr("Start new debug process failed");
+    exit(EXIT_FAILURE);
+  }
+
+  /* Parent */
+  pid_t *pid_p = malloc(sizeof(pid_p));
+  if (pid_p == NULL) {
+    werr("malloc failed: %s", strerror(errno));
+    return;
+  }
+  *pid_p = pid;
+  pthread_t wait_thread;
+  if (pthread_create(&wait_thread, NULL, wait_routine, pid_p) < 0) {
+    werr("Could not start wait thread: %s", strerror(errno));
+    return;
+  }
+  pthread_detach(wait_thread);
+}
+
+
+static void *wait_routine(void *arg) {
+  pid_t pid = *((pid_t *)arg);
+  free(arg);
+
+  waitpid(pid, NULL, 0);
+  return NULL;
 }
 
 

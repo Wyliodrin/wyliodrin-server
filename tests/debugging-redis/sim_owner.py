@@ -38,18 +38,17 @@ else:
 
 class D(ElementBase):
   """
-  <d xmlns="wyliodrin" d="<msgpack_data>"/>
+  <d xmlns="wyliodrin" d="<msgpack_data>" n="<irrelevant>"/>
   """
 
   name = 'd'
   namespace = 'wyliodrin'
   plugin_attrib = 'd'
-  interfaces = set(('d',))
+  interfaces = set(('d', 'n'))
 
 
 
 class SimOwner(sleekxmpp.ClientXMPP):
-
   def __init__(self, jid, password, recipient):
     sleekxmpp.ClientXMPP.__init__(self, jid, password)
 
@@ -140,6 +139,13 @@ class SimOwner(sleekxmpp.ClientXMPP):
     stat['to'] = self.recipient
     stat['status'] = 'Happy'
     stat.send()
+    sleep(1)
+
+    msg = self.Message()
+    msg['lang'] = None
+    msg['to'] = self.recipient
+    msg['d']['n'] = "n"
+    msg.send()
     sleep(3)
 
     """
