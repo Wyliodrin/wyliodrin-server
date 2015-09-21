@@ -115,7 +115,6 @@ void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, cons
     #endif
     #ifdef DEBUG
       add_module("d", debug);
-      werr("add debug module");
       init_debug();
     #endif
 
