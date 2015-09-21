@@ -16,6 +16,7 @@ import time
 
 gdb_commands_channel_name = "gdb_commands"
 gdb_results_channel_name  = "gdb_results"
+build_path = "/etc/wyliodrin/build/"
 
 
 
@@ -43,6 +44,7 @@ if __name__ == '__main__':
       if my_project is None:
         if b's' in data:
           my_project = data[b's'].decode("utf-8")
+          gdb.execute('cd ' + build_path + my_project)
           gdb.execute('file ' + my_project)
 
           to_publish = base64.b64encode(msgpack.packb(

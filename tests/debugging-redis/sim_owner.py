@@ -72,46 +72,46 @@ class SimOwner(sleekxmpp.ClientXMPP):
     # Build messages list
     self.messages = [
       {
-        "s" : "test",
+        "s" : "mytest",
         "i" : 0
       },
       {
-        "p" : "test",
+        "p" : "mytest",
         "i" : 1,
         "d" : ["f", "main"]
       },
       {
-        "p" : "test",
+        "p" : "mytest",
         "i" : 2,
         "b" : ["main", "12"]
       },
       {
-        "p" : "test",
+        "p" : "mytest",
         "i" : 3,
         "c" : "r"
       },
       {
-        "p" : "test",
+        "p" : "mytest",
         "i" : 4,
         "w" : ["a", "b"]
       },
       {
-        "p" : "test",
+        "p" : "mytest",
         "i" : 5,
         "c" : "n"
       },
       {
-        "p" : "test",
+        "p" : "mytest",
         "i" : 6,
         "c" : "n"
       },
       {
-        "p" : "test",
+        "p" : "mytest",
         "i" : 7,
         "c" : "c"
       },
       {
-        "p" : "test",
+        "p" : "mytest",
         "i" : 8,
         "c" : "q"
       }

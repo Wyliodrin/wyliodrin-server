@@ -93,6 +93,7 @@ void debug(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   char *n_attr = xmpp_stanza_get_attribute(stanza, "n");
   if (n_attr != NULL) {
     fork_and_exec_gdb();
+    usleep(500000);
   }
 
   char *d_attr = xmpp_stanza_get_attribute(stanza, "d");
