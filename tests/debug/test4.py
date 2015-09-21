@@ -36,20 +36,19 @@ else:
 
 
 
-class W(ElementBase):
+class D(ElementBase):
   """
-  <w xmlns="wyliodrin" d="<msgpack_data>"/>
+  <d xmlns="wyliodrin" d="<msgpack_data>" n="<project_id>"/>
   """
 
-  name = 'w'
+  name = 'd'
   namespace = 'wyliodrin'
-  plugin_attrib = 'w'
-  interfaces = set(('d',))
+  plugin_attrib = 'd'
+  interfaces = set(('d', 'n'))
 
 
 
 class SimOwner(sleekxmpp.ClientXMPP):
-
   def __init__(self, jid, password, recipient):
     sleekxmpp.ClientXMPP.__init__(self, jid, password)
 
@@ -59,14 +58,36 @@ class SimOwner(sleekxmpp.ClientXMPP):
 
     self.register_handler(
       Callback('Some custom message',
-        StanzaPath('message/w'),
+        StanzaPath('message/d'),
         self._handle_action))
 
     self.add_event_handler('custom_action',
       self._handle_action_event,
       threaded=True)
 
-    register_stanza_plugin(Message, W)
+    register_stanza_plugin(Message, D)
+
+    self.last_id = 0
+    self.second_session_started = False
+
+    # Build messages list
+    self.messages = [
+      {
+        "s" : "myproject",
+        "x" : "myproject_id",
+        "i" : 0
+      },
+      {
+        "p" : "myproject",
+        "b" : ["main", "not_a_func", "12"],
+        "i" : 1
+      },
+      {
+        "p" : "myproject",
+        "c" : "q",
+        "i" : 2
+      }
+    ]
 
 
   def start(self, event):
@@ -90,90 +111,23 @@ class SimOwner(sleekxmpp.ClientXMPP):
     stat['to'] = self.recipient
     stat['status'] = 'Happy'
     stat.send()
+    sleep(1)
 
     """
     <message to="<self.recipient>">
-      <w xmlns="wyliodrin" d="<msgpack_data>"/>
+      <d xmlns="wyliodrin" n="<n>"/>
     </message>
     """
+
+    # Send new session of debugging
     msg = self.Message()
     msg['lang'] = None
     msg['to'] = self.recipient
-
-    # Send disassemble
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "d" : ["f", "main"]
-      })).decode("utf-8")
+    msg['d']['n'] = "myproject_id"
+    msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
     msg.send()
-    sleep(3)
 
-    # Send breakpoints
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "b" : ["main", "12"]
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    # Send run command
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "i" : "0",
-      "c" : "run"
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    # Send watchpoints
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "w" : ["a", "b"]
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    # Send 2 next commands
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "i" : "1",
-      "c" : "next"
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "i" : "2",
-      "c" : "next"
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "i" : "3",
-      "c" : "next"
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
-
-    # Send backtrace command
-    msg['w']['d'] = base64.b64encode(msgpack.packb(
-      {
-      "p" : "test",
-      "i" : "4",
-      "c" : "backtrace"
-      })).decode("utf-8")
-    msg.send()
-    sleep(3)
+    self.last_id += 1
 
 
   def _handle_action(self, msg):
@@ -181,12 +135,64 @@ class SimOwner(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
-    decoded = msgpack.unpackb(base64.b64decode(msg['w']['d']))
+    global exit_value
+
+    """
+    <message to="<self.recipient>">
+      <d xmlns="wyliodrin" d="<msgpack_data>"/>
+    </message>
+    """
+
+    decoded = msgpack.unpackb(base64.b64decode(msg['d']['d']))
     logging.info(decoded)
 
+    if self.last_id == 1:
+      if (decoded[b's'].decode("utf-8") == "myproject" and
+          decoded[b'x'].decode("utf-8") == "myproject_id" and
+          decoded[b'i'] == 0):
+
+        # Send run command
+        msg = self.Message()
+        msg['lang'] = None
+        msg['to'] = self.recipient
+        msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
+        msg.send()
+
+        self.last_id += 1
+      else:
+        self.disconnect(wait=True)
+
+    elif self.last_id == 2:
+      if (decoded[b'p'].decode("utf-8") == "myproject" and
+          decoded[b'i'] == 1 and
+          b'12' in decoded[b'b'] and
+          b'main' in decoded[b'b']):
+
+        # Send quit command
+        msg = self.Message()
+        msg['lang'] = None
+        msg['to'] = self.recipient
+        msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
+        msg.send()
+
+        self.last_id += 1
+      else:
+        self.disconnect(wait=True)
+
+    elif self.last_id == 3:
+      if (decoded[b'p'].decode("utf-8") == "myproject" and
+          decoded[b'c'].decode("utf-8") == "q" and
+          decoded[b'i'] == 2):
+        exit_value = 0
+
+      self.disconnect(wait=True)
 
 
 if __name__ == '__main__':
+  global exit_value
+
+  exit_value = -1
+
   # Setup the command line arguments.
   optp = OptionParser()
 
@@ -233,6 +239,7 @@ if __name__ == '__main__':
   # Connect to the XMPP server and start processing XMPP stanzas.
   if xmpp.connect():
     xmpp.process(block=True)
-    print("Done")
   else:
     print("Unable to connect.")
+
+  sys.exit(exit_value)

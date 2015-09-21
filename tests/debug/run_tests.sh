@@ -9,13 +9,10 @@ test_name=(                                                                    \
   "Test start and close good debug session"                                    \
   "Test start debug session with wrong project id"                             \
   "Test simple run"                                                            \
-  "Test breakpoints"                                                           \
+  "Test both valid and invalid breakpoints"                                    \
 )
 
 printf "\n"
-
-/usr/bin/python3 test4.py -d --jid $JID_OWNER --password $PASSWORD --to $JID_BOARD
-exit 0
 
 for i in `seq 1 ${#test_name[@]}`; do
   printf "\t[%d/%d]: %-60s - " "$i" "${#test_name[@]}" "${test_name[$i - 1]:0:60}"
