@@ -3,10 +3,11 @@
 JID_OWNER="wyliodrin_test@wyliodrin.org"
 JID_BOARD="wyliodrin_board@wyliodrin.org"
 PASSWORD="wyliodrin"
-NUM_TESTS=1
+NUM_TESTS=2
 
 test_name=(                                                                    \
-  "Test start new debug session"                                               \
+  "Test start and close debug session"                                         \
+  "Test simple run"                                                            \
 )
 
 for i in `seq 1 $(($NUM_TESTS))`; do
