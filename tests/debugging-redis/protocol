@@ -69,6 +69,8 @@ f : fail
         }
 }
 
+NOTE: <bp_n> must be either function name or number represented as string
+
 
 
 === watchpoints ===============================================================

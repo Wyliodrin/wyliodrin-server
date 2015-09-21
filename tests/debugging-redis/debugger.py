@@ -98,8 +98,11 @@ if __name__ == '__main__':
 
         result = {}
         for breakpoint in breakpoints:
-          o = gdb.execute("break " + breakpoint.decode("utf-8"))
-          result[breakpoint.decode('utf-8')] = o
+          try:
+            o = gdb.execute("break " + breakpoint.decode("utf-8"))
+            result[breakpoint.decode('utf-8')] = o
+          except:
+            result[breakpoint.decode('utf-8')] = "invalid"
 
         to_publish = base64.b64encode(msgpack.packb(
           {
