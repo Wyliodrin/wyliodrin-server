@@ -79,8 +79,13 @@ class SimOwner(sleekxmpp.ClientXMPP):
       },
       {
         "p" : "myproject",
-        "c" : "q",
+        "c" : "r",
         "i" : 1
+      },
+      {
+        "p" : "myproject",
+        "c" : "q",
+        "i" : 2
       }
     ]
 
@@ -146,7 +151,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
           decoded[b'x'].decode("utf-8") == "myproject_id" and
           decoded[b'i'] == 0):
 
-        # Send quit command
+        # Send run command
         msg = self.Message()
         msg['lang'] = None
         msg['to'] = self.recipient
@@ -159,12 +164,29 @@ class SimOwner(sleekxmpp.ClientXMPP):
 
     elif self.last_id == 2:
       if (decoded[b'p'].decode("utf-8") == "myproject" and
-          decoded[b'c'].decode("utf-8") == "q" and
+          decoded[b'r'] == None and
+          decoded[b'o'].decode("utf-8") == "" and
+          decoded[b'e'].decode("utf-8") != "" and
           decoded[b'i'] == 1):
+
+        # Send quit command
+        msg = self.Message()
+        msg['lang'] = None
+        msg['to'] = self.recipient
+        msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
+        msg.send()
+
+        self.last_id += 1
+      else:
+        self.disconnect(wait=True)
+
+    elif self.last_id == 3:
+      if (decoded[b'p'].decode("utf-8") == "myproject" and
+          decoded[b'c'].decode("utf-8") == "q" and
+          decoded[b'i'] == 2):
         exit_value = 0
 
       self.disconnect(wait=True)
-
 
 
 if __name__ == '__main__':

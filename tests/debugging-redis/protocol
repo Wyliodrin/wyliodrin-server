@@ -10,6 +10,7 @@ c : command
 r : result
 o : stdout
 e : stderr
+f : fail
 
 
 

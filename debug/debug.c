@@ -99,7 +99,7 @@ void debug(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     //     board_str);
 
     /* The command above will be executed as soon as the files modules will be simulated.
-     * For testing purposes, make sure you have mytest_id/my_test and mytest2_id/my_test2
+     * For testing purposes, make sure you have myproject_id/myproject and myproject2_id/myproject2
      * in the build file path.
      */
 

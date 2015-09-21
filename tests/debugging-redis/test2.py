@@ -73,19 +73,9 @@ class SimOwner(sleekxmpp.ClientXMPP):
     # Build messages list
     self.messages = [
       {
-        "s" : "mytest",
-        "x" : "mytest_id",
+        "s" : "myproject",
+        "x" : "not_a_project_id",
         "i" : 0
-      },
-      {
-        "p" : "mytest",
-        "c" : "r",
-        "i" : 1
-      },
-      {
-        "p" : "mytest",
-        "c" : "q",
-        "i" : 2
       }
     ]
 
@@ -123,7 +113,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
     msg = self.Message()
     msg['lang'] = None
     msg['to'] = self.recipient
-    msg['d']['n'] = "mytest_id"
+    msg['d']['n'] = "myproject_id"
     msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
     msg.send()
 
@@ -146,47 +136,12 @@ class SimOwner(sleekxmpp.ClientXMPP):
     decoded = msgpack.unpackb(base64.b64decode(msg['d']['d']))
     logging.info(decoded)
 
-    if self.last_id == 1:
-      if (decoded[b's'].decode("utf-8") == "mytest" and
-          decoded[b'x'].decode("utf-8") == "mytest_id" and
-          decoded[b'i'] == 0):
+    if (decoded[b'f'].decode("utf-8") == "wrong project id" and
+        decoded[b'i'] == 0):
+      exit_value = 0
 
-        # Send run command
-        msg = self.Message()
-        msg['lang'] = None
-        msg['to'] = self.recipient
-        msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
-        msg.send()
+    self.disconnect(wait=True)
 
-        self.last_id += 1
-      else:
-        self.disconnect(wait=True)
-
-    elif self.last_id == 2:
-      if (decoded[b'p'].decode("utf-8") == "mytest" and
-          decoded[b'r'] == None and
-          decoded[b'o'].decode("utf-8") == "" and
-          decoded[b'e'].decode("utf-8") != "" and
-          decoded[b'i'] == 1):
-
-        # Send quit command
-        msg = self.Message()
-        msg['lang'] = None
-        msg['to'] = self.recipient
-        msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
-        msg.send()
-
-        self.last_id += 1
-      else:
-        self.disconnect(wait=True)
-
-    elif self.last_id == 3:
-      if (decoded[b'p'].decode("utf-8") == "mytest" and
-          decoded[b'c'].decode("utf-8") == "q" and
-          decoded[b'i'] == 2):
-        exit_value = 0
-
-      self.disconnect(wait=True)
 
 
 if __name__ == '__main__':

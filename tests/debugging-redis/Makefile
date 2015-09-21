@@ -1,24 +1,12 @@
-JID_OWNER="wyliodrin_test@wyliodrin.org"
-JID_BOARD="wyliodrin_board@wyliodrin.org"
-PASSWORD="wyliodrin"
+all: myproject myproject2
 
-test: test.c
-	gcc -g test.c -o mytest
+myproject: myproject.c
+	gcc -g myproject.c -o myproject
+	mv myproject /etc/wyliodrin/build/myproject_id
 
-test2: test2.c
-	gcc -g test2.c -o mytest2
-
-debugger:
-	gdb -q -x debugger.py &
-
-sim_board: test test2 debugger
-	/usr/bin/python3 sim_board.py
-
-sim_owner: test test2
-	/usr/bin/python3 sim_owner.py -q --jid $(JID_OWNER) --password $(PASSWORD) --to $(JID_BOARD)
+myproject2: myproject2.c
+	gcc -g myproject2.c -o myproject2
+	mv myproject2 /etc/wyliodrin/build/myproject2_id
 
 clean:
-	rm -rf mytest mytest2 out.log err.log
-
-stop_all_gdb:
-	kill -9 $(pgrep gdb)
+	rm -rf myproject myproject2 out.log err.log

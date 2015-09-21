@@ -44,7 +44,20 @@ if __name__ == '__main__':
       if my_project is None:
         if b's' in data:
           my_project = data[b's'].decode("utf-8")
-          gdb.execute('cd ' + build_path + "/" + data[b'x'].decode("utf-8"))
+
+          try:
+            gdb.execute('cd ' + build_path + "/" + data[b'x'].decode("utf-8"))
+          except:
+            to_publish = base64.b64encode(msgpack.packb(
+              {
+              "f" : "wrong project id",
+              "i" : i
+              })).decode("utf-8")
+
+            r.publish(gdb_results_channel_name, to_publish)
+
+            gdb.execute('q')
+
           gdb.execute('file ' + my_project)
 
           r.publish(gdb_results_channel_name, content['data'])

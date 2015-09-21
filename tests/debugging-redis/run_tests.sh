@@ -6,7 +6,8 @@ PASSWORD="wyliodrin"
 num_tests_passed=0
 
 test_name=(                                                                    \
-  "Test start and close debug session"                                         \
+  "Test start and close good debug session"                                    \
+  "Test start debug session with wrong project id"                             \
   "Test simple run"                                                            \
 )
 
