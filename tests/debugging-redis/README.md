@@ -1,3 +1,6 @@
+To improve:
+  * Use separate channel for every debug session: gdb_commands:projectid
+
 To run demo:
   * start redis-server
   * run ``make sim_board`` in one terminal
@@ -16,3 +19,5 @@ Add to ``/etc/gdb/gdbinit`` (no user query when unrecongnized breakpoint):
 ```
 set breakpoint pending off
 ```
+
+When se

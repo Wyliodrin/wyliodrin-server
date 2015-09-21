@@ -76,60 +76,6 @@ class SimOwner(sleekxmpp.ClientXMPP):
         "s" : "mytest",
         "x" : "mytest_id",
         "i" : 0
-      },
-      {
-        "p" : "mytest",
-        "i" : 1,
-        "d" : ["f", "main"]
-      },
-      {
-        "p" : "mytest",
-        "i" : 2,
-        "b" : ["main", "12"]
-      },
-      {
-        "p" : "mytest",
-        "i" : 3,
-        "c" : "r"
-      },
-      {
-        "p" : "mytest",
-        "i" : 4,
-        "w" : ["a", "b"]
-      },
-      {
-        "p" : "mytest",
-        "i" : 5,
-        "c" : "n"
-      },
-      {
-        "p" : "mytest",
-        "i" : 6,
-        "c" : "n"
-      },
-      {
-        "p" : "mytest",
-        "i" : 7,
-        "c" : "c"
-      },
-      {
-        "s" : "mytest2",
-        "i" : 8
-      },
-      {
-        "p" : "mytest2",
-        "i" : 9,
-        "c" : "r"
-      },
-      {
-        "p" : "mytest",
-        "i" : 10,
-        "c" : "q"
-      },
-      {
-        "p" : "mytest2",
-        "i" : 11,
-        "c" : "q"
       }
     ]
 
@@ -157,19 +103,21 @@ class SimOwner(sleekxmpp.ClientXMPP):
     stat.send()
     sleep(1)
 
-    # Send new session of debugging
-
     """
     <message to="<self.recipient>">
       <d xmlns="wyliodrin" n="<n>"/>
     </message>
     """
 
+    # Send new session of debugging
     msg = self.Message()
     msg['lang'] = None
     msg['to'] = self.recipient
-    msg['d']['n'] = "n"
+    msg['d']['n'] = "mytest_id"
+    msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
     msg.send()
+
+    self.last_id += 1
 
 
   def _handle_action(self, msg):
@@ -177,40 +125,32 @@ class SimOwner(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
+    global exit_value
+
     """
     <message to="<self.recipient>">
       <d xmlns="wyliodrin" d="<msgpack_data>"/>
     </message>
     """
 
-    if self.last_id == 8 and self.second_session_started == False:
-      # Send new session of debugging
-      msg = self.Message()
-      msg['lang'] = None
-      msg['to'] = self.recipient
-      msg['d']['n'] = "n"
-      msg.send()
-
-      self.second_session_started = True
-
-      return
-
-    if (msg['d']['d'] != ""):
+    try:
       decoded = msgpack.unpackb(base64.b64decode(msg['d']['d']))
       logging.info(decoded)
+      if (decoded[b's'].decode("utf-8") == "mytest" and
+          decoded[b'x'].decode("utf-8") == "mytest_id" and
+          decoded[b'i'] == 0):
+        exit_value = 0
+    except:
+      pass
 
-    # Send next message
-    msg = self.Message()
-    msg['lang'] = None
-    msg['to'] = self.recipient
-    msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
-    msg.send()
+    self.disconnect(wait=True)
 
-    self.last_id += 1
 
 
 
 if __name__ == '__main__':
+  global exit_value
+
   # Setup the command line arguments.
   optp = OptionParser()
 
@@ -257,6 +197,7 @@ if __name__ == '__main__':
   # Connect to the XMPP server and start processing XMPP stanzas.
   if xmpp.connect():
     xmpp.process(block=True)
-    print("Done")
   else:
     print("Unable to connect.")
+
+  sys.exit(exit_value)

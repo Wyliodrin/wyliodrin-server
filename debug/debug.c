@@ -91,23 +91,20 @@ void debug(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   }
 
   /* New attribute */
-  char *n_attr = xmpp_stanza_get_attribute(stanza, "n");
-  if (n_attr != NULL) {
+  char *projectid_attr = xmpp_stanza_get_attribute(stanza, "n");
+  if (projectid_attr != NULL) {
+    // snprintf(cmd, 1024, "cp -rf %s/%s %s && cd %s/%s && make -f Makefile.%s",
+    //     mount_file_str, projectid_attr, build_file_str,
+    //     build_file_str, projectid_attr,
+    //     board_str);
+
+    /* The command above will be executed as soon as the files modules will be simulated.
+     * For testing purposes, make sure you have mytest_id/my_test and mytest2_id/my_test2
+     * in the build file path.
+     */
+
     fork_and_exec_gdb();
     usleep(500000);
-
-    /* Send ACK */
-    xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
-    xmpp_stanza_set_name(message_stz, "message");
-    xmpp_stanza_set_attribute(message_stz, "to", owner_str);
-    xmpp_stanza_t *ack_stz = xmpp_stanza_new(ctx);
-    xmpp_stanza_set_name(ack_stz, "d");
-    xmpp_stanza_set_ns(ack_stz, WNS);
-    xmpp_stanza_set_attribute(ack_stz, "n", "n");
-    xmpp_stanza_add_child(message_stz, ack_stz);
-    xmpp_send(conn, message_stz);
-    xmpp_stanza_release(ack_stz);
-    xmpp_stanza_release(message_stz);
   }
 
   char *d_attr = xmpp_stanza_get_attribute(stanza, "d");

@@ -13,5 +13,5 @@ int main() {
 
   fprintf(stderr, "some output\n");
 
-  return 0;
+  return -1;
 }

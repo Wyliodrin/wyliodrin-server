@@ -1,6 +1,7 @@
 === LEGEND ====================================================================
 s : start
-p : project id
+p : project name
+x : project id
 d : disassemble
 b : breakpoints
 w : watchpoints

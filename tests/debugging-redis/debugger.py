@@ -16,7 +16,7 @@ import time
 
 gdb_commands_channel_name = "gdb_commands"
 gdb_results_channel_name  = "gdb_results"
-build_path = "/etc/wyliodrin/build/"
+build_path = "/etc/wyliodrin/build"
 
 
 
@@ -44,16 +44,10 @@ if __name__ == '__main__':
       if my_project is None:
         if b's' in data:
           my_project = data[b's'].decode("utf-8")
-          gdb.execute('cd ' + build_path + my_project)
+          gdb.execute('cd ' + build_path + "/" + data[b'x'].decode("utf-8"))
           gdb.execute('file ' + my_project)
 
-          to_publish = base64.b64encode(msgpack.packb(
-            {
-            "s" : my_project,
-            "i" : i
-            })).decode("utf-8")
-
-          r.publish(gdb_results_channel_name, to_publish)
+          r.publish(gdb_results_channel_name, content['data'])
 
         continue
 
@@ -126,13 +120,8 @@ if __name__ == '__main__':
         c = data[b'c'].decode("utf-8")
 
         if c == "q":
-          to_publish = base64.b64encode(msgpack.packb(
-            {
-            "q" : project,
-            "i" : i
-            })).decode("utf-8")
-
-          r.publish(gdb_results_channel_name, to_publish)
+          # Send back quit command
+          r.publish(gdb_results_channel_name, content['data'])
 
         if c == "r":
           os.system("rm out.log")
