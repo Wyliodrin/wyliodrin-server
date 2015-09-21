@@ -146,8 +146,6 @@ class SimOwner(sleekxmpp.ClientXMPP):
           decoded[b'x'].decode("utf-8") == "mytest_id" and
           decoded[b'i'] == 0):
 
-        sleep(5)
-
         # Send quit command
         msg = self.Message()
         msg['lang'] = None
