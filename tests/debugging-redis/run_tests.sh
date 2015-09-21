@@ -3,14 +3,13 @@
 JID_OWNER="wyliodrin_test@wyliodrin.org"
 JID_BOARD="wyliodrin_board@wyliodrin.org"
 PASSWORD="wyliodrin"
-NUM_TESTS=2
 
 test_name=(                                                                    \
   "Test start and close debug session"                                         \
   "Test simple run"                                                            \
 )
 
-for i in `seq 1 $(($NUM_TESTS))`; do
+for i in `seq 1 ${#test_name[@]}`; do
   printf "${test_name[$i - 1]} ... "
 
   /usr/bin/python3 test$i.py -q --jid $JID_OWNER --password $PASSWORD --to $JID_BOARD
