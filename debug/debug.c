@@ -58,6 +58,7 @@ static void fork_and_exec_gdb();
 static void *wait_routine(void *arg);
 
 
+
 /*** IMPLEMENTATIONS *****************************************************************************/
 
 void init_debug() {
@@ -94,6 +95,19 @@ void debug(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   if (n_attr != NULL) {
     fork_and_exec_gdb();
     usleep(500000);
+
+    /* Send ACK */
+    xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
+    xmpp_stanza_set_name(message_stz, "message");
+    xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+    xmpp_stanza_t *ack_stz = xmpp_stanza_new(ctx);
+    xmpp_stanza_set_name(ack_stz, "d");
+    xmpp_stanza_set_ns(ack_stz, WNS);
+    xmpp_stanza_set_attribute(ack_stz, "n", "n");
+    xmpp_stanza_add_child(message_stz, ack_stz);
+    xmpp_send(conn, message_stz);
+    xmpp_stanza_release(ack_stz);
+    xmpp_stanza_release(message_stz);
   }
 
   char *d_attr = xmpp_stanza_get_attribute(stanza, "d");
@@ -163,6 +177,7 @@ static void *subscriber_routine(void *arg) {
 
   return NULL;
 }
+
 
 static void connect_callback(const redisAsyncContext *rac, int status) {
   if (status != REDIS_OK) {

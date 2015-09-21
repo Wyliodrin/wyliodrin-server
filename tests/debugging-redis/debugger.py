@@ -125,6 +125,15 @@ if __name__ == '__main__':
       if b'c' in data:
         c = data[b'c'].decode("utf-8")
 
+        if c == "q":
+          to_publish = base64.b64encode(msgpack.packb(
+            {
+            "q" : project,
+            "i" : i
+            })).decode("utf-8")
+
+          r.publish(gdb_results_channel_name, to_publish)
+
         if c == "r":
           os.system("rm out.log")
           os.system("rm err.log")
@@ -132,7 +141,11 @@ if __name__ == '__main__':
         else:
           o = gdb.execute(c, to_string=True)
 
-        gdb.execute('call fflush(0)')
+        try:
+          gdb.execute('call fflush(0)')
+        except:
+          # Will fail when the process is finished
+          pass
 
         out = open("out.log")
         err = open("err.log")

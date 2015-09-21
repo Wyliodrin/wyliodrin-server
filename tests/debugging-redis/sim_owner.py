@@ -38,7 +38,7 @@ else:
 
 class D(ElementBase):
   """
-  <d xmlns="wyliodrin" d="<msgpack_data>" n="<irrelevant>"/>
+  <d xmlns="wyliodrin" d="<msgpack_data>" n="<project_id>"/>
   """
 
   name = 'd'
@@ -68,11 +68,13 @@ class SimOwner(sleekxmpp.ClientXMPP):
     register_stanza_plugin(Message, D)
 
     self.last_id = 0
+    self.second_session_started = False
 
     # Build messages list
     self.messages = [
       {
         "s" : "mytest",
+        "x" : "mytest_id",
         "i" : 0
       },
       {
@@ -111,8 +113,22 @@ class SimOwner(sleekxmpp.ClientXMPP):
         "c" : "c"
       },
       {
+        "s" : "mytest2",
+        "i" : 8
+      },
+      {
+        "p" : "mytest2",
+        "i" : 9,
+        "c" : "r"
+      },
+      {
         "p" : "mytest",
-        "i" : 8,
+        "i" : 10,
+        "c" : "q"
+      },
+      {
+        "p" : "mytest2",
+        "i" : 11,
         "c" : "q"
       }
     ]
@@ -141,27 +157,19 @@ class SimOwner(sleekxmpp.ClientXMPP):
     stat.send()
     sleep(1)
 
+    # Send new session of debugging
+
+    """
+    <message to="<self.recipient>">
+      <d xmlns="wyliodrin" n="<n>"/>
+    </message>
+    """
+
     msg = self.Message()
     msg['lang'] = None
     msg['to'] = self.recipient
     msg['d']['n'] = "n"
     msg.send()
-    sleep(3)
-
-    """
-    <message to="<self.recipient>">
-      <d xmlns="wyliodrin" d="<msgpack_data>"/>
-    </message>
-    """
-
-    # Send first message
-    msg = self.Message()
-    msg['lang'] = None
-    msg['to'] = self.recipient
-    msg['d']['d'] = base64.b64encode(msgpack.packb(self.messages[self.last_id])).decode("utf-8")
-    msg.send()
-
-    self.last_id += 1
 
 
   def _handle_action(self, msg):
@@ -169,8 +177,27 @@ class SimOwner(sleekxmpp.ClientXMPP):
 
 
   def _handle_action_event(self, msg):
-    decoded = msgpack.unpackb(base64.b64decode(msg['d']['d']))
-    logging.info(decoded)
+    """
+    <message to="<self.recipient>">
+      <d xmlns="wyliodrin" d="<msgpack_data>"/>
+    </message>
+    """
+
+    if self.last_id == 8 and self.second_session_started == False:
+      # Send new session of debugging
+      msg = self.Message()
+      msg['lang'] = None
+      msg['to'] = self.recipient
+      msg['d']['n'] = "n"
+      msg.send()
+
+      self.second_session_started = True
+
+      return
+
+    if (msg['d']['d'] != ""):
+      decoded = msgpack.unpackb(base64.b64decode(msg['d']['d']))
+      logging.info(decoded)
 
     # Send next message
     msg = self.Message()
