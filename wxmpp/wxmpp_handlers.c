@@ -84,6 +84,41 @@ void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, cons
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
 
+    /* Create tags hashmap */
+    if (modules != NULL) {
+      destroy_hashmap(modules);
+    }
+    modules = create_hashmap();
+
+    /* Init modules */
+    #ifdef SHELLS
+      add_module("shells", shells);
+      init_shells();
+      start_dead_projects(conn, userdata);
+    #endif
+    #ifdef FILES
+      add_module("files", files);
+      if (is_fuse_available) {
+        init_files();
+      }
+    #endif
+    #ifdef MAKE
+      add_module("make", make);
+      init_make();
+    #endif
+    #ifdef COMMUNICATION
+      add_module("communication", communication);
+      init_communication();
+    #endif
+    #ifdef PS
+      add_module("ps", ps);
+    #endif
+    #ifdef DEBUG
+      add_module("d", debug);
+      werr("add debug module");
+      init_debug();
+    #endif
+
     /* Add ping handler */
     xmpp_handler_add(conn, ping_handler, "urn:xmpp:ping", "iq", "get", ctx);
 
@@ -227,40 +262,6 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       xmpp_send(conn, message_stz);
       xmpp_stanza_release(version_stz);
       xmpp_stanza_release(message_stz);
-
-      /* Create tags hashmap */
-      if (modules != NULL) {
-        destroy_hashmap(modules);
-      }
-      modules = create_hashmap();
-
-      /* Init modules */
-      #ifdef SHELLS
-        add_module("shells", shells);
-        init_shells();
-        start_dead_projects(conn, userdata);
-      #endif
-      #ifdef FILES
-        add_module("files", files);
-        if (is_fuse_available) {
-          init_files();
-        }
-      #endif
-      #ifdef MAKE
-        add_module("make", make);
-        init_make();
-      #endif
-      #ifdef COMMUNICATION
-        add_module("communication", communication);
-        init_communication();
-      #endif
-      #ifdef PS
-        add_module("ps", ps);
-      #endif
-      #ifdef DEBUG
-        add_module("d", debug);
-        init_debug();
-      #endif
     }
   }
 
