@@ -1,0 +1,18 @@
+#/bin/bash
+
+ESSID=$(iwgetid -r)
+
+if [ ! "$1" == "$ESSID" ]; then
+  printf 'network={
+    ssid=\"%s\"
+    proto=WPA RSN
+    scan_ssid=1
+    key_mgmt=WPA-PSK NONE
+    psk=\"%s\"\n}\n' $1 $2 > /etc/wyliodrin/wireless.conf
+
+  ifdown wlan0
+  sleep 1
+  ifup wlan0
+else
+  echo "Wifi already configured"
+fi

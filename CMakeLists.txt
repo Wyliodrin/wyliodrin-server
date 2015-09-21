@@ -90,3 +90,9 @@ target_link_libraries (wyliodrind
   ${OPENSSL_LIBRARIES}
   ${CMAKE_BINARY_DIR}/libdbs.a
 )
+
+option (RASPBERRYPI "Build for the RaspberryPi." OFF)
+
+if (RASPBERRYPI)
+  install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
+endif ()

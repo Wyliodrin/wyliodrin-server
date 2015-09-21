@@ -121,7 +121,7 @@ cd wyliodrin-server
 git checkout $WVERSION
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
+cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr $CMAKE_PARAMS ..
 make
 make install
 
