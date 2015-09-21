@@ -283,7 +283,10 @@ void wtalk()
     if (ssid_str != NULL && strlen(ssid_str) != 0) {
       const char *psk_str = get_str_value(config_json, "psk");
       if (psk_str != NULL) {
-        wifi_rpi(ssid_str, psk_str);
+        // wifi_rpi(ssid_str, psk_str);
+        char wifi_cmd[512];
+        snprintf(wifi_cmd, 512, "setup_wifi_rpi %s %s", ssid_str, psk_str);
+        system(wifi_cmd);
       }
     }
   }
