@@ -13,6 +13,7 @@
 #include <sys/stat.h>  /* file stuff   */
 #include <sys/types.h> /* file stuff   */
 #include <sys/wait.h>  /* waitpid      */
+#include <errno.h>     /* errno        */
 #include <Wyliodrin.h> /* version      */
 
 #include "winternals/winternals.h" /* logs and errs */
@@ -59,38 +60,38 @@ static void create_running_projects_file_if_does_not_exist() {
   }
 }
 
-static void wifi_rpi(const char *ssid, const char *psk) {
-  int fd = open(RPI_WIFI_PATH, O_CREAT | O_RDWR);
-  if (fd == -1) {
-    werr("Could not open %s", RPI_WIFI_PATH);
-    return;
-  }
+// static void wifi_rpi(const char *ssid, const char *psk) {
+//   int fd = open(RPI_WIFI_PATH, O_CREAT | O_RDWR);
+//   if (fd == -1) {
+//     werr("Could not open %s", RPI_WIFI_PATH);
+//     return;
+//   }
 
-  char to_write[512];
-  snprintf(to_write, 512,
-    "network={\n"
-    "\tssid=\"%s\"\n"
-    "\tproto=WPA RSN\n"
-    "\tscan_ssid=1\n"
-    "\tkey_mgmt=WPA-PSK NONE\n"
-    "\tpsk=\"%s\"\n"
-    "}\n",
-    ssid, psk);
+//   char to_write[512];
+//   snprintf(to_write, 512,
+//     "network={\n"
+//     "\tssid=\"%s\"\n"
+//     "\tproto=WPA RSN\n"
+//     "\tscan_ssid=1\n"
+//     "\tkey_mgmt=WPA-PSK NONE\n"
+//     "\tpsk=\"%s\"\n"
+//     "}\n",
+//     ssid, psk);
 
-  char to_read[512];
-  to_read[0] = '\0';
-  read(fd, to_read, 512);
-  if (strncmp(to_write, to_read, strlen(to_write)) == 0) {
-    /* Already up to date */
-    close(fd);
-    return;
-  }
+//   char to_read[512];
+//   to_read[0] = '\0';
+//   read(fd, to_read, 512);
+//   if (strncmp(to_write, to_read, strlen(to_write)) == 0) {
+//     /* Already up to date */
+//     close(fd);
+//     return;
+//   }
 
-  write(fd, to_write, strlen(to_write));
-  close(fd);
+//   write(fd, to_write, strlen(to_write));
+//   close(fd);
 
-  system("/etc/init.d/networking restart");
-}
+//   system("/etc/init.d/networking restart");
+// }
 
 static void signal_handler(int signum) {
   if (signum == SIGTERM) {
@@ -283,10 +284,26 @@ void wtalk()
     if (ssid_str != NULL && strlen(ssid_str) != 0) {
       const char *psk_str = get_str_value(config_json, "psk");
       if (psk_str != NULL) {
-        // wifi_rpi(ssid_str, psk_str);
-        char wifi_cmd[512];
-        snprintf(wifi_cmd, 512, "setup_wifi_rpi %s %s", ssid_str, psk_str);
-        system(wifi_cmd);
+        int pid = fork();
+
+        /* Return if fork failed */
+        if (pid == -1) {
+          werr("Fork used for setup_wifi_rpi failed: %s", strerror(errno));
+        }
+
+        /* Child from fork */
+        else if (pid == 0) {
+          char *env[] = {"setup_wifi_rpi", (char *)ssid_str, (char *)psk_str, NULL};
+          execvp(env[0], env);
+
+          werr("setup_wifi_rpi failed");
+          exit(EXIT_FAILURE);
+        }
+
+        /* Parent */
+        else {
+          waitpid(pid, NULL, 0);
+        }
       }
     }
   }
