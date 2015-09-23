@@ -44,7 +44,7 @@ int execvpe(const char *file, char *const argv[], char *const envp[]);
 static void remove_project_id_from_running_projects(char *projectid) {
   char cmd[256];
 
-  snprintf(cmd, 256, "sed -i -e 's/%s://g' %s", projectid, RUNNING_PROJECTS_PATH);
+  snprintf(cmd, 255, "sed -i -e 's/%s://g' %s", projectid, RUNNING_PROJECTS_PATH);
   system(cmd);
 }
 
@@ -60,13 +60,13 @@ void *read_thread(void *args) {
       send_shells_keys_response(shell->conn, (void *)shell->ctx, buf, rc_int, shell->id);
       usleep(10000);
     } else if (rc_int < 0) {
-      char shellid_str[4];
-      snprintf(shellid_str, 4, "%d", shell->id);
+      char shellid_str[8];
+      snprintf(shellid_str, 7, "%d", shell->id);
 
       int status;
       pid_t waitpid_rc = waitpid(shell->pid, &status, 0);
-      char exit_status[4];
-      snprintf(exit_status, 4, "%d",  WEXITSTATUS(status));
+      char exit_status[8];
+      snprintf(exit_status, 7, "%d",  WEXITSTATUS(status));
 
       if (waitpid_rc == -1) {
         werr("waitpid error");
@@ -80,36 +80,36 @@ void *read_thread(void *args) {
 
         if (pid == 0) { /* Child*/
           char cd_path[256];
-          snprintf(cd_path, 256, "%s/%s", build_file_str, shell->projectid);
+          snprintf(cd_path, 255, "%s/%s", build_file_str, shell->projectid);
           int chdir_rc = chdir(cd_path);
           wsyserr(chdir_rc == -1, "chdir");
 
           char makefile_name[64];
-          snprintf(makefile_name, 64, "Makefile.%s", board_str);
+          snprintf(makefile_name, 63, "Makefile.%s", board_str);
 
           char *make_run[] = {"make", "-f", makefile_name, "run", NULL};
 
           char wyliodrin_project_env[64];
-          snprintf(wyliodrin_project_env, 64, "wyliodrin_project=%s", shell->projectid);
+          snprintf(wyliodrin_project_env, 63, "wyliodrin_project=%s", shell->projectid);
 
           char wyliodrin_userid_env[64];
-          snprintf(wyliodrin_userid_env, 64, "wyliodrin_userid=%s", shell->userid);
+          snprintf(wyliodrin_userid_env, 63, "wyliodrin_userid=%s", shell->userid);
 
           char wyliodrin_session_env[64];
-          snprintf(wyliodrin_session_env, 64, "wyliodrin_session=%s", shell->request_attr);
+          snprintf(wyliodrin_session_env, 63, "wyliodrin_session=%s", shell->request_attr);
 
           char wyliodrin_board_env[64];
-          snprintf(wyliodrin_board_env, 64, "wyliodrin_board=%s", board_str);
+          snprintf(wyliodrin_board_env, 63, "wyliodrin_board=%s", board_str);
 
           char wyliodrin_jid_env[64];
-          snprintf(wyliodrin_jid_env, 64, "wyliodrin_jid=%s", jid_str);
+          snprintf(wyliodrin_jid_env, 63, "wyliodrin_jid=%s", jid_str);
 
           char home_env[] = "HOME=/wyliodrin";
           char term_env[] = "TERM=xterm";
 
           #ifdef USEMSGPACK
             char wyliodrin_usemsgpack_env[64];
-            snprintf(wyliodrin_usemsgpack_env, 64, "wyliodrin_usemsgpack=1");
+            snprintf(wyliodrin_usemsgpack_env, 63, "wyliodrin_usemsgpack=1");
             char *env[] = { wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
               wyliodrin_board_env, wyliodrin_jid_env, home_env, term_env, wyliodrin_usemsgpack_env,
               NULL};
@@ -155,8 +155,8 @@ void *read_thread(void *args) {
       xmpp_stanza_set_name(close_stz, "shells");
       xmpp_stanza_set_ns(close_stz, WNS);
       if (shell->close_request != -1) {
-        char close_request_str[4];
-        snprintf(close_request_str, 4, "%d", shell->close_request);
+        char close_request_str[8];
+        snprintf(close_request_str, 7, "%d", shell->close_request);
         xmpp_stanza_set_attribute(close_stz, "request", close_request_str);
       }
       xmpp_stanza_set_attribute(close_stz, "action", "close");
@@ -172,7 +172,7 @@ void *read_thread(void *args) {
         remove_project_id_from_running_projects(shell->projectid);
 
         char projectid_path[64];
-        snprintf(projectid_path, 64, "/tmp/wyliodrin/%s", shell->projectid);
+        snprintf(projectid_path, 63, "/tmp/wyliodrin/%s", shell->projectid);
         free(shell->projectid);
         shell->projectid = NULL;
 

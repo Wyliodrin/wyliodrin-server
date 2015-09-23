@@ -68,7 +68,7 @@ static void create_running_projects_file_if_does_not_exist() {
 //   }
 
 //   char to_write[512];
-//   snprintf(to_write, 512,
+//   snprintf(to_write, 511,
 //     "network={\n"
 //     "\tssid=\"%s\"\n"
 //     "\tproto=WPA RSN\n"
@@ -118,7 +118,7 @@ void wtalk()
 
   /* Get the path of settings_<boardtype> file */
   char settings_path[SETTINGS_PATH_MAX_LENGTH]; /* Path of the settings file */
-  int snprintf_rc = snprintf(settings_path, SETTINGS_PATH_MAX_LENGTH, SETTINGS_PATH "%s.json",
+  int snprintf_rc = snprintf(settings_path, SETTINGS_PATH_MAX_LENGTH - 1, SETTINGS_PATH "%s.json",
     boardtype); /* Return code of snprintf */
   wsyserr(snprintf_rc < 0, "snprintf");
 
@@ -236,7 +236,7 @@ void wtalk()
   /* Umount the mountFile */
   if (strcmp(board_str, "server") != 0) {
     char umount_cmd[128];
-    snprintf_rc = snprintf(umount_cmd, 128, "umount -f %s", mount_file_str);
+    snprintf_rc = snprintf(umount_cmd, 127, "umount -f %s", mount_file_str);
     wsyserr(snprintf_rc < 0, "snprintf");
     int system_rc = system(umount_cmd);
     wsyserr(system_rc == -1, "system");
@@ -257,9 +257,9 @@ void wtalk()
         /* Set wifi type: OPEN or WPA-PSK */
         char wifi_type[16];
         if (strlen(psk_str) == 0) {
-          snprintf_rc = snprintf(wifi_type, 16, "OPEN");
+          snprintf_rc = snprintf(wifi_type, 15, "OPEN");
         } else {
-          snprintf_rc = snprintf(wifi_type, 16, "WPA-PSK");
+          snprintf_rc = snprintf(wifi_type, 15, "WPA-PSK");
         }
         wsyserr(snprintf_rc < 0, "snprintf");
 
@@ -316,7 +316,7 @@ void wtalk()
       werr("Could not open resolv.conf");
     } else {
       char to_write[128];
-      snprintf_rc = snprintf(to_write, 128, "nameserver %s", nameserver_str);
+      snprintf_rc = snprintf(to_write, 127, "nameserver %s", nameserver_str);
       wsyserr(snprintf_rc < 0, "snprintf");
       int write_rc = write(resolv_fd, to_write, strlen(to_write));
       wsyserr(write_rc == -1, "write");

@@ -73,7 +73,7 @@ static void *send_tasks_routine(void *args) {
       while ((ep = readdir(dp))) {
         if (isdigit(ep->d_name[0])) {
           /* stat */
-          snprintf(fn, 64, "/proc/%s/stat", ep->d_name);
+          snprintf(fn, 63, "/proc/%s/stat", ep->d_name);
           fd = open(fn, O_RDONLY);
           if (fd == -1) {
             perror("open");
@@ -97,7 +97,7 @@ static void *send_tasks_routine(void *args) {
           }
 
           /* statm */
-          snprintf(fn, 64, "/proc/%s/statm", ep->d_name);
+          snprintf(fn, 63, "/proc/%s/statm", ep->d_name);
           fd = open(fn, O_RDONLY);
           if (fd == -1) {
             perror("open");
@@ -177,7 +177,7 @@ static void ps_kill(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const 
     return;
   }
   char cmd[64];
-  snprintf(cmd, 64, "kill -9 %s", pid_attr);
+  snprintf(cmd, 63, "kill -9 %s", pid_attr);
   system(cmd);
 }
 

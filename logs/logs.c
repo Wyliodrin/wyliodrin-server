@@ -67,7 +67,7 @@ static void *send_logs_routine(void *args) {
         domain++;
       }
 
-      snprintf(URL, 256, "https://%s/gadgets/logs/%s", domain, jid_str);
+      snprintf(URL, 255, "https://%s/gadgets/logs/%s", domain, jid_str);
       curl_easy_setopt(curl, CURLOPT_URL, URL);
       curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
@@ -144,7 +144,7 @@ void add_log(const char *msg, ...) {
   char *str = malloc(MAX_LOG_SIZE * sizeof(char));
   char *p = asctime(timeinfo);
   p[strlen(p) - 1] = '\0'; /* Get rid of the newline character */
-  snprintf(str, MAX_LOG_SIZE, "ERR %s %s", p, full_msg);
+  snprintf(str, MAX_LOG_SIZE - 1, "ERR %s %s", p, full_msg);
   free(full_msg);
 
 

@@ -277,7 +277,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
     #endif
 
     char command[128];
-    snprintf(command, 128, "LRANGE %s 0 500", projectId);
+    snprintf(command, 127, "LRANGE %s 0 500", projectId);
 
     redisReply *reply = redisCommand(c, command);
     if (reply != NULL) {
@@ -466,7 +466,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
           werr("curl_easy_perform() failed: %s", curl_easy_strerror(res));
         } else {
           char ltrim_command[512];
-          snprintf(ltrim_command, 512, "LTRIM %s %d -1", projectId, (int)(reply->elements));
+          snprintf(ltrim_command, 511, "LTRIM %s %d -1", projectId, (int)(reply->elements));
           redisCommand(c, ltrim_command);
         }
 
