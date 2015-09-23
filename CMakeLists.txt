@@ -74,7 +74,8 @@ add_executable (wyliodrind
 
 install (TARGETS wyliodrind DESTINATION bin)
 
-add_definitions ("-Wall -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
+add_definitions ("-Wall -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64 \
+                  -DUSEMSGPACK")
 
 target_link_libraries (wyliodrind
   ${CMAKE_THREAD_LIBS_INIT}
