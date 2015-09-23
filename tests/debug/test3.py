@@ -164,7 +164,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
 
     elif self.last_id == 2:
       if (decoded[b'p'].decode("utf-8") == "myproject" and
-          decoded[b'r'] == None and
+          decoded[b'r'].decode("utf-8") != "error" and
           decoded[b'o'].decode("utf-8") == "" and
           decoded[b'e'].decode("utf-8") != "" and
           decoded[b'i'] == 1):

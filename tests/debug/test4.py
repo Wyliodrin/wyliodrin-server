@@ -165,8 +165,9 @@ class SimOwner(sleekxmpp.ClientXMPP):
     elif self.last_id == 2:
       if (decoded[b'p'].decode("utf-8") == "myproject" and
           decoded[b'i'] == 1 and
-          b'12' in decoded[b'b'] and
-          b'main' in decoded[b'b']):
+          decoded[b'b'][b'12'].decode("utf-8") != "error" and
+          decoded[b'b'][b'main'].decode("utf-8") != "error" and
+          decoded[b'b'][b'not_a_func'].decode("utf-8") == "error"):
 
         # Send quit command
         msg = self.Message()

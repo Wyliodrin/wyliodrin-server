@@ -80,7 +80,10 @@ if __name__ == '__main__':
 
         result = {}
         for func in disassemble_func:
-          o = gdb.execute('disassemble ' + func.decode("utf-8"), to_string=True)
+          try:
+            o = gdb.execute('disassemble ' + func.decode("utf-8"), to_string=True)
+          except:
+            o = "error"
           result[func.decode("utf-8")] = o
 
         to_publish = base64.b64encode(msgpack.packb(
@@ -99,10 +102,10 @@ if __name__ == '__main__':
         result = {}
         for breakpoint in breakpoints:
           try:
-            o = gdb.execute("break " + breakpoint.decode("utf-8"))
+            o = gdb.execute("break " + breakpoint.decode("utf-8"), to_string=True)
             result[breakpoint.decode('utf-8')] = o
           except:
-            result[breakpoint.decode('utf-8')] = "invalid"
+            result[breakpoint.decode('utf-8')] = "error"
 
         to_publish = base64.b64encode(msgpack.packb(
           {
@@ -119,7 +122,7 @@ if __name__ == '__main__':
 
         result = {}
         for watchpoint in watchpoints:
-          o = gdb.execute("watch " + watchpoint.decode("utf-8"))
+          o = gdb.execute("watch " + watchpoint.decode("utf-8"), to_string=True)
           result[watchpoint.decode('utf-8')] = o
 
         to_publish = base64.b64encode(msgpack.packb(
@@ -142,9 +145,15 @@ if __name__ == '__main__':
         if c == "r":
           os.system("rm out.log")
           os.system("rm err.log")
-          o = gdb.execute("run > out.log 2> err.log")
+          try:
+            o = gdb.execute("run > out.log 2> err.log", to_string=True)
+          except:
+            o = "error"
         else:
-          o = gdb.execute(c, to_string=True)
+          try:
+            o = gdb.execute(c, to_string=True)
+          except:
+            o = "error"
 
         try:
           gdb.execute('call fflush(0)')
