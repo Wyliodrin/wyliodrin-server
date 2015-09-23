@@ -6,3 +6,8 @@ v2.4
 v2.5
 ====
   * Modules initialized only once when connection is established
+
+v2.6
+====
+  * Replace system call with fork + exec for RaspberryPi's wifi setup
+  * Max size for snprintf reduced with 1
