@@ -122,7 +122,10 @@ if __name__ == '__main__':
 
         result = {}
         for watchpoint in watchpoints:
-          o = gdb.execute("watch " + watchpoint.decode("utf-8"), to_string=True)
+          try:
+            o = gdb.execute("watch " + watchpoint.decode("utf-8"), to_string=True)
+          except:
+            o = "error"
           result[watchpoint.decode('utf-8')] = o
 
         to_publish = base64.b64encode(msgpack.packb(

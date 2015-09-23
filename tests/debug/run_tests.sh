@@ -11,6 +11,7 @@ test_name=(                                                                    \
   "Test simple run"                                                            \
   "Test both valid and invalid breakpoints"                                    \
   "Test disassemble"                                                           \
+  "Test both valid and invalid watchpoints"                                    \
 )
 
 printf "\n"
