@@ -41,34 +41,7 @@ static bool is_connetion_in_progress = false;
 
   #define STORAGESIZE 1024
   #define SBUFSIZE    512
-
-  static uint32_t reader_offset = 0;
-  static uint32_t writer_offset = 0;
-
-  static bool string_reader(cmp_ctx_t *ctx, void *data, size_t limit) {
-    if (reader_offset + limit > STORAGESIZE) {
-      fprintf(stderr, "No more space available in string_reader\n");
-      return false;
-    }
-
-    memcpy(data, ctx->buf + reader_offset, limit);
-    reader_offset += limit;
-
-    return true;
-  }
-
-  static size_t string_writer(cmp_ctx_t *ctx, const void *data, size_t count) {
-    if (writer_offset + count > STORAGESIZE) {
-      fprintf(stderr, "No more space available in string_writer\n");
-      return 0;
-    }
-
-    memcpy(ctx->buf + writer_offset, data, count);
-    writer_offset += count;
-
-    return count;
-  }
-#endif
+#endif /* USEMSGPACK */
 
 void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
   redisReply *r = reply;
@@ -107,18 +80,13 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
       port = strdup((const char *)port + 1);
       wsyserr(port == NULL, "strdup");
 
-      reader_offset = 0;
-
       int i;
       cmp_ctx_t cmp;
       uint32_t map_size = 0;
       uint32_t string_size = 0;
       char sbuf[SBUFSIZE] = {0};
-      char storage[STORAGESIZE] = {0};
 
-      memcpy(storage, r->element[3]->str, strlen(r->element[3]->str));
-
-      cmp_init(&cmp, storage, string_reader, string_writer);
+      cmp_init(&cmp, r->element[3]->str, strlen(r->element[3]->str));
 
       if (!cmp_read_map(&cmp, &map_size)) {
         werr("cmp_read_map: %s", cmp_strerror(&cmp));
@@ -319,8 +287,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
             storage = strdup(reply->element[j]->str);
             wsyserr(storage == NULL, "strdup");
 
-            reader_offset = 0;
-            cmp_init(&cmp, storage, string_reader, string_writer);
+            cmp_init(&cmp, storage, strlen(reply->element[j]->str));
 
             if (!cmp_read_map(&cmp, &map_size)) {
               werr("cmp_read_map error: %s", cmp_strerror(&cmp));
@@ -619,9 +586,7 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
     cmp_ctx_t cmp;
     char storage[STORAGESIZE] = {0};
 
-    writer_offset = 0;
-
-    cmp_init(&cmp, storage, string_reader, string_writer);
+    cmp_init(&cmp, storage, STORAGESIZE);
 
     if (!cmp_write_map(&cmp, 2)) {
       werr("cmp_write_map error: %s", cmp_strerror(&cmp));
