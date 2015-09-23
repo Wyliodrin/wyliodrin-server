@@ -98,6 +98,9 @@ typedef struct cmp_ctx_s {
   void       *buf;
   cmp_reader  read;
   cmp_writer  write;
+  unsigned int reader_offset;
+  unsigned int writer_offset;
+  unsigned int size;
 } cmp_ctx_t;
 
 typedef struct cmp_object_s {
@@ -116,7 +119,7 @@ extern "C" {
  */
 
 /* Initializes a CMP context */
-void cmp_init(cmp_ctx_t *ctx, void *buf, cmp_reader read, cmp_writer write);
+void cmp_init(cmp_ctx_t *ctx, void *buf, unsigned int size);
 
 /* Returns CMP's version */
 uint32_t cmp_version(void);
@@ -471,4 +474,3 @@ bool cmp_object_to_bin(cmp_ctx_t *ctx, cmp_object_t *obj, void *data, uint32_t b
 #endif /* CMP_H__ */
 
 /* vi: set et ts=2 sw=2: */
-
