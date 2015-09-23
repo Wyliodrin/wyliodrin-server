@@ -1,3 +1,8 @@
 v2.4
 ====
   * Catch SIGTERM
+  * Change wifi connection for RaspberryPi
+
+v2.5
+====
+  * Modules initialized only once when connection is established
