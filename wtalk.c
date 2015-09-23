@@ -43,7 +43,7 @@ bool is_fuse_available; /* fuse checker */
  */
 static void check_for_fuse()
 {
-  is_fuse_available = system("stat /dev/fuse") == 0 ? true : false;
+  is_fuse_available = system("stat /dev/fuse > /dev/null") == 0 ? true : false;
 }
 
 static void create_running_projects_file_if_does_not_exist() {
