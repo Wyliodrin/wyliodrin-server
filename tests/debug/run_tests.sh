@@ -5,6 +5,8 @@ JID_BOARD="wyliodrin_board@wyliodrin.org"
 PASSWORD="wyliodrin"
 num_tests_passed=0
 
+
+
 test_name=(                                                                    \
   "Test start and close good debug session"                                    \
   "Test start debug session with wrong project id"                             \
@@ -12,7 +14,10 @@ test_name=(                                                                    \
   "Test both valid and invalid breakpoints"                                    \
   "Test disassemble"                                                           \
   "Test both valid and invalid watchpoints"                                    \
+  "Test two simultaneous debug sessions"                                       \
 )
+
+
 
 printf "\n"
 
