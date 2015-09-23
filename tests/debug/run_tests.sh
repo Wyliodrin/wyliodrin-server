@@ -10,6 +10,7 @@ test_name=(                                                                    \
   "Test start debug session with wrong project id"                             \
   "Test simple run"                                                            \
   "Test both valid and invalid breakpoints"                                    \
+  "Test disassemble"                                                           \
 )
 
 printf "\n"
