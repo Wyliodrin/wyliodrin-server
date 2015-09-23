@@ -17,13 +17,15 @@ f : fail
 === start =====================================================================
 <--
 {
-  "s" : "<projectid>",
+  "s" : "<project name>",
+  "x" : "<project id>",
   "i" : "<some_id>"
 }
 
 -->
 {
-  "s" : "<projectid>",
+  "s" : "<project name>",
+  "x" : "<project id>",
   "i" : "<some_id>"
 }
 
@@ -32,14 +34,14 @@ f : fail
 === disassemble ===============================================================
 <--
 {
-  "p" : "<projectid>",
+  "p" : "<project name>",
   "i" : "<some_id>",
   "d" : ["<func_1>", ... , "<func_n>"]
 }
 
 -->
 {
-  "p" : "<projectid>",
+  "p" : "<project name>",
   "i" : "<some_id>",
   "d" : {
           "<func_1>" : "<result_1>",
@@ -53,14 +55,14 @@ f : fail
 === breakpoints ===============================================================
 <--
 {
-  "p" : "<projectid>",
+  "p" : "<project name>",
   "i" : "<some_id>",
   "b" : ["<bp_1>", ... , "<bp_n>"]
 }
 
 -->
 {
-  "p" : "<projectid>",
+  "p" : "<project name>",
   "i" : "<some_id>",
   "b" : {
           "<bp_1>" : "<result_1>",
@@ -76,14 +78,14 @@ NOTE: <bp_n> must be either function name or number represented as string
 === watchpoints ===============================================================
 <--
 {
-  "p" : "<projectid>",
+  "p" : "<project name>",
   "i" : "<some_id>",
   "w" : ["<wp_1>", ... , "<wp_n>"]
 }
 
 -->
 {
-  "p" : "<projectid>",
+  "p" : "<project name>",
   "i" : "<some_id>",
   "w" : {
           "<wp_1>" : "<result_1>",
@@ -97,14 +99,14 @@ NOTE: <bp_n> must be either function name or number represented as string
 === commands ==================================================================
 <--
 {
-  "p" : "<projectid>",
+  "p" : "<project name>",
   "i" : "<some_id>",
   "c" : "<run / step / next / continue / info locals / backtrace / quit>"
 }
 
 -->
 {
-  "p" : "<projectid>",
+  "p" : "<project name>",
   "i" : "<some_id>",
   "r" : "<command_result>",
   "o" : "<program_output>",
