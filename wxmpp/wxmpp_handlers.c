@@ -83,9 +83,6 @@ void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, cons
 
     /* Create tags hashmap */
     if (!are_projects_initialized) {
-      if (modules != NULL) {
-        destroy_hashmap(modules);
-      }
       modules = create_hashmap();
 
       module_fct addr;

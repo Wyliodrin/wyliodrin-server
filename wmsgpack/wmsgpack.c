@@ -14,8 +14,10 @@
 #include <stdint.h> /* numbers handling */
 #include <string.h> /* string handling  */
 
-#include "../winternals/winternals.h" /* logs and errs    */
-#include "../cmp/cmp.h"               /* msgpack handling */
+#include "../cmp/cmp.h"               /* msgpack handling   */
+#include "../libds/ds.h"              /* modules hashmap    */
+#include "../winternals/winternals.h" /* logs and errs      */
+#include "../wxmpp/wxmpp.h"           /* module_fct typedef */
 
 #include "wmsgpack.h"
 
@@ -27,6 +29,14 @@
 
 #define MSGPACK_KEY_SIZE     8
 #define MSGPACK_MODULE_SIZE 32
+
+/*************************************************************************************************/
+
+
+
+/*** EXTERN VARIABLES ****************************************************************************/
+
+extern hashmap_p modules; /* from wxmpp_handlers.c */
 
 /*************************************************************************************************/
 
@@ -75,7 +85,8 @@ void wmsgpack(const char *from, const char *to, int error, xmpp_stanza_t *stanza
       }
 
       /* Call module */
-
+      module_fct f = *((module_fct *)hashmap_get(modules, module));
+      f(from, to, error, stanza, conn, userdata);
 
       return;
     }
@@ -86,4 +97,4 @@ void wmsgpack(const char *from, const char *to, int error, xmpp_stanza_t *stanza
 
 
 
-#endif USEMSGPACK
+#endif /* USEMSGPACK */
