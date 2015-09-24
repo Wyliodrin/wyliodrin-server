@@ -338,8 +338,7 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
     ns = xmpp_stanza_get_ns(child_stz);
     if(ns != NULL && strcmp(ns, WNS) == 0) {
       name = xmpp_stanza_get_name(child_stz);
-      void *p = hashmap_get(modules, name);
-      f = *((module_fct *)(p));
+      f = *((module_fct *)hashmap_get(modules, name));
       if(f != NULL && *f != NULL) {
         wlog("function available");
         f(from_attr, to_attr, error, child_stz, conn, userdata);
