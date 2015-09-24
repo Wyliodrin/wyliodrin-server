@@ -38,6 +38,10 @@
   #include "../debug/debug.h"
 #endif
 
+#ifdef USEMSGPACK
+  #include "../wmsgpack/wmsgpack.h"
+#endif
+
 
 
 bool is_owner_online = false;
@@ -57,19 +61,10 @@ extern bool is_fuse_available; /* from wtalk.c */
 
 
 
-/* Module function signature */
-typedef void (*module_fct)(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-                           xmpp_conn_t *const conn, void *const userdata);
-
-
-
 /* Handlers */
 int ping_handler     (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
 int presence_handler (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
 int message_handler  (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
-
-/* Add the module_name and corresponding function in the modules hashmap */
-void add_module(char *module_name, module_fct f);
 
 static bool are_projects_initialized = false;
 
@@ -93,28 +88,38 @@ void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, cons
       }
       modules = create_hashmap();
 
+      module_fct addr;
       /* Init modules */
       #ifdef SHELLS
-        add_module("shells", shells);
+        addr = shells;
+        hashmap_put(modules, "shells", &addr, sizeof(void *));
         init_shells();
         start_dead_projects(conn, userdata);
       #endif
       #ifdef FILES
-        add_module("files", files);
+        addr = files;
+        hashmap_put(modules, "files", &addr, sizeof(void *));
         if (is_fuse_available) {
           init_files();
         }
       #endif
       #ifdef MAKE
-        add_module("make", make);
+        addr = make;
+        hashmap_put(modules, "make", &addr, sizeof(void *));
         init_make();
       #endif
       #ifdef COMMUNICATION
-        add_module("communication", communication);
+        addr = communication;
+        hashmap_put(modules, "communication", &addr, sizeof(void *));
         init_communication();
       #endif
       #ifdef PS
-        add_module("ps", ps);
+        addr = ps;
+        hashmap_put(modules, "ps", &addr, sizeof(void *));
+      #endif
+      #ifdef USEMSGPACK
+        addr = wmsgpack;
+        hashmap_put(modules, "w", &addr, sizeof(void *));
       #endif
 
       are_projects_initialized = true;
@@ -327,16 +332,17 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
   /* Get every module function from stanza and execute it */
   char *ns;      /* namespace       */
   char *name;    /* name            */
-  module_fct *f; /* module function */
+  module_fct f; /* module function */
   xmpp_stanza_t *child_stz = xmpp_stanza_get_children(stanza); /* child of message */
   while(child_stz != NULL) {
     ns = xmpp_stanza_get_ns(child_stz);
     if(ns != NULL && strcmp(ns, WNS) == 0) {
       name = xmpp_stanza_get_name(child_stz);
-      f = hashmap_get(modules, name);
+      void *p = hashmap_get(modules, name);
+      f = *((module_fct *)(p));
       if(f != NULL && *f != NULL) {
         wlog("function available");
-        (*f)(from_attr, to_attr, error, child_stz, conn, userdata);
+        f(from_attr, to_attr, error, child_stz, conn, userdata);
       } else {
         werr("Module %s is not available", name);
       }
@@ -345,10 +351,4 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
   }
 
   return 1;
-}
-
-
-/* Add the module_name and corresponding function in the modules hashmap */
-void add_module(char *module_name, module_fct f) {
-  hashmap_put(modules, module_name, &f, sizeof(void *));
 }
