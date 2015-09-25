@@ -62,15 +62,22 @@ void wmsgpack(const char *from, const char *to, int error, xmpp_stanza_t *stanza
     return;
   }
 
+  /* Encoded data to hashmap */
   hashmap_p h = encoded_msgpack_map_to_hashmap(enc_data);
+
+  /* Get module */
   char *module = (char *)hashmap_get(h, "m");
   if (module == NULL) {
     werr("There is no key named m in msgpack map");
     return;
   }
 
+  /* Call module function */
   module_fct f = *((module_fct *)hashmap_get(modules, module));
   f(from, to, error, stanza, conn, userdata);
+
+  /* Clean */
+  destroy_hashmap(h);
 }
 
 /*************************************************************************************************/

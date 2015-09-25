@@ -107,7 +107,7 @@ class SimOwner(sleekxmpp.ClientXMPP):
       })).decode("utf-8")
     msg.send()
 
-    sleep(3)
+    sleep(10)
     self.disconnect(wait=True)
 
 
