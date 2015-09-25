@@ -15,26 +15,26 @@
 #include <sys/wait.h>  /* waitpid      */
 #include <Wyliodrin.h> /* version      */
 
-#include "winternals/winternals.h" /* logs and errs */
-#include "wxmpp/wxmpp.h"           /* xmpp stuff    */
-#include "wjson/wjson.h"           /* json stuff    */
-#include "wtalk.h"                 /* file paths    */
-#include "wtalk_config.h"          /* version       */
+#include "winternals/winternals.h" /* logs and errs         */
+#include "wxmpp/wxmpp.h"           /* xmpp stuff            */
+#include "wjson/wjson.h"           /* json stuff            */
+#include "wtalk.h"                 /* file paths            */
+#include "wtalk_config.h"          /* version               */
+#include "wmsgpack/wmsgpack.h"     /* build hashmap modules */
 
 
 
 /* Variables found in wyliodrin.json */
-const char *jid_str;
-const char *owner_str;
-const char *mount_file_str;
-const char *build_file_str;
-const char *board_str;
-const char *sudo_str;
-const char *shell_cmd;
+extern const char *jid_str;
+extern const char *owner_str;
+extern const char *mount_file_str;
+extern const char *build_file_str;
+extern const char *board_str;
+extern const char *sudo_str;
+extern const char *shell_cmd;
+extern bool privacy;
 
-bool privacy = false; /* privacy value from wylliodrin.json */
-
-bool is_fuse_available; /* fuse checker */
+extern bool is_fuse_available;
 
 
 
@@ -315,6 +315,8 @@ void wtalk()
   }
 
   create_running_projects_file_if_does_not_exist();
+
+  build_modules_hashmap();
 
   /* Connect to XMPP server */
   xmpp_connect(jid_str, password_str);

@@ -13,11 +13,12 @@
 
 
 
-/* These variables must be set to NULL whenever there is not a connection to the XMPP server */
-xmpp_ctx_t *ctx = NULL;   /* XMPP context    */
-xmpp_conn_t *conn = NULL; /* XMPP connection */
+/*** EXTERN VARIABLES ****************************************************************************/
+extern xmpp_ctx_t *ctx;   /* XMPP context    */
+extern xmpp_conn_t *conn; /* XMPP connection */
 
 extern char *board_str;   /* board name from wtalk.c */
+/*************************************************************************************************/
 
 
 

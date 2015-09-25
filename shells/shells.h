@@ -10,6 +10,8 @@
 
 #ifdef SHELLS
 
+#include "../libds/ds.h"              /* modules hashmap    */
+
 #define MAX_SHELLS 256 /* Maximum number of shells */
 
 #define DEFAULT_WIDTH  12
@@ -33,8 +35,7 @@ typedef struct {
 void init_shells();
 
 /* Parse shells commands */
-void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-            xmpp_conn_t *const conn, void *const userdata);
+void shells(const char *from, const char *to, hashmap_p h);
 
 /* Open shell */
 void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);

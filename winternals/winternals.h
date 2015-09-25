@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdarg.h>
 
 #include "../logs/logs.h"
 
@@ -68,5 +69,9 @@ extern bool privacy;
       exit(EXIT_FAILURE);                                           \
     }                                                               \
   } while (0)
+
+#define SANITY_CHECK(...) _sanity_check(__FILE__, __LINE__, sizeof((int[]){__VA_ARGS__})/sizeof(int), ##__VA_ARGS__)
+
+bool _sanity_check(char *file, int line, int num_params, ...);
 
 #endif /* _INTERNALS_H */

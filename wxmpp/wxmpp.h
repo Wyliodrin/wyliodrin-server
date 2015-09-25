@@ -13,11 +13,6 @@
 #define WNS       "wyliodrin"  /* Wyliodrin namespace */
 #define XMPP_PORT 5222         /* XMPP server port    */
 
-
-/* Module function signature */
-typedef void (*module_fct)(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-                           xmpp_conn_t *const conn, void *const userdata);
-
 void xmpp_connect(const char *jid, const char *pass); /* from wxmpp/wxmpp.c */
 
 #endif /* _WXMPP_H */

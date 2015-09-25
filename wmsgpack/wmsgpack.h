@@ -12,17 +12,15 @@
 
 
 
-/*** INCLUDES ************************************************************************************/
-
-#include <strophe.h> /* XMPP handling */
-
-
-
 /*** DECLARATIONS ********************************************************************************/
 
+/* Build a hashmap with keys as module names and values as handlers */
+void build_modules_hashmap();
+
 /* Handler for the w stanza */
-void wmsgpack(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-              xmpp_conn_t *const conn, void *const userdata);
+void wmsgpack(const char *from, const char *to, const char *enc_data);
+
+/*************************************************************************************************/
 
 
 

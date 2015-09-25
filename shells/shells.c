@@ -444,33 +444,35 @@ void init_shells()
   }
 }
 
-void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-            xmpp_conn_t *const conn, void *const userdata) {
-  wlog("shells(%s, %s, %d, stanza)", from, to, error);
+void shells(const char *from, const char *to, hashmap_p h) {
+  if (!SANITY_CHECK(from != NULL, to != NULL, h != NULL)) return;
 
-  char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
-  if (action_attr == NULL) {
-    werr("Error while getting action attribute");
-    return;
-  }
+  fprintf(stderr, "shells\n");
+  return;
 
-  if(strncasecmp(action_attr, "open", 4) == 0) {
-    shells_open(stanza, conn, userdata);
-  } else if(strncasecmp(action_attr, "close", 5) == 0) {
-    shells_close(stanza, conn, userdata);
-  } else if(strncasecmp(action_attr, "keys", 4) == 0) {
-    shells_keys(stanza, conn, userdata);
-  } else if(strncasecmp(action_attr, "list", 4) == 0) {
-    shells_list(stanza, conn, userdata);
-  } else if(strncasecmp(action_attr, "status", 6) == 0) {
-    shells_status(stanza, conn, userdata);
-  } else if(strncasecmp(action_attr, "poweroff", 8) == 0) {
-    shells_poweroff();
-  } else {
-    werr("Unknown action attribute: %s", action_attr);
-  }
+  // char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
+  // if (action_attr == NULL) {
+  //   werr("Error while getting action attribute");
+  //   return;
+  // }
 
-  wlog("Return from shells");
+  // if(strncasecmp(action_attr, "open", 4) == 0) {
+  //   shells_open(stanza, conn, userdata);
+  // } else if(strncasecmp(action_attr, "close", 5) == 0) {
+  //   shells_close(stanza, conn, userdata);
+  // } else if(strncasecmp(action_attr, "keys", 4) == 0) {
+  //   shells_keys(stanza, conn, userdata);
+  // } else if(strncasecmp(action_attr, "list", 4) == 0) {
+  //   shells_list(stanza, conn, userdata);
+  // } else if(strncasecmp(action_attr, "status", 6) == 0) {
+  //   shells_status(stanza, conn, userdata);
+  // } else if(strncasecmp(action_attr, "poweroff", 8) == 0) {
+  //   shells_poweroff();
+  // } else {
+  //   werr("Unknown action attribute: %s", action_attr);
+  // }
+
+  // wlog("Return from shells");
 }
 
 void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata)

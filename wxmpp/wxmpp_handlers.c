@@ -14,30 +14,6 @@
 #include "wxmpp.h"                    /* module_fct and WNS */
 #include "wtalk_config.h"             /* version            */
 
-#ifdef SHELLS
-  #include "../shells/shells.h"
-#endif
-
-#ifdef FILES
-  #include "../files/files.h"
-#endif
-
-#ifdef MAKE
-  #include "../make/make.h"
-#endif
-
-#ifdef COMMUNICATION
-  #include "../communication/communication.h"
-#endif
-
-#ifdef PS
-  #include "../ps/ps.h"
-#endif
-
-#ifdef DEBUG
-  #include "../debug/debug.h"
-#endif
-
 #ifdef USEMSGPACK
   #include "../wmsgpack/wmsgpack.h"
 #endif
@@ -46,7 +22,7 @@
 
 bool is_owner_online = false;
 
-hashmap_p modules = NULL; /* modules hashmap */
+
 
 /* Variables from files/files.c used for files synchronization */
 extern pthread_mutex_t mutex;
@@ -66,8 +42,6 @@ int ping_handler     (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void
 int presence_handler (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
 int message_handler  (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata);
 
-static bool are_projects_initialized = false;
-
 
 
 /* Connection handler */
@@ -80,47 +54,6 @@ void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, cons
     wlog("XMPP connection success");
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-
-    /* Create tags hashmap */
-    if (!are_projects_initialized) {
-      modules = create_hashmap();
-
-      module_fct addr;
-      /* Init modules */
-      #ifdef SHELLS
-        addr = shells;
-        hashmap_put(modules, "shells", &addr, sizeof(void *));
-        init_shells();
-        start_dead_projects(conn, userdata);
-      #endif
-      #ifdef FILES
-        addr = files;
-        hashmap_put(modules, "files", &addr, sizeof(void *));
-        if (is_fuse_available) {
-          init_files();
-        }
-      #endif
-      #ifdef MAKE
-        addr = make;
-        hashmap_put(modules, "make", &addr, sizeof(void *));
-        init_make();
-      #endif
-      #ifdef COMMUNICATION
-        addr = communication;
-        hashmap_put(modules, "communication", &addr, sizeof(void *));
-        init_communication();
-      #endif
-      #ifdef PS
-        addr = ps;
-        hashmap_put(modules, "ps", &addr, sizeof(void *));
-      #endif
-      #ifdef USEMSGPACK
-        addr = wmsgpack;
-        hashmap_put(modules, "w", &addr, sizeof(void *));
-      #endif
-
-      are_projects_initialized = true;
-    }
 
     /* Add ping handler */
     xmpp_handler_add(conn, ping_handler, "urn:xmpp:ping", "iq", "get", ctx);
@@ -307,6 +240,13 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
 int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
   wlog("message_handler()");
 
+  /* Check for error type */
+  char *type = xmpp_stanza_get_type(stanza); /* Stanza type */
+  if(type != NULL && strncasecmp(type, "error", 5) == 0) {
+    werr("Message with error");
+    return 1;
+  }
+
   /* Sanity checks */
   char *from_attr = xmpp_stanza_get_attribute(stanza, "from");
   if (from_attr == NULL) {
@@ -319,32 +259,44 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
     return 1;
   }
 
-  /* Check for error type */
-  char *type = xmpp_stanza_get_type(stanza); /* Stanza type */
-  int error = 0; /* 1 if type of stanza is error, 0 otherwise */
-  if(type != NULL && strncasecmp(type, "error", 5) == 0) {
-    error = 1;
-  }
-
-  /* Get every module function from stanza and execute it */
-  char *ns;      /* namespace       */
-  char *name;    /* name            */
-  module_fct f; /* module function */
-  xmpp_stanza_t *child_stz = xmpp_stanza_get_children(stanza); /* child of message */
-  while(child_stz != NULL) {
-    ns = xmpp_stanza_get_ns(child_stz);
-    if(ns != NULL && strcmp(ns, WNS) == 0) {
-      name = xmpp_stanza_get_name(child_stz);
-      f = *((module_fct *)hashmap_get(modules, name));
-      if(f != NULL && *f != NULL) {
-        wlog("function available");
-        f(from_attr, to_attr, error, child_stz, conn, userdata);
+  xmpp_stanza_t *child_stz = xmpp_stanza_get_children(stanza);
+  while (child_stz != NULL) {
+    char *ns = xmpp_stanza_get_ns(child_stz);
+    if (ns != NULL && strcmp(ns, WNS) == 0) {
+      char *name = xmpp_stanza_get_name(child_stz);
+      if (strcmp(name, "w") == 0) {
+        char *data = xmpp_stanza_get_attribute(child_stz, "d");
+        if (data == NULL) {
+          werr("There is no d attribute in data attribute");
+        } else {
+          wmsgpack(from_attr, to_attr, data);
+        }
       } else {
-        werr("Module %s is not available", name);
+        werr("Only msgpack module allowed");
       }
     }
     child_stz = xmpp_stanza_get_next(child_stz);
   }
+
+  // /* Get every module function from stanza and execute it */
+  // char *ns;      /* namespace       */
+  // char *name;    /* name            */
+  // module_fct f; /* module function */
+  // xmpp_stanza_t *child_stz = xmpp_stanza_get_children(stanza); /* child of message */
+  // while(child_stz != NULL) {
+  //   ns = xmpp_stanza_get_ns(child_stz);
+  //   if(ns != NULL && strcmp(ns, WNS) == 0) {
+  //     name = xmpp_stanza_get_name(child_stz);
+  //     f = *((module_fct *)hashmap_get(modules, name));
+  //     if(f != NULL && *f != NULL) {
+  //       wlog("function available");
+  //       f(from_attr, to_attr, error, child_stz, conn, userdata);
+  //     } else {
+  //       werr("Module %s is not available", name);
+  //     }
+  //   }
+  //   child_stz = xmpp_stanza_get_next(child_stz);
+  // }
 
   return 1;
 }

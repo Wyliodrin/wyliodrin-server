@@ -52,6 +52,8 @@ set (wyliodrind_SRCS
   ${PROJECT_SOURCE_DIR}/logs/logs.c
   ${PROJECT_SOURCE_DIR}/cmp/cmp.c
   ${PROJECT_SOURCE_DIR}/wmsgpack/wmsgpack.c
+  ${PROJECT_SOURCE_DIR}/shared/shared.c
+  ${PROJECT_SOURCE_DIR}/winternals/sanity_check.c
 )
 
 add_library (dbs STATIC

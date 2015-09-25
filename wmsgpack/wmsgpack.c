@@ -11,15 +11,40 @@
 
 /*** INCLUDES ************************************************************************************/
 
-#include <stdint.h> /* numbers handling */
-#include <string.h> /* string handling  */
-#include <errno.h>  /* errno            */
+#include <errno.h>   /* errno            */
+#include <stdbool.h> /* bool handling    */
+#include <stdint.h>  /* numbers handling */
+#include <string.h>  /* string handling  */
 
 #include "../base64/base64.h"         /* base64 handling    */
 #include "../cmp/cmp.h"               /* msgpack handling   */
 #include "../libds/ds.h"              /* modules hashmap    */
 #include "../winternals/winternals.h" /* logs and errs      */
 #include "../wxmpp/wxmpp.h"           /* module_fct typedef */
+
+#ifdef SHELLS
+  #include "../shells/shells.h"
+#endif /* SHELLS */
+
+#ifdef FILES
+  #include "../files/files.h"
+#endif /* FILES */
+
+#ifdef MAKE
+  #include "../make/make.h"
+#endif /* MAKE */
+
+#ifdef COMMUNICATION
+  #include "../communication/communication.h"
+#endif /* COMMUNICATION */
+
+#ifdef PS
+  #include "../ps/ps.h"
+#endif /* PS */
+
+#ifdef DEBUG
+  #include "../debug/debug.h"
+#endif /* DEBUG */
 
 #include "wmsgpack.h"
 
@@ -35,9 +60,25 @@
 
 
 
+/*** TYPEDEFS ************************************************************************************/
+
+typedef void (*module_handler)(const char *from, const char *to, hashmap_p h);
+
+/*************************************************************************************************/
+
+
+
 /*** EXTERN VARIABLES ****************************************************************************/
 
-extern hashmap_p modules; /* from wxmpp_handlers.c */
+extern bool is_fuse_available;
+
+/*************************************************************************************************/
+
+
+
+/*** STATIC VARIABLES ****************************************************************************/
+
+static hashmap_p modules = NULL;
 
 /*************************************************************************************************/
 
@@ -45,7 +86,7 @@ extern hashmap_p modules; /* from wxmpp_handlers.c */
 
 /*** STATIC FUNCTIONS DECLARATIONS ***************************************************************/
 
-static hashmap_p encoded_msgpack_map_to_hashmap(const char *encoded_msgpack_map);
+static hashmap_p encoded_msgpack_map_to_hashmap (const char *encoded_msgpack_map);
 
 /*************************************************************************************************/
 
@@ -53,12 +94,57 @@ static hashmap_p encoded_msgpack_map_to_hashmap(const char *encoded_msgpack_map)
 
 /*** IMPLEMENTATIONS *****************************************************************************/
 
-void wmsgpack(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-              xmpp_conn_t *const conn, void *const userdata) {
-  /* Get the msgpack encoded data */
-  char *enc_data = xmpp_stanza_get_attribute(stanza, "d");
-  if (enc_data == NULL) {
-    werr("Could not get the msgpack encoded data");
+void build_modules_hashmap() {
+  /* Sanity checks */
+  if (modules != NULL) {
+    werr("Sanity checks failed");
+    return;
+  }
+
+  modules = create_hashmap();
+  module_handler addr;
+
+  #ifdef SHELLS
+    addr = shells;
+    hashmap_put(modules, "shells", &addr, sizeof(void *));
+    init_shells();
+    // start_dead_projects(conn, userdata);
+  #endif
+  #ifdef FILES
+    addr = files;
+    hashmap_put(modules, "files", &addr, sizeof(void *));
+    if (is_fuse_available) {
+      init_files();
+    }
+  #endif
+  #ifdef MAKE
+    addr = make;
+    hashmap_put(modules, "make", &addr, sizeof(void *));
+    init_make();
+  #endif
+  #ifdef COMMUNICATION
+    addr = communication;
+    hashmap_put(modules, "communication", &addr, sizeof(void *));
+    init_communication();
+  #endif
+  #ifdef PS
+    addr = ps;
+    hashmap_put(modules, "ps", &addr, sizeof(void *));
+  #endif
+  #ifdef USEMSGPACK
+    addr = wmsgpack;
+    hashmap_put(modules, "w", &addr, sizeof(void *));
+  #endif
+}
+
+
+void wmsgpack(const char *from, const char *to, const char *enc_data) {
+  /* Sanity checks */
+  if (from == NULL ||
+      to == NULL ||
+      enc_data == NULL ||
+      modules == NULL) {
+    werr("Sanity checks failed");
     return;
   }
 
@@ -73,8 +159,8 @@ void wmsgpack(const char *from, const char *to, int error, xmpp_stanza_t *stanza
   }
 
   /* Call module function */
-  module_fct f = *((module_fct *)hashmap_get(modules, module));
-  f(from, to, error, stanza, conn, userdata);
+  module_handler f = *((module_handler *)hashmap_get(modules, module));
+  f(from, to, h);
 
   /* Clean */
   destroy_hashmap(h);
@@ -87,6 +173,12 @@ void wmsgpack(const char *from, const char *to, int error, xmpp_stanza_t *stanza
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
 
 static hashmap_p encoded_msgpack_map_to_hashmap(const char *encoded_msgpack_map) {
+  /* Sanity checks */
+  if (encoded_msgpack_map == NULL) {
+    werr("Sanity checks failed");
+    return NULL;
+  }
+
   /* Decode the encoded data */
   int msgpack_map_size = strlen(encoded_msgpack_map) * 3 / 4 + 1;
   char *msgpack_map = calloc(msgpack_map_size, sizeof(char *));
