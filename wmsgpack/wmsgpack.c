@@ -224,7 +224,7 @@ static hashmap_p encoded_msgpack_map_to_hashmap(const char *encoded_msgpack_map)
       return NULL;
     }
 
-    hashmap_put(h, key, (void *)value, (size_t)(strlen(value)));
+    hashmap_put(h, key, (void *)value, (size_t)(strlen(value)) + 1);
   }
 
   return h;

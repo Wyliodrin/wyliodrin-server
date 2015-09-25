@@ -447,57 +447,68 @@ void init_shells()
 void shells(const char *from, const char *to, hashmap_p h) {
   if (!SANITY_CHECK(from != NULL, to != NULL, h != NULL)) return;
 
-  fprintf(stderr, "shells\n");
-  return;
-
-  // char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
-  // if (action_attr == NULL) {
-  //   werr("Error while getting action attribute");
-  //   return;
-  // }
-
-  // if(strncasecmp(action_attr, "open", 4) == 0) {
-  //   shells_open(stanza, conn, userdata);
-  // } else if(strncasecmp(action_attr, "close", 5) == 0) {
-  //   shells_close(stanza, conn, userdata);
-  // } else if(strncasecmp(action_attr, "keys", 4) == 0) {
-  //   shells_keys(stanza, conn, userdata);
-  // } else if(strncasecmp(action_attr, "list", 4) == 0) {
-  //   shells_list(stanza, conn, userdata);
-  // } else if(strncasecmp(action_attr, "status", 6) == 0) {
-  //   shells_status(stanza, conn, userdata);
-  // } else if(strncasecmp(action_attr, "poweroff", 8) == 0) {
-  //   shells_poweroff();
-  // } else {
-  //   werr("Unknown action attribute: %s", action_attr);
-  // }
-
-  // wlog("Return from shells");
-}
-
-void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata)
-{
-  wlog("shells_open(...)");
-
-  /* Get attributes */
-  char *request_attr   = NULL;
-  char *width_attr     = NULL;
-  char *height_attr    = NULL;
-  char *projectid_attr = NULL;
-  char *userid_attr    = NULL;
-  if (!get_open_attributes(stanza, &request_attr, &width_attr, &height_attr, &projectid_attr,
-    &userid_attr))
-  {
-    send_shells_open_response(request_attr, conn, userdata, false, -1, false);
+  char *action = (char *)hashmap_get(h, "a");
+  if (action == NULL) {
+    werr("There is no action in shells msgpack map");
     return;
   }
 
-  if (projectid_attr == NULL) { /* A normal shell must be open */
-    open_normal_shell(conn, userdata, request_attr, width_attr, height_attr);
-  } else { /* A project must be run */
-    open_project_shell(conn, userdata, request_attr, width_attr, height_attr,
-      projectid_attr, userid_attr);
+  if (strcmp(action, "o") == 0) {
+    shells_open(h);
+  } else if (strcmp(action, "c") == 0) {
+    // shells_close(stanza, conn, userdata);
+  } else if (strcmp(action, "k") == 0) {
+    // shells_keys(stanza, conn, userdata);
+  } else if (strcmp(action, "l") == 0) {
+    // shells_list(stanza, conn, userdata);
+  } else if (strcmp(action, "s") == 0) {
+    // shells_status(stanza, conn, userdata);
+  } else if (strcmp(action, "p") == 0) {
+    // shells_poweroff();
+  } else {
+    werr("Unknown action: %s", action);
   }
+}
+
+void shells_open(hashmap_p h) {
+  fprintf(stderr, "OPEN\n");
+
+  if (!SANITY_CHECK(h != NULL)) return;
+
+  /* Get data */
+  char *request    = (char *)hashmap_get(h, "r");
+  char *width      = (char *)hashmap_get(h, "w");
+  char *height     = (char *)hashmap_get(h, "h");
+  char *project_id = (char *)hashmap_get(h, "p");
+  char *userid     = (char *)hashmap_get(h, "u");
+
+  if (!SANITY_CHECK(request != NULL,
+                    width   != NULL,
+                    height  != NULL)) {
+    return;
+  }
+
+  // wlog("shells_open(...)");
+
+  // /* Get attributes */
+  // char *request_attr   = NULL;
+  // char *width_attr     = NULL;
+  // char *height_attr    = NULL;
+  // char *projectid_attr = NULL;
+  // char *userid_attr    = NULL;
+  // if (!get_open_attributes(stanza, &request_attr, &width_attr, &height_attr, &projectid_attr,
+  //   &userid_attr))
+  // {
+  //   send_shells_open_response(request_attr, conn, userdata, false, -1, false);
+  //   return;
+  // }
+
+  // if (projectid_attr == NULL) { /* A normal shell must be open */
+  //   open_normal_shell(conn, userdata, request_attr, width_attr, height_attr);
+  // } else { /* A project must be run */
+  //   open_project_shell(conn, userdata, request_attr, width_attr, height_attr,
+  //     projectid_attr, userid_attr);
+  // }
 }
 
 void send_shells_open_response(char *request_attr, xmpp_conn_t *const conn,

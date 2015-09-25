@@ -103,7 +103,11 @@ class SimOwner(sleekxmpp.ClientXMPP):
     # Send disassemble
     msg['w']['d'] = base64.b64encode(msgpack.packb(
       {
-      "m" : "shells"
+      "m" : "shells", # module  = shells
+      "a" : "o",      # action  = open
+      "r" : "0",      # request = num_str
+      "w" : "90",     # width   = num_str
+      "h" : "21"      # height  = num_str
       })).decode("utf-8")
     msg.send()
 
