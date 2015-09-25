@@ -284,25 +284,20 @@ void wtalk()
     if (ssid_str != NULL && strlen(ssid_str) != 0) {
       const char *psk_str = get_str_value(config_json, "psk");
       if (psk_str != NULL) {
-        int pid = fork();
+        wifi_pid = fork();
 
         /* Return if fork failed */
-        if (pid == -1) {
+        if (wifi_pid == -1) {
           werr("Fork used for setup_wifi_rpi failed: %s", strerror(errno));
         }
 
         /* Child from fork */
-        else if (pid == 0) {
+        else if (wifi_pid == 0) {
           char *env[] = {"setup_wifi_rpi", (char *)ssid_str, (char *)psk_str, NULL};
           execvp(env[0], env);
 
           werr("setup_wifi_rpi failed");
           exit(EXIT_FAILURE);
-        }
-
-        /* Parent */
-        else {
-          waitpid(pid, NULL, 0);
         }
       }
     }
