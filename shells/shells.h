@@ -44,10 +44,10 @@ void shells_open(hashmap_p h);
 void send_shells_open_response(char *request, bool success, int8_t shell_id, bool running);
 
 /* Close shell */
-void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
+void shells_close(hashmap_p h);
 
 /* Keys from shell */
-void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
+void shells_keys(hashmap_p h);
 
 /* Keys response */
 void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,

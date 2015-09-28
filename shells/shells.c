@@ -458,9 +458,9 @@ void shells(const char *from, const char *to, hashmap_p h) {
   if (strcmp(action, "o") == 0) {
     shells_open(h);
   } else if (strcmp(action, "c") == 0) {
-    // shells_close(stanza, conn, userdata);
+    shells_close(h);
   } else if (strcmp(action, "k") == 0) {
-    // shells_keys(stanza, conn, userdata);
+    shells_keys(h);
   } else if (strcmp(action, "l") == 0) {
     // shells_list(stanza, conn, userdata);
   } else if (strcmp(action, "s") == 0) {
@@ -550,33 +550,33 @@ void send_shells_open_response(char *request, bool success, int8_t shell_id, boo
   xmpp_stanza_release(message_stz);
 }
 
-void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
-  wlog("shells_close(...)");
+void shells_close(hashmap_p h) {
+  if (!SANITY_CHECK(h != NULL)) goto fail;
 
   char *endptr; /* strtol endptr */
 
   /* Get request attribute */
-  char *request_attr = xmpp_stanza_get_attribute(stanza, "request"); /* request attribute */
+  char *request_attr = (char *)hashmap_get(h, "r"); /* request attribute */
   if(request_attr == NULL) {
     werr("Error while getting request attribute");
-    return;
+    goto fail;
   }
   long int request = strtol(request_attr, &endptr, 10);
   if (*endptr != '\0') {
     werr("strtol error: str = %s, val = %ld", request_attr, request);
-    return;
+    goto fail;
   }
 
   /* Get shellid attribute */
-  char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid"); /* shellid attribute */
+  char *shellid_attr = (char *)hashmap_get(h, "s");; /* shellid attribute */
   if(shellid_attr == NULL) {
     werr("Error while getting shellid attribute");
-    return;
+    goto fail;
   }
   long int shellid = strtol(shellid_attr, &endptr, 10); /* shellid value */
   if (*endptr != '\0') {
     werr("strtol error: str = %s, val = %ld", shellid_attr, shellid);
-    return;
+    goto fail;
   }
 
   /* Set close request or ignore it if it comes from unopened shell */
@@ -586,19 +586,19 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     close(shells_vector[shellid]->fdm);
   } else {
     pthread_mutex_unlock(&shells_lock);
-    return;
+    goto fail;
   }
   pthread_mutex_unlock(&shells_lock);
 
   /* Detach from screen session */
-  if (xmpp_stanza_get_attribute(stanza, "background") == NULL) {
+  if ((char *)hashmap_get(h, "b") == NULL) { /* Background */
     int pid = fork();
 
     /* Return if fork failed */
     if (pid == -1) {
       werr("SYSERR fork");
       perror("fork");
-      return;
+      goto fail;
     }
 
     /* Child from fork */
@@ -613,15 +613,16 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     waitpid(pid, NULL, 0);
   }
 
-  wlog("Return from shells_close");
+  fail:
+    return;
 }
 
-void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
-  wlog("shells_keys(...)");
-
+void shells_keys(hashmap_p h) {
   char *endptr; /* strtol endptr */
 
-  char *data_str = xmpp_stanza_get_text(stanza); /* data string */
+  /* CAREFULL: intead of putting the data in the text section of a stanza,
+     the data will be put in the msgpack section, corresponding to the d attribute */
+  char *data_str = (char *)hashmap_get(h, "d"); /* data string */
   if(data_str == NULL) {
     wlog("Return from shells_keys due to NULL data");
     return;
@@ -632,7 +633,7 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
   uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
   int rc = base64_decode(decoded, data_str, dec_size); /* decode */
 
-  char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid");
+  char *shellid_attr = (char *)hashmap_get(h, "s");
   if (shellid_attr == NULL) {
     werr("No shellid attribute in shells keys");
     return;
@@ -651,7 +652,7 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
   /* Update xmpp context and connection in shell */
   pthread_mutex_lock(&shells_lock);
-  shells_vector[shellid]->ctx = (xmpp_ctx_t *)userdata;
+  shells_vector[shellid]->ctx = ctx;
   shells_vector[shellid]->conn = conn;
   pthread_mutex_unlock(&shells_lock);
 
