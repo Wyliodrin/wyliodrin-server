@@ -233,8 +233,12 @@ touch /wyliodrin/running_projects
 sh -c 'printf "\
 [supervisord]\n\
 [program:wtalk]\n\
-command=/usr/bin/wyliodrind\n"\
->> /etc/supervisor/supervisord.conf'
+command=/usr/bin/wyliodrind\n\
+user=pi\n\
+autostart=true\n\
+autorestart=true\n\
+environment=HOME=\"/wyliodrin\"\n"\
+> /etc/supervisor/supervisord.conf'
 
 # Wifi
 cp /etc/network/interfaces /etc/network/interfaces.orig

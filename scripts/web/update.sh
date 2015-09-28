@@ -76,8 +76,18 @@ if [ "$wyliodrin_board" = "raspberrypi" ]; then
     \"mountFile\": \"/wyliodrin/mnt\",\n\
     \"buildFile\": \"/wyliodrin/build\",\n\
     \"board\": \"raspberrypi\",\n\
-    \"shell_cmd\": \"sudo -u pi bash\"\n\
+    \"shell_cmd\": \"bash\"\n\
   }\n" > /etc/wyliodrin/settings_raspberrypi.json
+
+printf "\
+[supervisord]\n\
+[program:wtalk]\n\
+command=/usr/bin/wyliodrind\n\
+user=pi\n\
+autostart=true\n\
+autorestart=true\n\
+environment=HOME=\"/wyliodrin\"\n"
+> /etc/supervisor/supervisord.conf
 
 elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
   CMAKE_PARAMS="-DBEAGLEBONEBLACK=ON -DNODE_ROOT_DIR=/usr/include"
