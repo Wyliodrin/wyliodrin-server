@@ -33,6 +33,7 @@
 #include "../wxmpp/wxmpp.h"           /* WNS */
 #include "../base64/base64.h"         /* encode decode */
 #include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
+#include "../wmsgpack/wmsgpack.h"     /* msgpack handling */
 #include "shells.h"                   /* shells module api */
 #include "shells_helper.h"            /* read routine */
 #include "wtalk_config.h"
@@ -81,27 +82,27 @@ static char **string_to_array(char *str, int *size) {
   return res;
 }
 
-static bool get_open_attributes(xmpp_stanza_t *stanza, char **request_attr, char **width_attr,
-  char **height_attr, char **projectid_attr, char **userid_attr)
-{
-  *request_attr   = xmpp_stanza_get_attribute(stanza, "request");
-  *width_attr     = xmpp_stanza_get_attribute(stanza, "width");
-  *height_attr    = xmpp_stanza_get_attribute(stanza, "height");
-  *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid");
-  *userid_attr    = xmpp_stanza_get_attribute(stanza, "userid");
+// static bool get_open_attributes(xmpp_stanza_t *stanza, char **request_attr, char **width_attr,
+//   char **height_attr, char **projectid_attr, char **userid_attr)
+// {
+//   *request_attr   = xmpp_stanza_get_attribute(stanza, "request");
+//   *width_attr     = xmpp_stanza_get_attribute(stanza, "width");
+//   *height_attr    = xmpp_stanza_get_attribute(stanza, "height");
+//   *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid");
+//   *userid_attr    = xmpp_stanza_get_attribute(stanza, "userid");
 
-  if (*request_attr == NULL || *width_attr == NULL || *height_attr == NULL) {
-    werr("No request, width or height attribute in shells open");
-    return false;
-  }
+//   if (*request_attr == NULL || *width_attr == NULL || *height_attr == NULL) {
+//     werr("No request, width or height attribute in shells open");
+//     return false;
+//   }
 
-  if (*projectid_attr != NULL && *userid_attr == NULL) {
-    werr("No userid attribute but projectid attribute is provided");
-    return false;
-  }
+//   if (*projectid_attr != NULL && *userid_attr == NULL) {
+//     werr("No userid attribute but projectid attribute is provided");
+//     return false;
+//   }
 
-  return true;
-}
+//   return true;
+// }
 
 static int get_entry_in_shells_vector() {
   int shell_index;
@@ -243,12 +244,13 @@ static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
   pthread_detach(rt);
 
   /* Send success response */
-  send_shells_open_response(request_attr, conn, userdata, true, shell_index, false);
+  // send_shells_open_response(request_attr, conn, userdata, true, shell_index, false);
 
   return;
 
   label_fail:
-    send_shells_open_response(request_attr, conn, userdata, false, -1, false);
+    // send_shells_open_response(request_attr, conn, userdata, false, -1, false);
+    return;
 }
 
 
@@ -264,7 +266,7 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
     int projectid_fd = open(projectid_filepath, O_RDWR);
     if (projectid_fd != -1) {
       read(projectid_fd, &shell_index, sizeof(int));
-      send_shells_open_response(request_attr, conn, userdata, true, shell_index, true);
+      // send_shells_open_response(request_attr, conn, userdata, true, shell_index, true);
       return;
     }
   }
@@ -395,14 +397,14 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
 
   /* Send success response */
   if (request_attr != NULL) {
-    send_shells_open_response(request_attr, conn, userdata, true, shell_index, false);
+    // send_shells_open_response(request_attr, conn, userdata, true, shell_index, false);
   }
 
   return;
 
   label_fail:
   if (request_attr != NULL) {
-    send_shells_open_response(request_attr, conn, userdata, false, -1, false);
+    // send_shells_open_response(request_attr, conn, userdata, false, -1, false);
   }
 }
 
@@ -480,14 +482,16 @@ void shells_open(hashmap_p h) {
   char *request    = (char *)hashmap_get(h, "r");
   char *width      = (char *)hashmap_get(h, "w");
   char *height     = (char *)hashmap_get(h, "h");
-  char *project_id = (char *)hashmap_get(h, "p");
-  char *userid     = (char *)hashmap_get(h, "u");
+  // char *project_id = (char *)hashmap_get(h, "p");
+  // char *userid     = (char *)hashmap_get(h, "u");
 
   if (!SANITY_CHECK(request != NULL,
                     width   != NULL,
                     height  != NULL)) {
     return;
   }
+
+  send_shells_open_response(request, true, 1, false);
 
   // /* Get attributes */
   // char *request_attr   = NULL;
@@ -498,7 +502,7 @@ void shells_open(hashmap_p h) {
   // if (!get_open_attributes(stanza, &request_attr, &width_attr, &height_attr, &projectid_attr,
   //   &userid_attr))
   // {
-  //   send_shells_open_response(request_attr, conn, userdata, false, -1, false);
+  //   // send_shells_open_response(request_attr, conn, userdata, false, -1, false);
   //   return;
   // }
 
@@ -511,27 +515,52 @@ void shells_open(hashmap_p h) {
 }
 
 void send_shells_open_response(char *request, bool success, int8_t shell_id, bool running) {
+  werr("send_shells_open_response");
+
+  int msgpack_map_size;
+
+  char shell_id_str[4];
+  if (success) {
+    snprintf(shell_id_str, 4, "%d", shell_id);
+  }
+
+  char *msgpack_map = build_msgpack_map(&msgpack_map_size,
+    "a",  "o",
+    "rq", request,
+    "rp", success ? "d" : "e",
+    "s",  success ? shell_id_str : "",
+    "rn", running ? "t" : "f");
+
+  if (msgpack_map == NULL) {
+    werr("build_msgpack_map failed");
+    return;
+  }
+
+  char *encoded_data = malloc(BASE64_SIZE(msgpack_map_size));
+  if (encoded_data == NULL) {
+    werr("malloc failed: %s", strerror(errno));
+    free(msgpack_map);
+    return;
+  }
+  encoded_data = base64_encode(encoded_data, BASE64_SIZE(msgpack_map_size),
+    (const unsigned char *)msgpack_map, msgpack_map_size);
+  if (encoded_data == NULL) {
+    werr("Could not encode");
+    free(msgpack_map);
+    return;
+  }
+
   xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
   xmpp_stanza_set_name(message_stz, "message");
   xmpp_stanza_set_attribute(message_stz, "to", owner_str);
-  xmpp_stanza_t *shells_stz = xmpp_stanza_new(ctx);
-  xmpp_stanza_set_name(shells_stz, "shells");
-  xmpp_stanza_set_ns(shells_stz, WNS);
-  xmpp_stanza_set_attribute(shells_stz, "action", "open");
-  if (success) {
-    xmpp_stanza_set_attribute(shells_stz, "response", "done");
-    char shell_id_str[4];
-    snprintf(shell_id_str, 4, "%d", shell_id);
-    xmpp_stanza_set_attribute(done, "shellid", shell_id_str);
-    xmpp_stanza_set_attribute(done, "running", running ? "true" : "false");
-  } else {
-    xmpp_stanza_set_attribute(done, "response", "error");
-  }
-  xmpp_stanza_set_attribute(done, "request", request);
-  xmpp_stanza_add_child(message, done);
-  xmpp_send(conn, message);
-  xmpp_stanza_release(done);
-  xmpp_stanza_release(message);
+  xmpp_stanza_t *w_stz = xmpp_stanza_new(ctx);
+  xmpp_stanza_set_name(w_stz, "w");
+  xmpp_stanza_set_ns(w_stz, WNS);
+  xmpp_stanza_set_attribute(w_stz, "d", encoded_data);
+  xmpp_stanza_add_child(message_stz, w_stz);
+  xmpp_send(conn, message_stz);
+  xmpp_stanza_release(w_stz);
+  xmpp_stanza_release(message_stz);
 }
 
 void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {

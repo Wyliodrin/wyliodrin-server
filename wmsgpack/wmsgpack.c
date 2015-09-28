@@ -138,15 +138,12 @@ void build_modules_hashmap() {
 }
 
 
-void _build_msgpack_map(char *ret_addr, int *size_addr, char *file, int line, int num_params, ...) {
+char *_build_msgpack_map(int *size_addr, char *file, int line,
+                        int num_params, ...) {
   /* Sanity checks */
   if (num_params % 2 == 1) {
     fprintf(stderr, "[BUILD_MSGPACK_MAP %s:%d] Uneven number of parameters\n", file, line);
-    ret_addr = NULL;
-    return;
-  }
-  if (ret_addr == NULL) {
-    fprintf(stderr, "[BUILD_MSGPACK_MAP %s:%d] First parameter is NULL\n", file, line);
+    return NULL;
   }
   if (size_addr == NULL) {
     fprintf(stderr, "[BUILD_MSGPACK_MAP %s:%d] Second parameter is NULL\n", file, line);
@@ -163,28 +160,26 @@ void _build_msgpack_map(char *ret_addr, int *size_addr, char *file, int line, in
     p = va_arg(ap, char *);
     if (p == NULL) {
       fprintf(stderr, "[BUILD_MSGPACK_MAP %s:%d] Argument %d is NULL\n", file, line, i);
-      ret_addr = NULL;
-      return;
+      return NULL;
     }
     params_size += strlen(p);
   }
   va_end(ap);
 
   /* Allocate memory for msgpack map */
-  char *storage = malloc(params_size);
-  if (storage == NULL) {
+  char *ret_addr = malloc(params_size);
+  if (ret_addr == NULL) {
     werr("malloc failed: %s", strerror(errno));
-    ret_addr = NULL;
-    return;
+    return NULL;
   }
 
   /* Init msgpack */
-  cmp_init(&cmp, storage, params_size);
+  cmp_ctx_t cmp;
+  cmp_init(&cmp, ret_addr, params_size);
   if (!cmp_write_map(&cmp, num_params / 2)) {
     werr("cmp_write_map error: %s", cmp_strerror(&cmp));
-    free(storage);
-    ret_addr = NULL;
-    return;
+    free(ret_addr);
+    return NULL;
   }
 
   /* Write msgpack map */
@@ -193,10 +188,16 @@ void _build_msgpack_map(char *ret_addr, int *size_addr, char *file, int line, in
     p = va_arg(ap, char *);
     if (!cmp_write_str(&cmp, p, strlen(p))) {
       werr("cmp_write_map error: %s", cmp_strerror(&cmp));
+      free(ret_addr);
+      return NULL;
     }
-    val = va_arg(ap, char *);
   }
   va_end(ap);
+
+  ret_addr[cmp.writer_offset] = 0;
+  *size_addr = cmp.writer_offset;
+
+  return ret_addr;
 }
 
 

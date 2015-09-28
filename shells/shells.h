@@ -41,8 +41,7 @@ void shells(const char *from, const char *to, hashmap_p h);
 void shells_open(hashmap_p h);
 
 /* Send shells open response */
-void send_shells_open_response(char *request_attr, xmpp_conn_t *const conn,
-    void *const userdata, bool success, int8_t id, bool running);
+void send_shells_open_response(char *request, bool success, int8_t shell_id, bool running);
 
 /* Close shell */
 void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
