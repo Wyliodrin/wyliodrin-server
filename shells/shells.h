@@ -62,7 +62,7 @@ void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const u
 /* Poweroff */
 void shells_poweroff();
 
-void start_dead_projects(xmpp_conn_t *const conn, void *const userdata);
+void start_dead_projects();
 
 #endif /* SHELLS */
 

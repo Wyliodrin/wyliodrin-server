@@ -2,7 +2,7 @@
  * Shells module
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: July 2015
+ * Date last modified: September 2015
  *************************************************************************************************/
 
 #ifdef SHELLS
@@ -133,8 +133,8 @@ static char **concatenation_of_local_and_user_env(char **local_env, int local_en
   return all_env;
 }
 
-static bool allocate_memory_for_new_shell(xmpp_conn_t *const conn, void *const userdata,
-  int shell_index, int pid, int fdm, long int width, long int height,
+static bool allocate_memory_for_new_shell(int shell_index, int pid, int fdm,
+  long int width, long int height,
   char *request_attr, char *projectid_attr, char *userid_attr)
 {
   pthread_mutex_lock(&shells_lock);
@@ -144,7 +144,7 @@ static bool allocate_memory_for_new_shell(xmpp_conn_t *const conn, void *const u
     return false;
   }
   shells_vector[shell_index]->conn           = conn;
-  shells_vector[shell_index]->ctx            = (xmpp_ctx_t *)userdata;
+  shells_vector[shell_index]->ctx            = ctx;
   shells_vector[shell_index]->id             = shell_index;
   shells_vector[shell_index]->pid            = pid;
   shells_vector[shell_index]->fdm            = fdm;
@@ -171,9 +171,7 @@ static bool allocate_memory_for_new_shell(xmpp_conn_t *const conn, void *const u
   return true;
 }
 
-static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
-  char *request_attr, char *width_attr, char *height_attr)
-{
+static void open_normal_shell(char *request_attr, char *width_attr, char *height_attr) {
   /* Get an entry in the shells_vector */
   int shell_index = get_entry_in_shells_vector();
   if (shell_index == MAX_SHELLS) {
@@ -228,7 +226,7 @@ static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
   }
 
   /* Parent from forkpty */
-  if (!allocate_memory_for_new_shell(conn, userdata, shell_index, pid, fdm, width, height,
+  if (!allocate_memory_for_new_shell(shell_index, pid, fdm, width, height,
     request_attr, NULL, NULL))
   {
     goto label_fail;
@@ -244,20 +242,19 @@ static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
   pthread_detach(rt);
 
   /* Send success response */
-  // send_shells_open_response(request_attr, conn, userdata, true, shell_index, false);
+  send_shells_open_response(request_attr, true, shell_index, false);
 
   return;
 
   label_fail:
-    // send_shells_open_response(request_attr, conn, userdata, false, -1, false);
+    send_shells_open_response(request_attr, false, -1, false);
     return;
 }
 
 
 
-static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, char *request_attr,
-  char *width_attr, char *height_attr, char *projectid_attr, char *userid_attr)
-{
+static void open_project_shell(char *request_attr, char *width_attr, char *height_attr,
+                               char *projectid_attr, char *userid_attr) {
   /* Get the shell_index in case of a running project */
   int shell_index;
   char projectid_filepath[128];
@@ -266,7 +263,7 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
     int projectid_fd = open(projectid_filepath, O_RDWR);
     if (projectid_fd != -1) {
       read(projectid_fd, &shell_index, sizeof(int));
-      // send_shells_open_response(request_attr, conn, userdata, true, shell_index, true);
+      send_shells_open_response(request_attr, true, shell_index, true);
       return;
     }
   }
@@ -343,12 +340,12 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
       snprintf(wyliodrin_usemsgpack_env, 64, "wyliodrin_usemsgpack=1");
 
       char *local_env[] = { wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
-        wyliodrin_board_env, wyliodrin_jid_env, "HOME=/wyliodrin", "TERM=xterm",
-        wyliodrin_usemsgpack_env, wyliodrin_server, NULL };
+                            wyliodrin_board_env, wyliodrin_jid_env, "HOME=/wyliodrin",
+                            "TERM=xterm", wyliodrin_server, wyliodrin_usemsgpack_env, NULL };
     #else
       char *local_env[] = { wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
-        wyliodrin_board_env, wyliodrin_jid_env, wyliodrin_server, "HOME=/wyliodrin", "TERM=xterm",
-        NULL };
+                            wyliodrin_board_env, wyliodrin_jid_env, "HOME=/wyliodrin",
+                            "TERM=xterm", wyliodrin_server, NULL };
     #endif
 
     int local_env_size = sizeof(local_env) / sizeof(*local_env);
@@ -366,7 +363,7 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
   }
 
   /* Parent from forkpty */
-  if (!allocate_memory_for_new_shell(conn, userdata, shell_index, pid, fdm, width, height,
+  if (!allocate_memory_for_new_shell(shell_index, pid, fdm, width, height,
     request_attr, projectid_attr, userid_attr))
   {
     goto label_fail;
@@ -397,18 +394,18 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
 
   /* Send success response */
   if (request_attr != NULL) {
-    // send_shells_open_response(request_attr, conn, userdata, true, shell_index, false);
+    send_shells_open_response(request_attr, true, shell_index, false);
   }
 
   return;
 
   label_fail:
   if (request_attr != NULL) {
-    // send_shells_open_response(request_attr, conn, userdata, false, -1, false);
+    send_shells_open_response(request_attr, false, -1, false);
   }
 }
 
-void start_dead_projects(xmpp_conn_t *const conn, void *const userdata) {
+void start_dead_projects() {
   FILE *fp;
 
   fp = fopen(RUNNING_PROJECTS_PATH, "r");
@@ -421,7 +418,7 @@ void start_dead_projects(xmpp_conn_t *const conn, void *const userdata) {
   while (fscanf(fp, "%[^:]:", projectid) != EOF) {
     wlog("projectid = %s\n\n\n", projectid);
     if (strlen(projectid) > 0) {
-      open_project_shell(conn, userdata, NULL, NULL, NULL,
+      open_project_shell(NULL, NULL, NULL,
         projectid, NULL);
     }
     sleep(1);
@@ -476,42 +473,32 @@ void shells(const char *from, const char *to, hashmap_p h) {
 }
 
 void shells_open(hashmap_p h) {
-  if (!SANITY_CHECK(h != NULL)) return;
+  if (!SANITY_CHECK(h != NULL)) goto fail;
 
   /* Get data */
   char *request    = (char *)hashmap_get(h, "r");
   char *width      = (char *)hashmap_get(h, "w");
   char *height     = (char *)hashmap_get(h, "h");
-  // char *project_id = (char *)hashmap_get(h, "p");
-  // char *userid     = (char *)hashmap_get(h, "u");
+  char *project_id = (char *)hashmap_get(h, "p");
+  char *user_id    = (char *)hashmap_get(h, "u");
 
   if (!SANITY_CHECK(request != NULL,
                     width   != NULL,
                     height  != NULL)) {
-    return;
+    goto fail;
   }
 
-  send_shells_open_response(request, true, 1, false);
+  if (project_id == NULL) { /* A normal shell must be open */
+    open_normal_shell(request, width, height);
+  } else { /* A project must be run */
+    open_project_shell(request, width, height,
+      project_id, user_id);
+  }
 
-  // /* Get attributes */
-  // char *request_attr   = NULL;
-  // char *width_attr     = NULL;
-  // char *height_attr    = NULL;
-  // char *projectid_attr = NULL;
-  // char *userid_attr    = NULL;
-  // if (!get_open_attributes(stanza, &request_attr, &width_attr, &height_attr, &projectid_attr,
-  //   &userid_attr))
-  // {
-  //   // send_shells_open_response(request_attr, conn, userdata, false, -1, false);
-  //   return;
-  // }
+  return;
 
-  // if (projectid_attr == NULL) { /* A normal shell must be open */
-  //   open_normal_shell(conn, userdata, request_attr, width_attr, height_attr);
-  // } else { /* A project must be run */
-  //   open_project_shell(conn, userdata, request_attr, width_attr, height_attr,
-  //     projectid_attr, userid_attr);
-  // }
+  fail:
+    send_shells_open_response(request, false, 0, false);
 }
 
 void send_shells_open_response(char *request, bool success, int8_t shell_id, bool running) {
@@ -529,7 +516,7 @@ void send_shells_open_response(char *request, bool success, int8_t shell_id, boo
     "rq", request,
     "rp", success ? "d" : "e",
     "s",  success ? shell_id_str : "",
-    "rn", running ? "t" : "f");
+    "rn", success ? (running ? "t" : "f") : "");
 
   if (msgpack_map == NULL) {
     werr("build_msgpack_map failed");
