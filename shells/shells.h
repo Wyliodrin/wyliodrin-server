@@ -50,14 +50,7 @@ void shells_close(hashmap_p h);
 void shells_keys(hashmap_p h);
 
 /* Keys response */
-void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
-    char *data_str, int data_len, int shell_id);
-
-/* List */
-void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
-
-/* Status */
-void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
+void send_shells_keys_response(char *data_str, int data_len, int shell_id);
 
 /* Poweroff */
 void shells_poweroff();

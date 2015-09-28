@@ -461,12 +461,8 @@ void shells(const char *from, const char *to, hashmap_p h) {
     shells_close(h);
   } else if (strcmp(action, "k") == 0) {
     shells_keys(h);
-  } else if (strcmp(action, "l") == 0) {
-    // shells_list(stanza, conn, userdata);
-  } else if (strcmp(action, "s") == 0) {
-    // shells_status(stanza, conn, userdata);
   } else if (strcmp(action, "p") == 0) {
-    // shells_poweroff();
+    shells_poweroff();
   } else {
     werr("Unknown action: %s", action);
   }
@@ -662,14 +658,7 @@ void shells_keys(hashmap_p h) {
   wlog("Return from shells_keys");
 }
 
-void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
-    char *data_str, int data_len, int shell_id) {
-  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-  if (ctx == NULL) {
-    wlog("NULL xmpp context");
-    return;
-  }
-
+void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
   xmpp_stanza_set_attribute(message, "to", owner_str);
@@ -700,65 +689,6 @@ void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
   xmpp_stanza_release(message);
 
   free(encoded_data);
-}
-
-void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
-  wlog("shells_list(...)");
-
-  /* Send list */
-  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-
-  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with close */
-  xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner_str);
-  xmpp_stanza_t *list = xmpp_stanza_new(ctx); /* close stanza */
-  xmpp_stanza_set_name(list, "shells");
-  xmpp_stanza_set_ns(list, WNS);
-  xmpp_stanza_set_attribute(list, "action", "list");
-  xmpp_stanza_set_attribute(list, "request",
-    (const char *)xmpp_stanza_get_attribute(stanza, "request"));
-  xmpp_stanza_t *project = xmpp_stanza_new(ctx); /* project stanza */
-  xmpp_stanza_set_attribute(project, "projectid", "0");
-  xmpp_stanza_add_child(list, project);
-  xmpp_stanza_add_child(message, list);
-  xmpp_send(conn, message);
-  xmpp_stanza_release(list);
-  xmpp_stanza_release(message);
-
-  wlog("Return from shell_list");
-}
-
-void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
-  char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid");
-
-  if (projectid_attr != NULL) {
-    char projectid_filepath[128];
-    snprintf(projectid_filepath, 64, "/tmp/wyliodrin/%s", projectid_attr);
-
-    xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-
-    xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message with close */
-    xmpp_stanza_set_name(message_stz, "message");
-    xmpp_stanza_set_attribute(message_stz, "to", owner_str);
-
-    xmpp_stanza_t *status_stz = xmpp_stanza_new(ctx); /* status stanza */
-    xmpp_stanza_set_name(status_stz, "shells");
-    xmpp_stanza_set_ns(status_stz, WNS);
-    xmpp_stanza_set_attribute(status_stz, "action", "status");
-    xmpp_stanza_set_attribute(status_stz, "request",
-      (const char *)xmpp_stanza_get_attribute(stanza, "request"));
-    xmpp_stanza_set_attribute(status_stz, "projectid",
-      (const char *)xmpp_stanza_get_attribute(stanza, "projectid"));
-    xmpp_stanza_set_attribute(status_stz, "running",
-      open(projectid_filepath, O_RDWR) != -1 ? "true" : "false");
-
-    xmpp_stanza_add_child(message_stz, status_stz);
-    xmpp_send(conn, message_stz);
-    xmpp_stanza_release(status_stz);
-    xmpp_stanza_release(message_stz);
-  } else {
-    werr("No projectid attribute in status");
-  }
 }
 
 void shells_poweroff() {
