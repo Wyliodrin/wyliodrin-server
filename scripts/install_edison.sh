@@ -10,7 +10,7 @@
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v2.6
+WVERSION=v2.7
 LWVERSION=v1.16
 
 ###################################################################################################
@@ -135,6 +135,7 @@ echo "{
 \"config_file\": \"/media/storage/wyliodrin.json\",
 \"mountFile\": \"/wyliodrin/mnt\",
 \"buildFile\": \"/wyliodrin/build\",
+\"run\": \"make -f Makefile.edison run\",\n\
 \"board\": \"edison\"
 }" > /etc/wyliodrin/settings_edison.json
 

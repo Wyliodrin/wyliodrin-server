@@ -32,6 +32,7 @@ const char *build_file_str;
 const char *board_str;
 const char *sudo_str;
 const char *shell_cmd;
+const char *run_cmd;
 
 bool privacy = false; /* privacy value from wylliodrin.json */
 
@@ -131,6 +132,9 @@ void wtalk()
   if (shell_cmd == NULL) {
     shell_cmd = strdup("bash");
   }
+
+  run_cmd = get_str_value(settings_json, "run");
+  wfatal(run_cmd == NULL, "No entry named run in %s", settings_path);
 
   /* Get config_file value. This value contains the path to wyliodrin.json */
   const char *config_file_str = get_str_value(settings_json, "config_file"); /* config_file value */

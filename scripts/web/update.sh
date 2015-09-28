@@ -11,7 +11,7 @@
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v2.6
+WVERSION=v2.7
 LWVERSION=v1.16
 
 
@@ -49,6 +49,9 @@ fi
 # Create sandbox
 mkdir -p $SANDBOX_PATH
 
+# Create home
+mkdir -p /wyliodrin
+
 if [ "$wyliodrin_board" = "raspberrypi" ]; then
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
 
@@ -70,12 +73,12 @@ if [ "$wyliodrin_board" = "raspberrypi" ]; then
   # Copy bashrc
   cp /home/pi/.bashrc /wyliodrin
 
-  # Create settings_raspberry.json
   printf "{\n\
     \"config_file\": \"/boot/wyliodrin.json\",\n\
     \"mountFile\": \"/wyliodrin/mnt\",\n\
     \"buildFile\": \"/wyliodrin/build\",\n\
     \"board\": \"raspberrypi\",\n\
+    \"run\": \"sudo -E make -f Makefile.raspberrypi run\",\n\
     \"shell_cmd\": \"bash\"\n\
   }\n" > /etc/wyliodrin/settings_raspberrypi.json
 
@@ -92,14 +95,50 @@ environment=HOME=\"/wyliodrin\"\n"
 elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
   CMAKE_PARAMS="-DBEAGLEBONEBLACK=ON -DNODE_ROOT_DIR=/usr/include"
 
+  printf "{\n\
+    \"config_file\": \"/boot/wyliodrin.json\",\n\
+    \"mountFile\": \"/wyliodrin/mnt\",\n\
+    \"buildFile\": \"/wyliodrin/build\",\n\
+    \"board\": \"beagleboneblack\",\n\
+    \"run\": \"make -f Makefile.beagleboneblack run\",\n\
+    \"shell_cmd\": \"bash\"\n\
+  }\n" > /etc/wyliodrin/settings_beagleboneblack.json
+
 elif [ "$wyliodrin_board" = "arduinogalileo" ]; then
   CMAKE_PARAMS="-DGALILEO=ON"
+
+  printf "{\n\
+    \"config_file\": \"/boot/wyliodrin.json\",\n\
+    \"mountFile\": \"/wyliodrin/mnt\",\n\
+    \"buildFile\": \"/wyliodrin/build\",\n\
+    \"board\": \"arduinogalileo\",\n\
+    \"run\": \"make -f Makefile.arduinogalileo run\",\n\
+    \"shell_cmd\": \"bash\"\n\
+  }\n" > /etc/wyliodrin/settings_arduinogalileo.json
 
 elif [ "$wyliodrin_board" = "edison" ]; then
   CMAKE_PARAMS="-DEDISON=ON"
 
+  printf "{\n\
+    \"config_file\": \"/boot/wyliodrin.json\",\n\
+    \"mountFile\": \"/wyliodrin/mnt\",\n\
+    \"buildFile\": \"/wyliodrin/build\",\n\
+    \"board\": \"edison\",\n\
+    \"run\": \"sudo -E make -f Makefile.edison run\",\n\
+    \"shell_cmd\": \"bash\"\n\
+  }\n" > /etc/wyliodrin/settings_edison.json
+
 elif [ "$wyliodrin_board" = "redpitaya" ]; then
   CMAKE_PARAMS="-DREDPITAYA=ON"
+
+  printf "{\n\
+    \"config_file\": \"/boot/wyliodrin.json\",\n\
+    \"mountFile\": \"/wyliodrin/mnt\",\n\
+    \"buildFile\": \"/wyliodrin/build\",\n\
+    \"board\": \"redpitaya\",\n\
+    \"run\": \"make -f Makefile.redpitaya run\",\n\
+    \"shell_cmd\": \"bash\"\n\
+  }\n" > /etc/wyliodrin/settings_redpitaya.json
 
 elif [ "$wyliodrin_board" = "" ]; then
   echo "ERROR: there is no environment variable named wyliodrin_board" \

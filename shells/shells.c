@@ -45,6 +45,7 @@ extern const char *jid_str;        /* jid */
 extern const char *owner_str;      /* owner_str */
 extern const char *sudo_str;       /* sudo command from wtalk.c */
 extern const char *shell_cmd;      /* start shell command from wtalk.c */
+extern const char *run_cmd;        /* start shell command from wtalk.c */
 
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
@@ -349,10 +350,8 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
     int local_env_size = sizeof(local_env) / sizeof(*local_env);
     char **all_env = concatenation_of_local_and_user_env(local_env, local_env_size);
 
-    char makefile_name[64];
-    snprintf(makefile_name, 63, "Makefile.%s", board_str);
-
-    char *exec_argv[] = {"make", "-f", makefile_name, "run", NULL};
+    int exec_argv_size;
+    char **exec_argv = string_to_array((char *)run_cmd, &exec_argv_size);
 
     execvpe(exec_argv[0], exec_argv, all_env);
 
