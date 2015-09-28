@@ -12,10 +12,32 @@
 
 
 
+/*** INCLUDES ************************************************************************************/
+
+#include <stdarg.h>
+
+/*************************************************************************************************/
+
+
+
+/*** MACROS **************************************************************************************/
+
+#define build_msgpack_map(ret_addr, size_addr, ...)                                               \
+        _build_msgpack_map(ret_addr, size_addr, __FILE__, __LINE__,                               \
+                           sizeof((int[]){__VA_ARGS__})/sizeof(int), ##__VA_ARGS__)
+
+/*************************************************************************************************/
+
+
+
 /*** DECLARATIONS ********************************************************************************/
 
 /* Build a hashmap with keys as module names and values as handlers */
 void build_modules_hashmap();
+
+/* Build msgpack map */
+char *_build_msgpack_map(char *ret_addr, int *size_addr, char *file, int line,
+                         int num_params, ...);
 
 /* Handler for the w stanza */
 void wmsgpack(const char *from, const char *to, const char *enc_data);

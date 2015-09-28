@@ -138,6 +138,68 @@ void build_modules_hashmap() {
 }
 
 
+void _build_msgpack_map(char *ret_addr, int *size_addr, char *file, int line, int num_params, ...) {
+  /* Sanity checks */
+  if (num_params % 2 == 1) {
+    fprintf(stderr, "[BUILD_MSGPACK_MAP %s:%d] Uneven number of parameters\n", file, line);
+    ret_addr = NULL;
+    return;
+  }
+  if (ret_addr == NULL) {
+    fprintf(stderr, "[BUILD_MSGPACK_MAP %s:%d] First parameter is NULL\n", file, line);
+  }
+  if (size_addr == NULL) {
+    fprintf(stderr, "[BUILD_MSGPACK_MAP %s:%d] Second parameter is NULL\n", file, line);
+  }
+
+  va_list ap;
+
+  /* Get size needed to store the map */
+  int i;
+  char *p;
+  int params_size = 64;
+  va_start(ap, num_params);
+  for (i = 0; i < num_params; i++) {
+    p = va_arg(ap, char *);
+    if (p == NULL) {
+      fprintf(stderr, "[BUILD_MSGPACK_MAP %s:%d] Argument %d is NULL\n", file, line, i);
+      ret_addr = NULL;
+      return;
+    }
+    params_size += strlen(p);
+  }
+  va_end(ap);
+
+  /* Allocate memory for msgpack map */
+  char *storage = malloc(params_size);
+  if (storage == NULL) {
+    werr("malloc failed: %s", strerror(errno));
+    ret_addr = NULL;
+    return;
+  }
+
+  /* Init msgpack */
+  cmp_init(&cmp, storage, params_size);
+  if (!cmp_write_map(&cmp, num_params / 2)) {
+    werr("cmp_write_map error: %s", cmp_strerror(&cmp));
+    free(storage);
+    ret_addr = NULL;
+    return;
+  }
+
+  /* Write msgpack map */
+  va_start(ap, num_params);
+  for (i = 0; i < num_params; i++) {
+    p = va_arg(ap, char *);
+    if (!cmp_write_str(&cmp, p, strlen(p))) {
+      werr("cmp_write_map error: %s", cmp_strerror(&cmp));
+    }
+    val = va_arg(ap, char *);
+  }
+  va_end(ap);
+}
+
+
 void wmsgpack(const char *from, const char *to, const char *enc_data) {
   /* Sanity checks */
   if (from == NULL ||

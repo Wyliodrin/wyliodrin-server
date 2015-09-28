@@ -46,6 +46,9 @@ extern const char *owner_str;      /* owner_str */
 extern const char *sudo_str;       /* sudo command from wtalk.c */
 extern const char *shell_cmd;      /* start shell command from wtalk.c */
 
+extern xmpp_ctx_t *ctx;   /* XMPP context    */
+extern xmpp_conn_t *conn; /* XMPP connection */
+
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
 pthread_mutex_t shells_lock; /* shells mutex */
@@ -471,8 +474,6 @@ void shells(const char *from, const char *to, hashmap_p h) {
 }
 
 void shells_open(hashmap_p h) {
-  fprintf(stderr, "OPEN\n");
-
   if (!SANITY_CHECK(h != NULL)) return;
 
   /* Get data */
@@ -487,8 +488,6 @@ void shells_open(hashmap_p h) {
                     height  != NULL)) {
     return;
   }
-
-  // wlog("shells_open(...)");
 
   // /* Get attributes */
   // char *request_attr   = NULL;
@@ -511,27 +510,24 @@ void shells_open(hashmap_p h) {
   // }
 }
 
-void send_shells_open_response(char *request_attr, xmpp_conn_t *const conn,
-  void *const userdata, bool success, int8_t id, bool running)
-{
-  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
-  xmpp_stanza_t *message = xmpp_stanza_new(ctx);
-  xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner_str);
-  xmpp_stanza_t *done = xmpp_stanza_new(ctx);
-  xmpp_stanza_set_name(done, "shells");
-  xmpp_stanza_set_ns(done, WNS);
-  xmpp_stanza_set_attribute(done, "action", "open");
+void send_shells_open_response(char *request, bool success, int8_t shell_id, bool running) {
+  xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
+  xmpp_stanza_set_name(message_stz, "message");
+  xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+  xmpp_stanza_t *shells_stz = xmpp_stanza_new(ctx);
+  xmpp_stanza_set_name(shells_stz, "shells");
+  xmpp_stanza_set_ns(shells_stz, WNS);
+  xmpp_stanza_set_attribute(shells_stz, "action", "open");
   if (success) {
-    xmpp_stanza_set_attribute(done, "response", "done");
-    char id_str[4];
-    snprintf(id_str, 4, "%d", id);
-    xmpp_stanza_set_attribute(done, "shellid", id_str);
+    xmpp_stanza_set_attribute(shells_stz, "response", "done");
+    char shell_id_str[4];
+    snprintf(shell_id_str, 4, "%d", shell_id);
+    xmpp_stanza_set_attribute(done, "shellid", shell_id_str);
+    xmpp_stanza_set_attribute(done, "running", running ? "true" : "false");
   } else {
     xmpp_stanza_set_attribute(done, "response", "error");
   }
-  xmpp_stanza_set_attribute(done, "request", request_attr);
-  xmpp_stanza_set_attribute(done, "running", running ? "true" : "false");
+  xmpp_stanza_set_attribute(done, "request", request);
   xmpp_stanza_add_child(message, done);
   xmpp_send(conn, message);
   xmpp_stanza_release(done);
