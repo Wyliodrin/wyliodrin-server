@@ -7,10 +7,11 @@
 
 #ifdef MAKE
 
-#include <stdio.h>   /* snprintf    */
+#include <stdio.h>   /* snprintf   */
 #include <string.h>  /* strcmp     */
 #include <strophe.h> /* xmpp stuff */
 #include <stdlib.h>  /* malloc     */
+#include <errno.h>   /* errno      */
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -21,6 +22,7 @@
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../wxmpp/wxmpp.h"           /* WNS */
 #include "../base64/base64.h"
+#include "../wmsgpack/wmsgpack.h"     /* msgpack handling */
 
 #include "make.h"
 
@@ -32,11 +34,12 @@ extern const char *build_file_str; /* build file */
 extern const char *board_str;      /* board_str from wtalk.c */
 extern bool is_fuse_available;     /* from wtalk.c */
 
+extern xmpp_ctx_t *ctx;   /* Context    */
+extern xmpp_conn_t *conn; /* Connection */
+
 void init_make() { }
 
 typedef struct {
-  xmpp_conn_t *conn;
-  void *userdata;
   char *projectid_attr;
   char *request_attr;
   char *address_attr;
@@ -46,8 +49,6 @@ typedef struct {
 void *out_read_thread(void *args) {
   thread_arg *arg = (thread_arg *)args;
 
-  xmpp_conn_t *conn = arg->conn;
-  void *userdata = arg->userdata;
   char *request_attr = arg->request_attr;
   int fd = arg->fd;
 
@@ -57,32 +58,44 @@ void *out_read_thread(void *args) {
   while(1) {
     rc = read(fd, buf, BUFSIZE);
     if (rc > 0) {
-      /* Send Working */
-      xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+      int msgpack_map_size;
+      char *msgpack_map = build_msgpack_map(&msgpack_map_size,
+        "a",  "b", /* action = build */
+        "rp", "w", /* response = working */
+        "r",  request_attr, /* request */
+        "s",  "s"); /* source = out */
 
+      if (msgpack_map == NULL) {
+        werr("build_msgpack_map failed");
+        return NULL;
+      }
+
+      char *encoded_data = malloc(BASE64_SIZE(msgpack_map_size));
+      if (encoded_data == NULL) {
+        werr("malloc failed: %s", strerror(errno));
+        free(msgpack_map);
+        return NULL;
+      }
+      encoded_data = base64_encode(encoded_data, BASE64_SIZE(msgpack_map_size),
+        (const unsigned char *)msgpack_map, msgpack_map_size);
+      if (encoded_data == NULL) {
+        werr("Could not encode");
+        free(msgpack_map);
+        return NULL;
+      }
+
+      /* Send Working */
       xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza with make */
       xmpp_stanza_set_name(message_stz, "message");
       xmpp_stanza_set_attribute(message_stz, "to", owner_str);
-      xmpp_stanza_t *make_stz = xmpp_stanza_new(ctx); /* make stanza */
-      xmpp_stanza_set_name(make_stz, "make");
-      xmpp_stanza_set_ns(make_stz, WNS);
-      xmpp_stanza_set_attribute(make_stz, "action", "build");
-      xmpp_stanza_set_attribute(make_stz, "response", "working");
-      xmpp_stanza_set_attribute(make_stz, "request", request_attr);
-      xmpp_stanza_set_attribute(make_stz, "source", "stdout");
+      xmpp_stanza_t *w_stz = xmpp_stanza_new(ctx); /* make stanza */
+      xmpp_stanza_set_name(w_stz, "w");
+      xmpp_stanza_set_ns(w_stz, WNS);
+      xmpp_stanza_set_attribute(w_stz, "d", encoded_data);
 
-      char *encoded_data = (char *)malloc(BASE64_SIZE(rc));
-      encoded_data = base64_encode(encoded_data, BASE64_SIZE(rc),
-        (const unsigned char *)buf, rc);
-
-      xmpp_stanza_t *data_stz = xmpp_stanza_new(ctx); /* make stanza */
-      xmpp_stanza_set_text(data_stz, encoded_data);
-
-      xmpp_stanza_add_child(make_stz, data_stz);
-      xmpp_stanza_add_child(message_stz, make_stz);
+      xmpp_stanza_add_child(message_stz, w_stz);
       xmpp_send(conn, message_stz);
-      xmpp_stanza_release(data_stz);
-      xmpp_stanza_release(make_stz);
+      xmpp_stanza_release(w_stz);
       xmpp_stanza_release(message_stz);
     } else if (rc < 0) {
       return NULL;
@@ -93,8 +106,6 @@ void *out_read_thread(void *args) {
 void *err_read_thread(void *args) {
   thread_arg *arg = (thread_arg *)args;
 
-  xmpp_conn_t *conn = arg->conn;
-  void *userdata = arg->userdata;
   char *request_attr = arg->request_attr;
   int fd = arg->fd;
 
@@ -104,33 +115,32 @@ void *err_read_thread(void *args) {
   while(1) {
     rc = read(fd, buf, BUFSIZE);
     if (rc > 0) {
-      /* Send Working */
-      xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+      /* Send working */
+      int msgpack_map_size;
+      char *msgpack_map = build_msgpack_map(&msgpack_map_size,
+        "a",  "b", /* action = build */
+        "rp", "w", /* response = working */
+        "r",  request_attr, /* request */
+        "s",  "e"); /* source = out */
 
-      xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza with make */
-      xmpp_stanza_set_name(message_stz, "message");
-      xmpp_stanza_set_attribute(message_stz, "to", owner_str);
-      xmpp_stanza_t *make_stz = xmpp_stanza_new(ctx); /* make stanza */
-      xmpp_stanza_set_name(make_stz, "make");
-      xmpp_stanza_set_ns(make_stz, WNS);
-      xmpp_stanza_set_attribute(make_stz, "action", "build");
-      xmpp_stanza_set_attribute(make_stz, "response", "working");
-      xmpp_stanza_set_attribute(make_stz, "request", request_attr);
-      xmpp_stanza_set_attribute(make_stz, "source", "stderr");
+      if (msgpack_map == NULL) {
+        werr("build_msgpack_map failed");
+        return NULL;
+      }
 
-      char *encoded_data = (char *)malloc(BASE64_SIZE(rc));
-      encoded_data = base64_encode(encoded_data, BASE64_SIZE(rc),
-        (const unsigned char *)buf, rc);
-
-      xmpp_stanza_t *data_stz = xmpp_stanza_new(ctx); /* make stanza */
-      xmpp_stanza_set_text(data_stz, encoded_data);
-
-      xmpp_stanza_add_child(make_stz, data_stz);
-      xmpp_stanza_add_child(message_stz, make_stz);
-      xmpp_send(conn, message_stz);
-      xmpp_stanza_release(make_stz);
-      xmpp_stanza_release(data_stz);
-      xmpp_stanza_release(message_stz);
+      char *encoded_data = malloc(BASE64_SIZE(msgpack_map_size));
+      if (encoded_data == NULL) {
+        werr("malloc failed: %s", strerror(errno));
+        free(msgpack_map);
+        return NULL;
+      }
+      encoded_data = base64_encode(encoded_data, BASE64_SIZE(msgpack_map_size),
+        (const unsigned char *)msgpack_map, msgpack_map_size);
+      if (encoded_data == NULL) {
+        werr("Could not encode");
+        free(msgpack_map);
+        return NULL;
+      }
     } else if (rc < 0) {
       return NULL;
     }
@@ -140,8 +150,6 @@ void *err_read_thread(void *args) {
 void *status_read_thread(void *args) {
   thread_arg *arg = (thread_arg *)args;
 
-  xmpp_conn_t *conn = arg->conn;
-  void *userdata = arg->userdata;
   char *request_attr = arg->request_attr;
   int fd = arg->fd;
 
@@ -153,22 +161,44 @@ void *status_read_thread(void *args) {
     rc = read(fd, buf, BUFSIZE);
     if (rc > 0) {
       /* Send done */
-      xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
+      int msgpack_map_size;
+      char *msgpack_map = build_msgpack_map(&msgpack_map_size,
+        "a",  "b", /* action = build */
+        "rp", "d", /* response = done */
+        "r",  request_attr, /* request */
+        "c",  "s"); /* code = buf */
 
+      if (msgpack_map == NULL) {
+        werr("build_msgpack_map failed");
+        return NULL;
+      }
+
+      char *encoded_data = malloc(BASE64_SIZE(msgpack_map_size));
+      if (encoded_data == NULL) {
+        werr("malloc failed: %s", strerror(errno));
+        free(msgpack_map);
+        return NULL;
+      }
+      encoded_data = base64_encode(encoded_data, BASE64_SIZE(msgpack_map_size),
+        (const unsigned char *)msgpack_map, msgpack_map_size);
+      if (encoded_data == NULL) {
+        werr("Could not encode");
+        free(msgpack_map);
+        return NULL;
+      }
+
+      /* Send Working */
       xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza with make */
       xmpp_stanza_set_name(message_stz, "message");
       xmpp_stanza_set_attribute(message_stz, "to", owner_str);
-      xmpp_stanza_t *make_stz = xmpp_stanza_new(ctx); /* make stanza */
-      xmpp_stanza_set_name(make_stz, "make");
-      xmpp_stanza_set_ns(make_stz, WNS);
-      xmpp_stanza_set_attribute(make_stz, "action", "build");
-      xmpp_stanza_set_attribute(make_stz, "response", "done");
-      xmpp_stanza_set_attribute(make_stz, "request", request_attr);
-      xmpp_stanza_set_attribute(make_stz, "code", buf);
+      xmpp_stanza_t *w_stz = xmpp_stanza_new(ctx); /* make stanza */
+      xmpp_stanza_set_name(w_stz, "w");
+      xmpp_stanza_set_ns(w_stz, WNS);
+      xmpp_stanza_set_attribute(w_stz, "d", encoded_data);
 
-      xmpp_stanza_add_child(message_stz, make_stz);
+      xmpp_stanza_add_child(message_stz, w_stz);
       xmpp_send(conn, message_stz);
-      xmpp_stanza_release(make_stz);
+      xmpp_stanza_release(w_stz);
       xmpp_stanza_release(message_stz);
     } else if (rc < 0) {
       return NULL;
@@ -179,8 +209,6 @@ void *status_read_thread(void *args) {
 void *fork_thread(void *args) {
   thread_arg *arg = (thread_arg *)args;
 
-  xmpp_conn_t *conn = arg->conn;
-  void *userdata = arg->userdata;
   char *projectid_attr = arg->projectid_attr;
   char *request_attr = arg->request_attr;
 
@@ -205,20 +233,14 @@ void *fork_thread(void *args) {
   pthread_t out_rt, err_rt, status_rt; /* Output, error and status read threads */
 
   thread_arg *out_arg = (thread_arg *)malloc(sizeof(thread_arg));
-  out_arg->conn = conn;
-  out_arg->userdata = userdata;
   out_arg->request_attr = strdup(request_attr);
   out_arg->fd = out_fd[0];
 
   thread_arg *err_arg = (thread_arg *)malloc(sizeof(thread_arg));
-  err_arg->conn = conn;
-  err_arg->userdata = userdata;
   err_arg->request_attr = strdup(request_attr);
   err_arg->fd = err_fd[0];
 
   thread_arg *status_arg = (thread_arg *)malloc(sizeof(thread_arg));
-  status_arg->conn = conn;
-  status_arg->userdata = userdata;
   status_arg->request_attr = strdup(request_attr);
   status_arg->fd = status_fd[0];
 
@@ -295,28 +317,27 @@ void *fork_thread(void *args) {
   return NULL;
 }
 
-void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-          xmpp_conn_t *const conn, void *const userdata) {
+void make(const char *from, const char *to, hashmap_p h) {
   wlog("make()");
 
   /* Get action attribute */
-  char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
+  char *action_attr = (char *)hashmap_get(h, "a"); /* action attribute */
   if (action_attr == NULL) {
     werr("No action attribute in make stanza");
     return;
   }
 
   /* Treat build action */
-  if (strcmp(action_attr, "build") == 0) {
+  if (strcmp(action_attr, "b") == 0) { /* build */
     /* Get projectid request */
-    char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
+    char *projectid_attr = (char *)hashmap_get(h, "p"); /* projectid attribute */
     if (projectid_attr == NULL) {
       werr("No projectid attribute in make stanza");
       return;
     }
 
     /* Get request attribute */
-    char *request_attr = xmpp_stanza_get_attribute(stanza, "request"); /* request attribute */
+    char *request_attr = (char *)hashmap_get(h, "r"); /* request attribute */
     if (request_attr == NULL) {
       werr("No request attribute in make stanza");
     }
@@ -324,12 +345,10 @@ void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     pthread_t ft; /* Fork thread */
 
     thread_arg *arg = (thread_arg *)malloc(sizeof(thread_arg));
-    arg->conn = conn;
-    arg->userdata = userdata;
     arg->projectid_attr = strdup(projectid_attr);
     arg->request_attr = strdup(request_attr);
     if (!is_fuse_available) {
-      char *address_attr = xmpp_stanza_get_attribute(stanza, "address"); /* address attribute */
+      char *address_attr = (char *)hashmap_get(h, "ad"); /* address attribute */
       if (address_attr == NULL) {
         werr("No address attribute in make stanza");
       }
@@ -344,7 +363,7 @@ void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   }
 
   /* Treat close action */
-  else if (strcmp(action_attr, "close") == 0) {
+  else if (strcmp(action_attr, "c") == 0) { /* close */
     wlog("closing make...");
   }
 

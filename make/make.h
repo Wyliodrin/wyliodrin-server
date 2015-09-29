@@ -5,16 +5,17 @@
  * Date last modified: May 2015
  *************************************************************************************************/
 
+#ifdef MAKE
+
 #ifndef _MAKE_H
 #define _MAKE_H
 
-#ifdef MAKE
+#include "../libds/ds.h"
 
 void init_make();
 
-void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-          xmpp_conn_t *const conn, void *const userdata);
-
-#endif /* MAKE */
+void make(const char *from, const char *to, hashmap_p h);
 
 #endif /* _MAKE_H */
+
+#endif /* MAKE */
