@@ -73,9 +73,9 @@ elem_t *last = NULL;
 
 char *read_data = NULL;
 
-static void files_attr(xmpp_stanza_t *stanza);
-static void files_list(xmpp_stanza_t *stanza);
-static void files_read(xmpp_stanza_t *stanza);
+static void files_attr(hashmap_p h);
+static void files_list(hashmap_p h);
+static void files_read(hashmap_p h);
 
 static int wfuse_getattr(const char *path, struct stat *stbuf) {
   wlog("wfuse_getattr path = %s\n", path);
@@ -338,53 +338,53 @@ void init_files() {
   }
 }
 
-void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-           xmpp_conn_t *const conn, void *const userdata)
-{
+void files(const char *from, const char *to, hashmap_p h) {
   wlog("files()");
-  if (error == 0) {
-    char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
+  char *error = (char *)hashmap_get(h, "e");
+
+  if (strcmp(error, "0") == 0) {
+    char *action_attr = (char *)hashmap_get(h, "a"); /* action attribute */
     if (action_attr == NULL) {
       werr("xmpp_stanza_get_attribute attribute = action");
     }
     wfatal(action_attr == NULL, "xmpp_stanza_get_attribute [attribute = action]");
 
-    if (strcmp(action_attr, "attributes") == 0) {
-      files_attr(stanza);
-    } else if (strcmp(action_attr, "list") == 0) {
-      files_list(stanza);
-    } else if (strncasecmp(action_attr, "read", 4) == 0) {
-      files_read(stanza);
+    if (strcmp(action_attr, "a") == 0) {
+      files_attr(h);
+    } else if (strcmp(action_attr, "l") == 0) {
+      files_list(h);
+    } else if (strncasecmp(action_attr, "r", 4) == 0) {
+      files_read(h);
     } else {
       werr("Unknown action: %s", action_attr);
     }
   } else {
-    werr("error stanza %s %s", xmpp_stanza_get_attribute(stanza, "path"), xmpp_stanza_get_attribute(stanza, "action"));
+    werr("error stanza %s %s", (char *)hashmap_get(h, "p"), (char *)hashmap_get(h, "a"));
   }
 
   wlog("Return from files()");
 }
 
-static void files_attr(xmpp_stanza_t *stanza) {
+static void files_attr(hashmap_p h) {
   int rc; /* Return code */
 
   rc = pthread_mutex_lock(&mutex);
   wsyserr(rc != 0, "pthread_mutex_lock");
 
-  char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* error attribute */
+  char *error_attr = (char *)hashmap_get(h, "e"); /* error attribute */
   wfatal(error_attr == NULL, "no error attribute in files stanza");
 
   if (strcmp(error_attr, "0") != 0) {
     wlog("Error in attributes: %s", error_attr);
     attributes.is_valid = -1;
   } else {
-    char *type_attr = xmpp_stanza_get_attribute(stanza, "type"); /* type attribute */
+    char *type_attr = (char *)hashmap_get(h, "t"); /* type attribute */
     wfatal(type_attr == NULL, "no type attribute in files stanza");
 
-    if (strcmp(type_attr, "directory") == 0) {
+    if (strcmp(type_attr, "d") == 0) {
       attributes.is_valid = 1;
       attributes.type = DIR;
-    } else if (strcmp(type_attr, "file") == 0) {
+    } else if (strcmp(type_attr, "f") == 0) {
       attributes.is_valid = 1;
       attributes.type = REG;
     } else {
@@ -392,9 +392,9 @@ static void files_attr(xmpp_stanza_t *stanza) {
       attributes.is_valid = -1;
     }
 
-    char *size_attr = xmpp_stanza_get_attribute(stanza, "size"); /* size */
+    char *size_attr = (char *)hashmap_get(h, "s"); /* size */
     if (size_attr == NULL) {
-      werr("xmpp_stanza_get_attribute attribute = size (%s)", xmpp_stanza_get_attribute(stanza, "path"));
+      werr("xmpp_stanza_get_attribute attribute = size (%s)", (char *)hashmap_get(h, "p"));
       attributes.size = 0;
     } else {
       char *endptr; /* strtol endptr */
@@ -416,54 +416,91 @@ static void files_attr(xmpp_stanza_t *stanza) {
   wsyserr(rc != 0, "pthread_mutex_unlock");
 }
 
-static void files_list(xmpp_stanza_t *stanza) {
+static void files_list(hashmap_p h) {
   int rc; /* Return code */
 
   rc = pthread_mutex_lock(&mutex);
   wsyserr(rc != 0, "pthread_mutex_lock");
 
-  char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* error attribute */
+  char *error_attr = (char *)hashmap_get(h, "e"); /* error attribute */
   wfatal(error_attr == NULL, "no error attribute in files stanza");
 
   if (strcmp(error_attr, "0") != 0) {
     wlog("Error in attributes: %s", error_attr);
   } else {
-    char *path_attr = xmpp_stanza_get_attribute(stanza, "path"); /* path attribute */
+    char *path_attr = (char *)hashmap_get(h, "p"); /* path attribute */
     wfatal(path_attr == NULL, "xmpp_stanza_get_attribute [attribute = path]");
 
-    xmpp_stanza_t *child = xmpp_stanza_get_children(stanza);
-    while (child != NULL) {
-      elem_t *elem = (elem_t *)malloc(sizeof(elem_t));
-      wsyserr(elem == NULL, "malloc");
+    // xmpp_stanza_t *child = xmpp_stanza_get_children(stanza);
+    // while (child != NULL) {
+    //   elem_t *elem = (elem_t *)malloc(sizeof(elem_t));
+    //   wsyserr(elem == NULL, "malloc");
 
-      elem->next = NULL;
+    //   elem->next = NULL;
 
-      char *name = xmpp_stanza_get_name(child);
-      wfatal(name == NULL, "xmpp_stanza_get_name");
+    //   char *name = xmpp_stanza_get_name(child);
+    //   wfatal(name == NULL, "xmpp_stanza_get_name");
 
-      if (strcmp(name, "directory") == 0) {
-        elem->type = DIR;
-      } else if (strcmp(name, "file") == 0) {
-        elem->type = REG;
-      } else {
-        werr("Unknown name: %s", name);
+    //   if (strcmp(name, "directory") == 0) {
+    //     elem->type = DIR;
+    //   } else if (strcmp(name, "file") == 0) {
+    //     elem->type = REG;
+    //   } else {
+    //     werr("Unknown name: %s", name);
+    //   }
+
+    //   char *filename_attr = xmpp_stanza_get_attribute(child, "filename");
+    //   wfatal(filename_attr == NULL, "xmpp_stanza_get_attribute [attribute = filename]");
+
+    //   elem->filename = strdup(filename_attr);
+    //   wsyserr(elem->filename == NULL, "strdup");
+
+    //   /* Add elem in list */
+    //   if (root == NULL) {
+    //     root = elem;
+    //   } else {
+    //     last->next = elem;
+    //   }
+    //   last = elem;
+
+    //   child = xmpp_stanza_get_next(child);
+    // }
+
+    char *list_of_files = (char *)hashmap_get(h, "l");
+    if (list_of_files == NULL) {
+      werr("There is no list entry in files map");
+    } else {
+      char *saveptr;
+      char *p = strtok_r(list_of_files, " ", &saveptr);
+      while (p != NULL) {
+        elem_t *elem = (elem_t *)malloc(sizeof(elem_t));
+        wsyserr(elem == NULL, "malloc");
+
+        elem->next = NULL;
+
+        if (p[0] == 'd') {
+          elem->type = DIR;
+        } else if (p[0] == 'f') {
+          elem->type = REG;
+        } else {
+          werr("Unknown name: %c", p[0]);
+        }
+
+        char *filename_attr = p + 1;
+
+        elem->filename = strdup(filename_attr);
+        wsyserr(elem->filename == NULL, "strdup");
+
+        /* Add elem in list */
+        if (root == NULL) {
+          root = elem;
+        } else {
+          last->next = elem;
+        }
+        last = elem;
+
+        p = strtok_r(NULL, " ", &saveptr);
       }
-
-      char *filename_attr = xmpp_stanza_get_attribute(child, "filename");
-      wfatal(filename_attr == NULL, "xmpp_stanza_get_attribute [attribute = filename]");
-
-      elem->filename = strdup(filename_attr);
-      wsyserr(elem->filename == NULL, "strdup");
-
-      /* Add elem in list */
-      if (root == NULL) {
-        root = elem;
-      } else {
-        last->next = elem;
-      }
-      last = elem;
-
-      child = xmpp_stanza_get_next(child);
     }
   }
 
@@ -476,15 +513,16 @@ static void files_list(xmpp_stanza_t *stanza) {
   wsyserr(rc != 0, "pthread_mutex_unlock");
 }
 
-static void files_read(xmpp_stanza_t *stanza) {
+static void files_read(hashmap_p h) {
   int rc;
 
   rc = pthread_mutex_lock(&mutex);
   wsyserr(rc != 0, "pthread_mutex_lock");
 
-  char *text = xmpp_stanza_get_text(stanza);
+  char *text = (char *)hashmap_get(h, "t");
   if(text == NULL) {
-    werr("xmpp_stanza_get_text returned NULL (%s, error %s)", xmpp_stanza_get_attribute(stanza, "path"), xmpp_stanza_get_attribute(stanza, "error"));
+    werr("xmpp_stanza_get_text returned NULL (%s, error %s)", (char *)hashmap_get(h, "p"),
+         (char *)hashmap_get(h, "e"));
     read_data = strdup ("");
   }
   else

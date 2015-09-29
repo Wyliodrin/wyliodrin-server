@@ -5,16 +5,17 @@
  * Date last modified: April 2015
  *************************************************************************************************/
 
+#ifdef FILES
+
 #ifndef _FILES_H
 #define _FILES_H
 
-#ifdef FILES
+#include "../libds/ds.h"
 
 void init_files();
 
-void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-           xmpp_conn_t *const conn, void *const userdata);
-
-#endif /* FILES */
+void files(const char *from, const char *to, hashmap_p h);
 
 #endif /* _FILES_H */
+
+#endif /* FILES */
