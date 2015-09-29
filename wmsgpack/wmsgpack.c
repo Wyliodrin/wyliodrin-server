@@ -131,10 +131,6 @@ void build_modules_hashmap() {
     addr = ps;
     hashmap_put(modules, "ps", &addr, sizeof(void *));
   #endif
-  #ifdef USEMSGPACK
-    addr = wmsgpack;
-    hashmap_put(modules, "w", &addr, sizeof(void *));
-  #endif
 }
 
 
