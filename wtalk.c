@@ -2,25 +2,31 @@
  * WTalk
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: August 2015
+ * Date last modified: September 2015
  *************************************************************************************************/
 
-#include <string.h>    /* string stuff */
+
+
+/*** INCLUDES ************************************************************************************/
+
 #include <ctype.h>     /* string stuff */
-#include <unistd.h>    /* file stuff   */
+#include <errno.h>     /* errno        */
 #include <fcntl.h>     /* file stuff   */
+#include <unistd.h>    /* file stuff   */
 #include <signal.h>    /* SIGTERM      */
+#include <string.h>    /* string stuff */
 #include <sys/stat.h>  /* file stuff   */
 #include <sys/types.h> /* file stuff   */
 #include <sys/wait.h>  /* waitpid      */
-#include <errno.h>     /* errno        */
-#include <Wyliodrin.h> /* version      */
+#include <Wyliodrin.h> /* lw version   */
 
-#include "winternals/winternals.h" /* logs and errs */
-#include "wxmpp/wxmpp.h"           /* xmpp stuff    */
-#include "wjson/wjson.h"           /* json stuff    */
-#include "wtalk.h"                 /* file paths    */
-#include "wtalk_config.h"          /* version       */
+#include "winternals/winternals.h" /* logs and errs   */
+#include "wjson/wjson.h"           /* json stuff      */
+#include "wtalk.h"                 /* file paths      */
+#include "wtalk_config.h"          /* version         */
+#include "wxmpp/wxmpp.h"           /* xmpp connection */
+
+/*************************************************************************************************/
 
 
 
@@ -45,7 +51,7 @@ bool is_fuse_available; /* fuse checker */
  */
 static void check_for_fuse()
 {
-  is_fuse_available = system("stat /dev/fuse > /dev/null 2>&1") == 0 ? true : false;
+  is_fuse_available = system("sudo stat /dev/fuse > /dev/null 2>&1") == 0 ? true : false;
 }
 
 static void create_running_projects_file_if_does_not_exist() {
@@ -240,7 +246,7 @@ void wtalk()
   /* Umount the mountFile */
   if (strcmp(board_str, "server") != 0) {
     char umount_cmd[128];
-    snprintf_rc = snprintf(umount_cmd, 127, "umount -f %s", mount_file_str);
+    snprintf_rc = snprintf(umount_cmd, 127, "sudo umount -f %s", mount_file_str);
     wsyserr(snprintf_rc < 0, "snprintf");
     int system_rc = system(umount_cmd);
     wsyserr(system_rc == -1, "system");
