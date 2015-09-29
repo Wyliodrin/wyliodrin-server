@@ -6,7 +6,7 @@
 
 SANDBOX_PATH=/sandbox
 HOME=/wyliodrin
-WVERSION=v2.7
+WVERSION=v2.8
 LWVERSION=v1.16
 
 
@@ -45,6 +45,15 @@ mkdir -p $HOME
 
 if [ "$wyliodrin_board" = "raspberrypi" ]; then
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
+
+  # Add pi to the fuse group
+  usermod -a -G fuse pi
+
+  # Prepare stuff for user pi
+  rm -rf /wyliodrin/build/*
+  chmod 777 /wyliodrin
+  chmod 777 /wyliodrin/mnt
+  chmod 777 /wyliodrin/build
 
   # Update wiringPi
   cd $SANDBOX_PATH
@@ -191,3 +200,6 @@ make install
 
 # Clean
 rm -rf $SANDBOX_PATH
+
+# Reboot
+reboot

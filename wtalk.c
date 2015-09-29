@@ -246,7 +246,11 @@ void wtalk()
   /* Umount the mountFile */
   if (strcmp(board_str, "server") != 0) {
     char umount_cmd[128];
-    snprintf_rc = snprintf(umount_cmd, 127, "sudo umount -f %s", mount_file_str);
+    if (strcmp(board_str, "raspberrypi") == 0) {
+      snprintf_rc = snprintf(umount_cmd, 127, "sudo umount -f %s", mount_file_str);
+    } else {
+      snprintf_rc = snprintf(umount_cmd, 127, "umount -f %s", mount_file_str);
+    }
     wsyserr(snprintf_rc < 0, "snprintf");
     int system_rc = system(umount_cmd);
     wsyserr(system_rc == -1, "system");

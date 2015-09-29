@@ -11,3 +11,11 @@ v2.6
 ====
   * Replace system call with fork + exec for RaspberryPi's wifi setup
   * Max size for snprintf reduced with 1
+
+v2.7
+===
+  * run command in settings
+
+v2.8
+===
+  * umount with sudo for raspberrypi
