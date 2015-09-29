@@ -15,12 +15,7 @@ LWVERSION=v1.16
 
 # Test whether the script is run by root or not
 if [ ! "$(whoami)" = "root" ]; then
-  echo ""
-  echo "***************************************"
-  echo "*** This script must be run as root ***"
-  echo "***************************************"
-  echo ""
-  exit 1
+  sudo -E su
 fi
 
 # Test whether the board has the new C server or not
