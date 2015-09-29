@@ -105,7 +105,7 @@ command=/usr/bin/wyliodrind
 user=pi
 autostart=true
 autorestart=true
-' > /etc/supervisord.conf
+' > /etc/supervisor/supervisord.conf
 
 elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
   CMAKE_PARAMS="-DBEAGLEBONEBLACK=ON -DNODE_ROOT_DIR=/usr/include"
