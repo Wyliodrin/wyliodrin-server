@@ -90,9 +90,6 @@ pip install redis
 pip install ino
 pip install pyfirmata
 
-# Copy bashrc
-cp /home/pi/.bashrc /wyliodrin
-
 # Create sandbox directory
 mkdir -p $SANDBOX_PATH
 
@@ -132,10 +129,6 @@ cd node-v0.10.24-linux-arm-armv6j-vfp-hard
 cp -R * /usr
 cd $SANDBOX_PATH
 rm -rf node-v0.10.24-linux-arm-armv6j-vfp-hard
-
-# Install serialport
-cd $SANDBOX_PATH
-npm install -g serialport
 
 # Install wiringPi
 cd $SANDBOX_PATH
@@ -206,15 +199,11 @@ rm -rf wyliodrin-server
 mkdir -p /etc/wyliodrin
 echo -n raspberrypi > /etc/wyliodrin/boardtype
 
-# Create mount and build directories
-mkdir /wyliodrin/mnt
-mkdir /wyliodrin/build
-
 # Create settings_raspberry.json
 printf "{\n\
   \"config_file\": \"/boot/wyliodrin.json\",\n\
-  \"mountFile\": \"/wyliodrin/mnt\",\n\
-  \"buildFile\": \"/wyliodrin/build\",\n\
+  \"mountFile\": \"/wyliodrin/projects/mnt\",\n\
+  \"buildFile\": \"/wyliodrin/projects/build\",\n\
   \"board\": \"raspberrypi\",\n\
   \"run\": \"sudo -E make -f Makefile.raspberrypi run\",\n\
   \"shell_cmd\": \"bash\"\n\
@@ -223,6 +212,10 @@ printf "{\n\
 # Create running_projects file
 mkdir -p /wyliodrin
 touch /wyliodrin/running_projects
+
+# Create mount and build directories
+mkdir -p /wyliodrin/projects/mnt
+mkdir -p /wyliodrin/projects/build
 
 # Startup script
 printf '
@@ -254,6 +247,9 @@ chown -R pi:pi /etc/wyliodrin
 
 # Add pi to the fuse group
 usermod -a -G fuse pi
+
+# Copy bashrc
+cp /home/pi/.bashrc /wyliodrin
 
 # Clean
 apt-get clean
