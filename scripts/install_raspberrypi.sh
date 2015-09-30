@@ -1,23 +1,25 @@
 #!/bin/bash
 
+
+
 ###################################################################################################
 # Raspberry Pi install script
 #
 # !!! BEFORE RUNNING THIS SCRIPT !!!
-# apt-get install raspi-config
-# raspi-config
 # Select 1 Expand Filesystem.
 # Select 8 Advanced Options and then  A6 SPI - Enable/Disable automatic loading.
 # Select 8 Advanced Options and then  A7 I2C - Enable/Disable automatic loading.
-# A prompt will appear asking "Would you like the ARM I2C interface to be
-# enabled?". Select Yes, exit the utility and reboot your raspberry pi.
 # Add "dtparam=i2c1=on" and "dtparam=i2c_arm=on" in /boot/config.txt.
 # Add "i2c-dev" in /etc/modules.
 # Add "i2c-bcm2708" in /etc/modules.
 # Follow [1] for more details on how to enable I2C on your raspberry pi.
-# Add "/usr/local/bin/supervisord -c /etc/supervisord.conf" in /etc/rc.local.
 #
 # [1] https://www.abelectronics.co.uk/i2c-raspbian-wheezy/info.aspx
+#
+# Tested on 2015-05-05-raspbian-wheezy
+#
+# Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
+# Date last modified: September 2015
 ###################################################################################################
 
 
@@ -28,22 +30,14 @@
 
 # Test whether the script is run by root or not
 if [ ! "$(whoami)" = "root" ]; then
-  echo ""
-  echo "***************************************"
-  echo "*** This script must be run as root ***"
-  echo "***************************************"
-  echo ""
+  printf 'ERROR: This script must be run as root\n' 1>&2
   exit 1
 fi
 
 # Check whether raspi-config is installed or not
 dpkg -s raspi-config > /dev/null 2>&1
 if [ $? -ne 0 ]; then
-  echo ""
-  echo "**************************************************************************"
-  echo "*** Please follow the steps described above before running this script ***"
-  echo "**************************************************************************"
-  echo ""
+  printf 'ERROR: raspi-config not installed\n' 1>&2
   exit 1
 fi
 
@@ -51,11 +45,7 @@ fi
 MIN_SIZE=$((700 * 1024))
 df_result=($(df / | tail -n 1))
 if [ ${df_result[3]} -lt $MIN_SIZE ]; then
-  echo ""
-  echo "****************************************"
-  echo "*** At least 700MB of space required ***"
-  echo "****************************************"
-  echo ""
+  printf 'ERROR: At least 700MB of space required\n' 1>&2
   exit 1
 fi
 
@@ -111,12 +101,16 @@ cd $SANDBOX_PATH
 git clone https://github.com/Wyliodrin/pybass.git
 cd pybass
 python setup.py install
+cd $SANDBOX_PATH
+rm -rf pybass
 
 # Install BrickPi
 cd $SANDBOX_PATH
 git clone https://github.com/DexterInd/BrickPi_Python.git
 cd BrickPi_Python
 python setup.py install
+cd $SANDBOX_PATH
+rm -rf BrickPi_Python
 
 # Install libstrophe
 cd $SANDBOX_PATH
@@ -126,14 +120,17 @@ cd libstrophe
 ./configure --prefix=/usr
 make
 make install
+cd $SANDBOX_PATH
+rm -rf libstrophe
 
 # Install node
 cd $SANDBOX_PATH
 wget https://gist.githubusercontent.com/raw/3245130/v0.10.24/node-v0.10.24-linux-arm-armv6j-vfp-hard.tar.gz
 tar -xzf node-v0.10.24-linux-arm-armv6j-vfp-hard.tar.gz
+rm -f node-v0.10.24-linux-arm-armv6j-vfp-hard.tar.gz
 cd node-v0.10.24-linux-arm-armv6j-vfp-hard
 cp -R * /usr
-cd ..
+cd $SANDBOX_PATH
 rm -rf node-v0.10.24-linux-arm-armv6j-vfp-hard
 
 # Install serialport
@@ -144,29 +141,33 @@ npm install -g serialport
 cd $SANDBOX_PATH
 git clone https://github.com/Wyliodrin/wiringPi.git
 cd wiringPi
-sed 's/sudo//g' build > build2
-chmod +x build2
-./build2
+./build
+cd $SANDBOX_PATH
+rm -rf wiringPi
 
 # Install pcre
 cd $SANDBOX_PATH
 wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.36.tar.gz
 tar -xzf pcre-8.36.tar.gz
-rm pcre-8.36.tar.gz
+rm -f pcre-8.36.tar.gz
 cd pcre-8.36
 ./configure --prefix=/usr
 make
 make install
+cd $SANDBOX_PATH
+rm -rf pcre-8.36
 
 # Install swig 3+
 cd $SANDBOX_PATH
 wget http://prdownloads.sourceforge.net/swig/swig-3.0.5.tar.gz
 tar -xzf swig-3.0.5.tar.gz
-rm swig-3.0.5.tar.gz
+rm -f swig-3.0.5.tar.gz
 cd swig-3.0.5
 ./configure --prefix=/usr
 make
 make install
+cd $SANDBOX_PATH
+rm -rf swig-3.0.5
 
 # Install libwyliodrin
 cd $SANDBOX_PATH
@@ -178,6 +179,8 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
 make
 make install
+cd $SANDBOX_PATH
+rm -rf libwyliodrin
 
 # Run libwyliodrin scripts
 install_social
@@ -196,6 +199,8 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
 make
 make install
+cd $SANDBOX_PATH
+rm -rf wyliodrin-server
 
 # Set boardtype to raspberry
 mkdir -p /etc/wyliodrin
@@ -216,44 +221,43 @@ printf "{\n\
 }\n" > /etc/wyliodrin/settings_raspberrypi.json
 
 # Create running_projects file
+mkdir -p /wyliodrin
 touch /wyliodrin/running_projects
 
-# I2C support
-# cd $SANDBOX_PATH
-# apt-get install -y python3-dev
-# wget http://ftp.de.debian.org/debian/pool/main/i/i2c-tools/i2c-tools_3.1.0.orig.tar.bz2
-# tar xf i2c-tools_3.1.0.orig.tar.bz2
-# rm i2c-tools_3.1.0.orig.tar.bz2
-# cd i2c-tools-3.1.0/py-smbus
-# mv smbusmodule.c smbusmodule.c.orig
-# wget https://raw.githubusercontent.com/abelectronicsuk/ABElectronics_Python3_Libraries/master/smbusmodule.c
-# python3 setup.py build
-# python3 setup.py install
-
 # Startup script
-sh -c 'printf "\
-[supervisord]\n\
-[program:wtalk]\n\
-command=/usr/bin/wyliodrind\n\
-user=pi\n\
-autostart=true\n\
-autorestart=true\n\
-environment=HOME=\"/wyliodrin\"\n"\
-> /etc/supervisor/supervisord.conf'
+printf '
+[supervisord]
+[program:wtalk]
+command=/usr/bin/wyliodrind
+user=pi
+autostart=true
+autorestart=true
+environment=HOME="/wyliodrin"
+'>> /etc/supervisor/supervisord.conf
 
 # Wifi
 cp /etc/network/interfaces /etc/network/interfaces.orig
-sh -c 'printf "\
-auto lo\n\
-iface lo inet loopback\n\
-auto eth0\n\
-iface eth0 inet dhcp\n\
-allow-hotplug wlan0\n\
-auto wlan0\n\
-iface wlan0 inet manual\n\
-wpa-roam /etc/wyliodrin/wireless.conf\n\
-iface default inet dhcp\n" > /etc/network/interfaces'
+printf 'auto lo
+iface lo inet loopback
+auto eth0
+iface eth0 inet dhcp
+allow-hotplug wlan0
+auto wlan0
+iface wlan0 inet manual
+wpa-roam /etc/wyliodrin/wireless.conf
+iface default inet dhcp
+' > /etc/network/interfaces
+
+# Change owner of directories used by wyliodrin
+chown -R pi:pi /wyliodrin
+chown -R pi:pi /etc/wyliodrin
+
+# Add pi to the fuse group
+usermod -a -G fuse pi
 
 # Clean
 apt-get clean
 rm -rf $SANDBOX_PATH
+
+# Reboot
+reboot
