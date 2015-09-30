@@ -240,12 +240,10 @@ void *fork_thread(void *args) {
   if (pid == 0) {
     char cmd[1024];
     if (!is_fuse_available) {
-      snprintf(cmd, 1023, "cd %s && wget --no-check-certificate %s &&"
-        "tar xf %s && rm -rf %s && cd %s/%s && make -f Makefile.%s",
+      snprintf(cmd, 1023, "cd %s && curl -L -k %s > archive && tar xf archive &&"
+        "rm -rf archive && cd %s/%s && make -f Makefile.%s",
           build_file_str,
           arg->address_attr,
-          strrchr(arg->address_attr, '/') + 1,
-          strrchr(arg->address_attr, '/') + 1,
           build_file_str, projectid_attr,
           board_str);
     } else {
