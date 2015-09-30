@@ -72,7 +72,7 @@ apt-get install -y git gcc g++ gcc-4.7 g++-4.7 make pkg-config libexpat1-dev lib
   supervisor vim python-dev libi2c-dev python-pip libjansson-dev cmake mc mplayer arduino minicom \
   picocom bluez-utils bluez-compat bluez-hcidump libusb-dev libbluetooth-dev bluetooth joystick   \
   python-smbus curl libicu-dev mpg123 firmware-ralink firmware-realtek wireless-tools             \
-  wpasupplicant libbass
+  wpasupplicant
 apt-get clean
 
 # Use gcc and g++ 4.7
