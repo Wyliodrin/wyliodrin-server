@@ -6,7 +6,7 @@
 
 SANDBOX_PATH=/wyliodrin/sandbox
 HOME=/wyliodrin
-WVERSION=v2.9
+WVERSION=v2.10
 LWVERSION=v1.16
 
 
@@ -21,76 +21,6 @@ mkdir -p $HOME
 
 if [ "$wyliodrin_board" = "raspberrypi" ]; then
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
-
-  # Add pi to the fuse group
-  usermod -a -G fuse pi
-
-  # Prepare stuff for user pi
-  rm -rf /wyliodrin/build/*
-  chmod 777 /wyliodrin
-  chmod 777 /wyliodrin/mnt
-  chmod 777 /wyliodrin/build
-
-  # Update wiringPi
-  cd $SANDBOX_PATH
-  rm -rf wiringPi
-  git clone https://github.com/Wyliodrin/wiringPi.git
-  cd wiringPi
-  ./build
-
-  # Install pybass
-  cd $SANDBOX_PATH
-  git clone https://github.com/Wyliodrin/pybass.git
-  cd pybass
-  python setup.py install
-
-  # Copy bashrc
-  cp /home/pi/.bashrc /wyliodrin
-
-  printf "{\n\
-    \"config_file\": \"/boot/wyliodrin.json\",\n\
-    \"mountFile\": \"/wyliodrin/mnt\",\n\
-    \"buildFile\": \"/wyliodrin/build\",\n\
-    \"board\": \"raspberrypi\",\n\
-    \"run\": \"sudo -E make -f Makefile.raspberrypi run\",\n\
-    \"shell_cmd\": \"bash\"\n\
-  }\n" > /etc/wyliodrin/settings_raspberrypi.json
-
-printf '; supervisor config file
-
-[unix_http_server]
-file=/var/run//supervisor.sock   ; (the path to the socket file)
-chmod=0700                       ; sockef file mode (default 0700)
-
-[supervisord]
-logfile=/var/log/supervisor/supervisord.log ; (main log file;default $CWD/supervisord.log)
-pidfile=/var/run/supervisord.pid ; (supervisord pidfile;default supervisord.pid)
-childlogdir=/var/log/supervisor            ; ('AUTO' child log dir, default $TEMP)
-
-; the below section must remain in the config file for RPC
-; (supervisorctl/web interface) to work, additional interfaces may be
-; added by defining them in separate rpcinterface: sections
-[rpcinterface:supervisor]
-supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
-
-[supervisorctl]
-serverurl=unix:///var/run//supervisor.sock ; use a unix:// URL  for a unix socket
-
-; The [include] section can just contain the "files" setting.  This
-; setting can list multiple files (separated by whitespace or
-; newlines).  It can also contain wildcards.  The filenames are
-; interpreted as relative to this file.  Included files *cannot*
-; include files themselves.
-
-[include]
-files = /etc/supervisor/conf.d/*.conf
-[supervisord]
-[program:wtalk]
-command=/usr/bin/wyliodrind
-user=pi
-autostart=true
-autorestart=true
-' > /etc/supervisor/supervisord.conf
 
 elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
   CMAKE_PARAMS="-DBEAGLEBONEBLACK=ON -DNODE_ROOT_DIR=/usr/include"
@@ -120,7 +50,7 @@ elif [ "$wyliodrin_board" = "edison" ]; then
   CMAKE_PARAMS="-DEDISON=ON"
 
   printf "{\n\
-    \"config_file\": \"/boot/wyliodrin.json\",\n\
+    \"config_file\": \"/media/storage/wyliodrin.json\",\n\
     \"mountFile\": \"/wyliodrin/mnt\",\n\
     \"buildFile\": \"/wyliodrin/build\",\n\
     \"board\": \"edison\",\n\
