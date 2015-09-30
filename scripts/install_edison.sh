@@ -65,18 +65,14 @@ git clone https://github.com/andymccurdy/redis-py.git /tmp/redis-py
 cd /tmp/redis-py
 python setup.py install
 
-cd $SANDBOX_PATH
-wget http://iotdk.intel.com/repos/1.1/iotdk/i586/libevent-dev_2.0.21-r1_i586.ipk
-opkg install libevent-dev_2.0.21-r1_i586.ipk
-
 # Install libevent
-# cd $SANDBOX_PATH
-# git clone https://github.com/libevent/libevent.git
-# cd libevent/
-# ./autogen.sh
-# ./configure --prefix=/usr
-# make
-# make install
+cd $SANDBOX_PATH
+git clone https://github.com/libevent/libevent.git
+cd libevent/
+./autogen.sh
+./configure --prefix=/usr
+make
+make install
 
 # Install libwyliodrin
 cd $SANDBOX_PATH
@@ -135,7 +131,7 @@ echo "{
 \"config_file\": \"/media/storage/wyliodrin.json\",
 \"mountFile\": \"/wyliodrin/mnt\",
 \"buildFile\": \"/wyliodrin/build\",
-\"run\": \"make -f Makefile.edison run\",\n\
+\"run\": \"make -f Makefile.edison run\",
 \"board\": \"edison\"
 }" > /etc/wyliodrin/settings_edison.json
 
