@@ -4,19 +4,14 @@
 
 ### Script variables ##############################################################################
 
-SANDBOX_PATH=/sandbox
+SANDBOX_PATH=/wyliodrin/sandbox
 HOME=/wyliodrin
-WVERSION=v2.8
+WVERSION=v2.9
 LWVERSION=v1.16
 
 
 
 ### Sanity checks #################################################################################
-
-# Test whether the script is run by root or not
-if [ ! "$(whoami)" = "root" ]; then
-  sudo -E su
-fi
 
 # Test whether the board has the new C server or not
 if [ "$wyliodrin_server" = "" ]; then
