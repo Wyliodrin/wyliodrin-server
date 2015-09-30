@@ -49,9 +49,12 @@ bool is_fuse_available; /* fuse checker */
 /**
  * Check whether fuse is available or not by stat /dev/fuse.
  */
-static void check_for_fuse()
-{
-  is_fuse_available = system("sudo stat /dev/fuse > /dev/null 2>&1") == 0 ? true : false;
+static void check_for_fuse() {
+  if (strcmp(board_str, "raspberrypi") == 0) {
+    is_fuse_available = system("sudo stat /dev/fuse > /dev/null 2>&1") == 0 ? true : false;
+  } else {
+    is_fuse_available = system("stat /dev/fuse > /dev/null 2>&1") == 0 ? true : false;
+  }
 }
 
 static void create_running_projects_file_if_does_not_exist() {
