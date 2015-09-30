@@ -108,7 +108,7 @@ elif [ "$wyliodrin_board" = "arduinogalileo" ]; then
   CMAKE_PARAMS="-DGALILEO=ON"
 
   printf "{\n\
-    \"config_file\": \"/boot/wyliodrin.json\",\n\
+    \"config_file\": \"/media/card/wyliodrin.json\",\n\
     \"mountFile\": \"/wyliodrin/mnt\",\n\
     \"buildFile\": \"/wyliodrin/build\",\n\
     \"board\": \"arduinogalileo\",\n\
