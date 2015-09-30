@@ -310,7 +310,7 @@ void wtalk()
 
         /* Child from fork */
         else if (wifi_pid == 0) {
-          char *env[] = {"setup_wifi_rpi", (char *)ssid_str, (char *)psk_str, NULL};
+          char *env[] = {"sudo", "setup_wifi_rpi", (char *)ssid_str, (char *)psk_str, NULL};
           execvp(env[0], env);
 
           werr("setup_wifi_rpi failed");
