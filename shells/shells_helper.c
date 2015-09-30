@@ -58,7 +58,7 @@ void *read_thread(void *args) {
     int rc_int = read(fdm, buf, sizeof(buf));
     if (rc_int > 0) {
       send_shells_keys_response(shell->conn, (void *)shell->ctx, buf, rc_int, shell->id);
-      usleep(10000);
+      // usleep(10000);
     } else if (rc_int < 0) {
       char shellid_str[8];
       snprintf(shellid_str, 7, "%d", shell->id);
