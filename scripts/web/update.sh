@@ -11,20 +11,6 @@ LWVERSION=v1.16
 
 
 
-### Sanity checks #################################################################################
-
-# Test whether the board has the new C server or not
-if [ "$wyliodrin_server" = "" ]; then
-  echo ""
-  echo "***************************************"
-  echo "*** Please upgrade to our new image ***"
-  echo "***************************************"
-  echo ""
-  exit 1
-fi
-
-
-
 ### Actual update #################################################################################
 
 # Create sandbox
