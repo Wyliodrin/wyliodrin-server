@@ -345,6 +345,10 @@ void wtalk()
 
   create_running_projects_file_if_does_not_exist();
 
+  werr("Starting wyliodrin-server v%d.%d with libwyliodrin v%d.%d",
+    WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR,
+    get_version_major(), get_version_minor());
+
   /* Connect to XMPP server */
   xmpp_connect(jid_str, password_str);
 

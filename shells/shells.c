@@ -171,6 +171,8 @@ static bool allocate_memory_for_new_shell(xmpp_conn_t *const conn, void *const u
 static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
   char *request_attr, char *width_attr, char *height_attr)
 {
+  werr("Opening a new shell");
+
   /* Get an entry in the shells_vector */
   int shell_index = get_entry_in_shells_vector();
   if (shell_index == MAX_SHELLS) {
@@ -254,6 +256,8 @@ static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
 static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, char *request_attr,
   char *width_attr, char *height_attr, char *projectid_attr, char *userid_attr)
 {
+  werr("Start project %s", projectid_attr);
+
   /* Get the shell_index in case of a running project */
   int shell_index;
   char projectid_filepath[128];
