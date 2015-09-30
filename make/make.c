@@ -240,7 +240,7 @@ void *fork_thread(void *args) {
   if (pid == 0) {
     char cmd[1024];
     if (!is_fuse_available) {
-      snprintf(cmd, 1023, "cd %s && curl %s > %s && tar xf %s &&"
+      snprintf(cmd, 1023, "cd %s && curl -L -k %s > %s && tar xf %s &&"
         "rm -rf %s && cd %s/%s && make -f Makefile.%s",
           build_file_str,
           arg->address_attr,
