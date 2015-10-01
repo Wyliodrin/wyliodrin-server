@@ -81,9 +81,10 @@ static int wfuse_getattr(const char *path, struct stat *stbuf) {
   if (signal_fail == true) {
     /* Connection was lost. Now it's ok */
     signal_attr = false;
+    signal_list = false;
+    signal_read = false;
     signal_fail = false;
   }
-
 
   if (!is_owner_online) {
     return -ENOENT;
@@ -164,7 +165,9 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                          off_t offset, struct fuse_file_info *fi) {
   if (signal_fail == true) {
     /* Connection was lost. Now it's ok */
+    signal_attr = false;
     signal_list = false;
+    signal_read = false;
     signal_fail = false;
   }
 
@@ -259,6 +262,8 @@ static int wfuse_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi) {
   if (signal_fail == true) {
     /* Connection was lost. Now it's ok */
+    signal_attr = false;
+    signal_list = false;
     signal_read = false;
     signal_fail = false;
   }
@@ -482,6 +487,7 @@ static void files_list(xmpp_stanza_t *stanza) {
 
   /* Data set */
   signal_list = true;
+
   rc = pthread_cond_signal(&cond);
   wsyserr(rc != 0, "pthread_cond_signal");
 
