@@ -326,10 +326,10 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
     snprintf(wyliodrin_project_env, 63, "wyliodrin_project=%s", projectid_attr);
     char wyliodrin_userid_env[64];
     snprintf(wyliodrin_userid_env, 63, "wyliodrin_userid=%s",
-      userid_attr == NULL ? userid_attr : "null");
+      userid_attr != NULL ? userid_attr : "null");
     char wyliodrin_session_env[64];
     snprintf(wyliodrin_session_env, 63, "wyliodrin_session=%s",
-      request_attr == NULL ? request_attr : "null");
+      request_attr != NULL ? request_attr : "null");
     char wyliodrin_board_env[64];
     snprintf(wyliodrin_board_env, 63, "wyliodrin_board=%s", board_str);
     char wyliodrin_jid_env[64];
