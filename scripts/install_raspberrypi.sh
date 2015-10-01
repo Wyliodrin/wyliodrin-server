@@ -232,7 +232,6 @@ environment=HOME="/wyliodrin"
 cp /etc/network/interfaces /etc/network/interfaces.orig
 printf 'auto lo
 iface lo inet loopback
-auto eth0
 iface eth0 inet dhcp
 allow-hotplug wlan0
 auto wlan0
