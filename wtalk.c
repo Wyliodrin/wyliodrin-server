@@ -51,8 +51,7 @@ bool is_fuse_available; /* fuse checker */
  */
 static void check_for_fuse() {
   if (strcmp(board_str, "raspberrypi") == 0) {
-    // is_fuse_available = system("sudo stat /dev/fuse > /dev/null 2>&1") == 0 ? true : false;
-    is_fuse_available = false;
+    is_fuse_available = system("sudo stat /dev/fuse > /dev/null 2>&1") == 0 ? true : false;
   } else {
     is_fuse_available = system("stat /dev/fuse > /dev/null 2>&1") == 0 ? true : false;
   }
