@@ -238,16 +238,17 @@ void *fork_thread(void *args) {
   wsyserr(pid == -1, "fork");
 
   if (pid == 0) {
-    char cmd[1024];
+    char cmd[2048];
     if (!is_fuse_available) {
-      snprintf(cmd, 1023, "cd %s && curl -L -k %s > %s && tar xf %s &&"
-        "rm -rf %s && cd %s/%s && make -f Makefile.%s",
+      snprintf(cmd, 2047, "cd %s && curl -L -k %s > %s.tar && rm -rf %s && "
+                          "tar xf %s.tar && rm -rf %s.tar && cd %s && make -f Makefile.%s",
           build_file_str,
           arg->address_attr,
-          strrchr(arg->address_attr, '/') + 1,
-          strrchr(arg->address_attr, '/') + 1,
-          strrchr(arg->address_attr, '/') + 1,
-          build_file_str, projectid_attr,
+          projectid_attr,
+          projectid_attr,
+          projectid_attr,
+          projectid_attr,
+          projectid_attr,
           board_str);
     } else {
       snprintf(cmd, 1023, "cp -rf %s/%s %s && cd %s/%s && make -f Makefile.%s",
