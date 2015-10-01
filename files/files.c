@@ -203,7 +203,11 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
   /* Do your job */
   if (signal_fail == true) {
-    res = -ENOENT;
+    // res = -ENOENT;
+
+    filler(buf, ".", NULL, 0);
+    filler(buf, "..", NULL, 0);
+
     signal_attr = false;
     signal_list = false;
     signal_read = false;
@@ -301,7 +305,8 @@ static int wfuse_read(const char *path, char *buf, size_t size, off_t offset,
 
   /* Do your job */
   if (signal_fail == true) {
-    res = -ENOENT;
+    memset(buf, 0, size);
+
     signal_attr = false;
     signal_list = false;
     signal_read = false;
