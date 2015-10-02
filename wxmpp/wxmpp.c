@@ -16,6 +16,7 @@
 /* These variables must be set to NULL whenever there is not a connection to the XMPP server */
 xmpp_ctx_t *ctx = NULL;   /* XMPP context    */
 xmpp_conn_t *conn = NULL; /* XMPP connection */
+bool is_connected = false;
 
 extern char *board_str;   /* board name from wtalk.c */
 
@@ -78,6 +79,7 @@ void xmpp_connect(const char *jid, const char *pass) {
   werr("XMPP event loop completed. Retrying to connect...");
 
   /* Cleaning */
+  is_connected = false;
   xmpp_conn_release(conn);
   xmpp_ctx_free(ctx);
   xmpp_shutdown();

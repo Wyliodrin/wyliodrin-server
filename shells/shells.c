@@ -50,6 +50,8 @@ extern const char *run_cmd;        /* start shell command from wtalk.c */
 extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
 
+extern bool is_connected;
+
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
 pthread_mutex_t shells_lock; /* shells mutex */
@@ -638,6 +640,10 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 }
 
 void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
+  while (!is_connected) {
+    usleep(500000);
+  }
+
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
   xmpp_stanza_set_attribute(message, "to", owner_str);
