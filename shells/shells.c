@@ -582,7 +582,11 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     /* Child from fork */
     if (pid == 0) {
       char screen_quit_cmd[32];
-      snprintf(screen_quit_cmd, 31, "kill -9 %d", shells_vector[shellid]->pid);
+      if (strcmp(board_str, "raspberrypi") == 0) {
+        snprintf(screen_quit_cmd, 31, "sudo kill -9 %d", shells_vector[shellid]->pid);
+      } else {
+        snprintf(screen_quit_cmd, 31, "kill -9 %d", shells_vector[shellid]->pid);
+      }
       system(screen_quit_cmd);
       waitpid(shells_vector[shellid]->pid, NULL, 0);
       exit(EXIT_SUCCESS);
