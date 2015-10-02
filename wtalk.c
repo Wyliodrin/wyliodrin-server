@@ -70,39 +70,6 @@ static void create_running_projects_file_if_does_not_exist() {
   }
 }
 
-// static void wifi_rpi(const char *ssid, const char *psk) {
-//   int fd = open(RPI_WIFI_PATH, O_CREAT | O_RDWR);
-//   if (fd == -1) {
-//     werr("Could not open %s", RPI_WIFI_PATH);
-//     return;
-//   }
-
-//   char to_write[512];
-//   snprintf(to_write, 511,
-//     "network={\n"
-//     "\tssid=\"%s\"\n"
-//     "\tproto=WPA RSN\n"
-//     "\tscan_ssid=1\n"
-//     "\tkey_mgmt=WPA-PSK NONE\n"
-//     "\tpsk=\"%s\"\n"
-//     "}\n",
-//     ssid, psk);
-
-//   char to_read[512];
-//   to_read[0] = '\0';
-//   read(fd, to_read, 512);
-//   if (strncmp(to_write, to_read, strlen(to_write)) == 0) {
-//     /* Already up to date */
-//     close(fd);
-//     return;
-//   }
-
-//   write(fd, to_write, strlen(to_write));
-//   close(fd);
-
-//   system("/etc/init.d/networking restart");
-// }
-
 static void signal_handler(int signum) {
   if (signum == SIGTERM) {
     exit(EXIT_SUCCESS);
