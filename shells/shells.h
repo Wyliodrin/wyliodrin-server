@@ -22,8 +22,6 @@ typedef struct {
   int id;             /* Shell id */
   int fdm;            /* PTY file descriptor */
   int close_request;  /* close request */
-  xmpp_conn_t *conn;  /* XMPP Connection */
-  xmpp_ctx_t *ctx;    /* XMPP Context */
   char *request_attr; /* open request */
   char *projectid;    /* projectid in case of make shell */
   char *userid;       /* userid in case of make shell */
@@ -50,8 +48,7 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
 void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 
 /* Keys response */
-void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
-    char *data_str, int data_len, int shell_id);
+void send_shells_keys_response(char *data_str, int data_len, int shell_id);
 
 /* List */
 void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);

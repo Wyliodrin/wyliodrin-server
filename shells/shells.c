@@ -47,6 +47,9 @@ extern const char *sudo_str;       /* sudo command from wtalk.c */
 extern const char *shell_cmd;      /* start shell command from wtalk.c */
 extern const char *run_cmd;        /* start shell command from wtalk.c */
 
+extern xmpp_ctx_t *ctx;
+extern xmpp_conn_t *conn;
+
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
 pthread_mutex_t shells_lock; /* shells mutex */
@@ -140,8 +143,6 @@ static bool allocate_memory_for_new_shell(xmpp_conn_t *const conn, void *const u
     werr("malloc failed");
     return false;
   }
-  shells_vector[shell_index]->conn           = conn;
-  shells_vector[shell_index]->ctx            = (xmpp_ctx_t *)userdata;
   shells_vector[shell_index]->id             = shell_index;
   shells_vector[shell_index]->pid            = pid;
   shells_vector[shell_index]->fdm            = fdm;
@@ -630,26 +631,13 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     return;
   }
 
-  /* Update xmpp context and connection in shell */
-  pthread_mutex_lock(&shells_lock);
-  shells_vector[shellid]->ctx = (xmpp_ctx_t *)userdata;
-  shells_vector[shellid]->conn = conn;
-  pthread_mutex_unlock(&shells_lock);
-
   /* Send decoded data to screen */
   write(shells_vector[shellid]->fdm, decoded, rc);
 
   wlog("Return from shells_keys");
 }
 
-void send_shells_keys_response(xmpp_conn_t *const conn, void *const userdata,
-    char *data_str, int data_len, int shell_id) {
-  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-  if (ctx == NULL) {
-    wlog("NULL xmpp context");
-    return;
-  }
-
+void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
   xmpp_stanza_set_attribute(message, "to", owner_str);
@@ -714,6 +702,11 @@ void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const u
   if (projectid_attr != NULL) {
     char projectid_filepath[128];
     snprintf(projectid_filepath, 127, "/tmp/wyliodrin/%s", projectid_attr);
+    int projectid_fd = open(projectid_filepath, O_RDWR);
+    bool is_project_running = projectid_fd != -1;
+    if (is_project_running) {
+      close(projectid_fd);
+    }
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
 
@@ -730,7 +723,7 @@ void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const u
     xmpp_stanza_set_attribute(status_stz, "projectid",
       (const char *)xmpp_stanza_get_attribute(stanza, "projectid"));
     xmpp_stanza_set_attribute(status_stz, "running",
-      open(projectid_filepath, O_RDWR) != -1 ? "true" : "false");
+      is_project_running ? "true" : "false");
 
     xmpp_stanza_add_child(message_stz, status_stz);
     xmpp_send(conn, message_stz);

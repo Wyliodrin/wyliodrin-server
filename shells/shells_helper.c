@@ -36,6 +36,9 @@ extern const char *owner_str; /* owner_str from wtalk.c */
 extern const char *board_str; /* board name */
 extern const char *jid_str;   /* jid */
 
+extern xmpp_ctx_t *ctx;
+extern xmpp_conn_t *conn;
+
 static pthread_mutex_t projectid_lock; /* shells mutex */
 
 extern char **environ;
@@ -57,7 +60,7 @@ void *read_thread(void *args) {
   while (1) {
     int rc_int = read(fdm, buf, sizeof(buf));
     if (rc_int > 0) {
-      send_shells_keys_response(shell->conn, (void *)shell->ctx, buf, rc_int, shell->id);
+      send_shells_keys_response(buf, rc_int, shell->id);
       // usleep(10000);
     } else if (rc_int < 0) {
       werr("Closing project %s", shell->projectid);
@@ -150,10 +153,10 @@ void *read_thread(void *args) {
       }
 
       /* Send close stanza */
-      xmpp_stanza_t *message_stz = xmpp_stanza_new(shell->ctx); /* message stanza */
+      xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza */
       xmpp_stanza_set_name(message_stz, "message");
       xmpp_stanza_set_attribute(message_stz, "to", owner_str);
-      xmpp_stanza_t *close_stz = xmpp_stanza_new(shell->ctx); /* close stanza */
+      xmpp_stanza_t *close_stz = xmpp_stanza_new(ctx); /* close stanza */
       xmpp_stanza_set_name(close_stz, "shells");
       xmpp_stanza_set_ns(close_stz, WNS);
       if (shell->close_request != -1) {
@@ -165,7 +168,7 @@ void *read_thread(void *args) {
       xmpp_stanza_set_attribute(close_stz, "shellid", shellid_str);
       xmpp_stanza_set_attribute(close_stz, "code", exit_status);
       xmpp_stanza_add_child(message_stz, close_stz);
-      xmpp_send(shell->conn, message_stz);
+      xmpp_send(conn, message_stz);
       xmpp_stanza_release(close_stz);
       xmpp_stanza_release(message_stz);
 
