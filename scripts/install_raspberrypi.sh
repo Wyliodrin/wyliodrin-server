@@ -202,14 +202,15 @@ mkdir -p /etc/wyliodrin
 echo -n raspberrypi > /etc/wyliodrin/boardtype
 
 # Create settings_raspberry.json
-printf "{\n\
-  \"config_file\": \"/boot/wyliodrin.json\",\n\
-  \"mountFile\": \"/wyliodrin/projects/mnt\",\n\
-  \"buildFile\": \"/wyliodrin/projects/build\",\n\
-  \"board\": \"raspberrypi\",\n\
-  \"run\": \"sudo -E make -f Makefile.raspberrypi run\",\n\
-  \"shell_cmd\": \"bash\"\n\
-}\n" > /etc/wyliodrin/settings_raspberrypi.json
+printf '{
+  "config_file": "/boot/wyliodrin.json",
+  "mountFile": "/wyliodrin/projects/mnt",
+  "buildFile": "/wyliodrin/projects/build\",
+  "board": "raspberrypi",
+  "run": "sudo -E make -f Makefile.raspberrypi run",
+  "shell_cmd": "bash",
+  "sudo": "sudo"
+}\n' > /etc/wyliodrin/settings_raspberrypi.json
 
 # Create running_projects file
 mkdir -p /wyliodrin
