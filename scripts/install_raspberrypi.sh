@@ -99,6 +99,8 @@ git clone https://github.com/Wyliodrin/pybass.git
 cd pybass
 python setup.py install
 cd $SANDBOX_PATH
+cp lib/hardfp/libbass* /usr/local/lib
+ldconfig
 rm -rf pybass
 
 # Install BrickPi
@@ -253,6 +255,9 @@ cp /home/pi/.bashrc /wyliodrin
 # Clean
 apt-get clean
 rm -rf $SANDBOX_PATH
+
+# set shell
+cp /home/pi/.bashrc /wyliodrin
 
 # Reboot
 reboot
