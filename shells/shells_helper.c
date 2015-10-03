@@ -54,6 +54,7 @@ static void remove_project_id_from_running_projects(char *projectid) {
 void *read_thread(void *args) {
   shell_t *shell = (shell_t *)args;
   int fdm = shell->fdm;
+  int num_reads = 0; /* Sleep every 10 reads */
 
   /* Get data from PTY and send it to server */
   char buf[BUFSIZE];
@@ -61,7 +62,11 @@ void *read_thread(void *args) {
     int rc_int = read(fdm, buf, sizeof(buf));
     if (rc_int > 0) {
       send_shells_keys_response(buf, rc_int, shell->id);
-      // usleep(10000);
+      num_reads++;
+      if (num_reads == 10) {
+        usleep(100000);
+        num_reads = 0;
+      }
     } else if (rc_int < 0) {
       werr("Closing project %s", shell->projectid);
 

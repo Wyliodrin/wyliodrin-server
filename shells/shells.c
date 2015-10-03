@@ -479,8 +479,7 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   wlog("Return from shells");
 }
 
-void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata)
-{
+void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
   wlog("shells_open(...)");
 
   /* Get attributes */
@@ -603,6 +602,12 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
 void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
   wlog("shells_keys(...)");
 
+  char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
+  if (request_attr == NULL) {
+    werr("Received keys with no request");
+    return;
+  }
+
   char *endptr; /* strtol endptr */
 
   char *data_str = xmpp_stanza_get_text(stanza); /* data string */
@@ -633,6 +638,12 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
     return;
   }
 
+  /* Update shell request */
+  if (shells_vector[shellid]->request_attr != NULL) {
+    free(shells_vector[shellid]->request_attr);
+  }
+  shells_vector[shellid]->request_attr = strdup(request_attr);
+
   /* Send decoded data to screen */
   write(shells_vector[shellid]->fdm, decoded, rc);
 
@@ -642,6 +653,11 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
   while (!is_connected) {
     usleep(500000);
+  }
+
+  if (shells_vector[shell_id]->request_attr == NULL) {
+    werr("Trying to send keys but shell has no request attribute");
+    return;
   }
 
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
@@ -654,7 +670,7 @@ void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
   snprintf(shell_id_str, 7, "%d", shell_id);
   xmpp_stanza_set_attribute(keys, "shellid", shell_id_str);
   xmpp_stanza_set_attribute(keys, "action", "keys");
-
+  xmpp_stanza_set_attribute(keys, "request", shells_vector[shell_id]->request_attr);
   xmpp_stanza_t *data = xmpp_stanza_new(ctx); /* data */
   char *encoded_data = (char *)malloc(BASE64_SIZE(data_len));
   encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len),
