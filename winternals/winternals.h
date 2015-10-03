@@ -23,6 +23,9 @@ extern bool privacy;
 #define FALSE 0
 #define TRUE  1
 
+#define ERR_MSG  0
+#define INFO_MSG 1
+
 #ifdef LOG
   #define wlog(msg, ...) fprintf(LOG_FILE, "[wlog in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);
 #else
@@ -34,7 +37,7 @@ extern bool privacy;
     do {                                                                                   \
       fprintf(ERR_FILE, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);   \
       if (!privacy) {                                                                      \
-        add_log(msg, ##__VA_ARGS__);                                                       \
+        add_log(ERR_MSG, msg, ##__VA_ARGS__);                                              \
       }                                                                                    \
     } while (0)
 #else
@@ -67,6 +70,14 @@ extern bool privacy;
       perror(msg);                                                  \
       exit(EXIT_FAILURE);                                           \
     }                                                               \
+  } while (0)
+
+#define winfo(msg, ...)                                                                  \
+  do {                                                                                   \
+    fprintf(ERR_FILE, "[winfo in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);  \
+    if (!privacy) {                                                                      \
+      add_log(INFO_MSG, msg, ##__VA_ARGS__);                                             \
+    }                                                                                    \
   } while (0)
 
 #endif /* _INTERNALS_H */

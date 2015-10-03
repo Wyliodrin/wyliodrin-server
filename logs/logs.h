@@ -8,6 +8,6 @@
 #ifndef _LOGS_H
 #define _LOGS_H
 
-void add_log(const char *msg, ...);
+void add_log(int log_type, const char *msg, ...);
 
 #endif /* _LOGS_H */

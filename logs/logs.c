@@ -114,7 +114,7 @@ static void send_logs() {
   pthread_detach(t);
 }
 
-void add_log(const char *msg, ...) {
+void add_log(int log_type, const char *msg, ...) {
   /* Don't add any more logs in case of full buffer */
   if (logs_size == MAX_LOGS) {
     fprintf(stderr, "Maximum number of logs\n");
@@ -144,7 +144,13 @@ void add_log(const char *msg, ...) {
   char *str = malloc(MAX_LOG_SIZE * sizeof(char));
   char *p = asctime(timeinfo);
   p[strlen(p) - 1] = '\0'; /* Get rid of the newline character */
-  snprintf(str, MAX_LOG_SIZE - 1, "ERR %s %s", p, full_msg);
+  if (log_type == ERR_MSG) {
+    snprintf(str, MAX_LOG_SIZE - 1, "[ERR  : %s] %s", p, full_msg);
+  } else if (log_type == INFO_MSG) {
+    snprintf(str, MAX_LOG_SIZE - 1, "[INFO : %s] %s", p, full_msg);
+  } else {
+    snprintf(str, MAX_LOG_SIZE - 1, "[LOG  : %s] %s", p, full_msg);
+  }
   free(full_msg);
 
 

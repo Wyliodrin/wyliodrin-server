@@ -68,7 +68,7 @@ void *read_thread(void *args) {
         num_reads = 0;
       }
     } else if (rc_int < 0) {
-      werr("Closing project %s", shell->projectid);
+      winfo("Closing project %s", shell->projectid);
 
       char shellid_str[8];
       snprintf(shellid_str, 7, "%d", shell->id);
