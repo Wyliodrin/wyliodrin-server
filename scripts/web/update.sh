@@ -21,7 +21,7 @@ mkdir -p $HOME
 
 if [ "$wyliodrin_board" = "raspberrypi" ]; then
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
-  # sehll
+  # shell
   cp /home/pi/.bshrc $HOME
 
 elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
