@@ -132,7 +132,8 @@ echo "{
 \"mountFile\": \"/wyliodrin/mnt\",
 \"buildFile\": \"/wyliodrin/build\",
 \"run\": \"make -f Makefile.edison run\",
-\"board\": \"edison\"
+\"board\": \"edison\",
+\"sudo:\": \"\"
 }" > /etc/wyliodrin/settings_edison.json
 
 mkdir -p /wyliodrin
