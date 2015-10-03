@@ -21,8 +21,20 @@ mkdir -p $HOME
 
 if [ "$wyliodrin_board" = "raspberrypi" ]; then
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
-  # shell
-  cp /home/pi/.bshrc $HOME
+
+  # Copy bashrc
+  cp /home/pi/.bashrc /wyliodrin
+
+  # Settings
+  printf '{
+  "config_file": "/boot/wyliodrin.json",
+  "mountFile": "/wyliodrin/projects/mnt",
+  "buildFile": "/wyliodrin/projects/build\",
+  "board": "raspberrypi",
+  "run": "sudo -E make -f Makefile.raspberrypi run",
+  "shell_cmd": "bash",
+  "sudo": "sudo"
+}\n' > /etc/wyliodrin/settings_raspberrypi.json
 
 elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
   CMAKE_PARAMS="-DBEAGLEBONEBLACK=ON -DNODE_ROOT_DIR=/usr/include"
