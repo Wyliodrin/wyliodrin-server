@@ -351,7 +351,7 @@ void *init_files_thread(void *a) {
 bool files_initialized = false;
 
 void init_files() {
-  werr("Init files module");
+  winfo("Init files module");
   if (!files_initialized) {
     pthread_t ift; /* Init files thread */
     int rc = pthread_create(&ift, NULL, init_files_thread, NULL);
