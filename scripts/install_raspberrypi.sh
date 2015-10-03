@@ -257,8 +257,5 @@ cp /home/pi/.bashrc /wyliodrin
 apt-get clean
 rm -rf $SANDBOX_PATH
 
-# set shell
-cp /home/pi/.bashrc /wyliodrin
-
 # Reboot
 reboot
