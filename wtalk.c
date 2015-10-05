@@ -2,21 +2,19 @@
  * WTalk
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: September 2015
+ * Date last modified: October 2015
  *************************************************************************************************/
 
 
 
 /*** INCLUDES ************************************************************************************/
 
-#include <ctype.h>     /* string stuff */
+#include <ctype.h>     /* tolower      */
 #include <errno.h>     /* errno        */
 #include <fcntl.h>     /* file stuff   */
-#include <unistd.h>    /* file stuff   */
 #include <signal.h>    /* SIGTERM      */
 #include <string.h>    /* string stuff */
-#include <sys/stat.h>  /* file stuff   */
-#include <sys/types.h> /* file stuff   */
+#include <sys/stat.h>  /* mkdir        */
 #include <sys/wait.h>  /* waitpid      */
 #include <Wyliodrin.h> /* lw version   */
 
@@ -29,6 +27,7 @@
 /*************************************************************************************************/
 
 
+/*** VARIABLES ***********************************************************************************/
 
 /* Variables found in wyliodrin.json */
 const char *jid_str;
@@ -44,7 +43,18 @@ bool privacy = false; /* privacy value from wylliodrin.json */
 
 bool is_fuse_available; /* fuse checker */
 
+/*************************************************************************************************/
 
+
+
+/*** STATIC FUNCTIONS DECLARATIONS ***************************************************************/
+
+/* Returns the boardtype or NULL in case of errors.
+ * Return value must be freed.
+ */
+static char *get_boardtype();
+
+/*************************************************************************************************/
 
 /**
  * Check whether fuse is available or not by stat /dev/fuse.
@@ -66,7 +76,9 @@ static void create_running_projects_file_if_does_not_exist() {
   /* Create RUNNING_PROJECTS_PATH if it does not exist */
   if (open_rc == -1) {
     open_rc = open(RUNNING_PROJECTS_PATH, O_CREAT | O_RDWR);
-    werr2(open_rc == -1, "Error while trying to create " RUNNING_PROJECTS_PATH);
+    if (open_rc == -1) {
+      werr("Error while trying to create " RUNNING_PROJECTS_PATH);
+    }
   }
 }
 
@@ -78,26 +90,19 @@ static void signal_handler(int signum) {
 
 
 
-void wtalk()
-{
-  /* Get the type of board from the boardtype file */
-  int boardtype_fd = open(BOARDTYPE_PATH, O_RDONLY); /* File descriptor of boardtype file */
-  if (boardtype_fd == -1) {
-    werr("There should be a file named boardtype in /etc/wyliodrin");
-    return;
-  }
+void wtalk() {
+  /* Get boartype */
+  char *boardtype = get_boardtype();
+  werr2(boardtype == NULL, return, "Could not get boardtype");
 
-  /* Get the content from boardtype */
-  char boardtype[BOARDTYPE_MAX_LENGTH]; /* Content of boardtype */
-  memset(boardtype, 0, BOARDTYPE_MAX_LENGTH);
-  int read_rc = read(boardtype_fd, boardtype, BOARDTYPE_MAX_LENGTH); /* Return code of read */
-  wsyserr(read_rc == -1, "read");
+  /* Build path of settings_<boardtype>.json */
+  char settings_path[128];
+  int snprintf_rc = snprintf(settings_path, 128, "%s%s.json", SETTINGS_PATH, boardtype);
+  wsyserr2(snprintf_rc < 0, return, "Could not build the settings configuration file");
+  werr2(snprintf_rc >= 128, return, "File path of settings configuration file too long");
 
-  /* Get the path of settings_<boardtype> file */
-  char settings_path[SETTINGS_PATH_MAX_LENGTH]; /* Path of the settings file */
-  int snprintf_rc = snprintf(settings_path, SETTINGS_PATH_MAX_LENGTH - 1, SETTINGS_PATH "%s.json",
-    boardtype); /* Return code of snprintf */
-  wsyserr(snprintf_rc < 0, "snprintf");
+  /* Now that the settings configuration file is built, free boardtype */
+  free(boardtype);
 
   /* Get the content from the settings_<boardtype> file in a json_object */
   json_t *settings_json = file_to_json_t(settings_path); /* JSON object of settings_<boardtype> */
@@ -334,3 +339,30 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
+
+
+
+/*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
+
+static char *get_boardtype() {
+  /* Open boardtype */
+  int boardtype_fd = open(BOARDTYPE_PATH, O_RDONLY);
+  wsyserr2(boardtype_fd == -1, return NULL, "Could not open %s", BOARDTYPE_PATH);
+
+  /* Allocate space for return value */
+  char *boardtype = calloc(64, sizeof(char));
+  wsyserr2(boardtype == NULL, return NULL, "Could not calloc space for boardtype");
+
+  /* Read the content of the boartype file */
+  int read_rc = read(boardtype_fd, boardtype, 63);
+  wsyserr2(read_rc == -1, return NULL, "Could not read from %s", BOARDTYPE_PATH);
+  werr2(read_rc == 63, return NULL, "Board name too long in %s", BOARDTYPE_PATH);
+
+  /* Close boardtype file */
+  int close_rc = close(boardtype_fd);
+  wsyserr2(close_rc == -1, return NULL, "Could not close %s", BOARDTYPE_PATH);
+
+  return boardtype;
+}
+
+/*************************************************************************************************/

@@ -8,10 +8,12 @@
 #ifndef _INTERNALS_H
 #define _INTERNALS_H
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../logs/logs.h"
 
@@ -45,14 +47,18 @@ extern bool privacy;
 #endif
 
 #ifdef ERR
-  #define werr2(assertion, msg, ...)                                                       \
-    do {                                                                                   \
-      if (assertion) {                                                                     \
-        fprintf(ERR_FILE, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
-      }                                                                                    \
-  } while (0)
+  #define werr2(assertion, action, msg, ...)                                                        \
+    do {                                                                                            \
+      if (assertion) {                                                                              \
+        fprintf(stderr, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);            \
+        if (!privacy) {                                                                             \
+          add_log(ERR_MSG, msg, ##__VA_ARGS__);                                                     \
+        }                                                                                           \
+        action;                                                                                     \
+      }                                                                                             \
+    } while (0)
 #else
-  #define werr2(assertion, msg, ...) /* Do nothing */
+  #define werr2(assertion, action, msg, ...) /* Do nothing */
 #endif
 
 #define wfatal(assertion, msg, ...)                                                        \
@@ -79,5 +85,18 @@ extern bool privacy;
       add_log(INFO_MSG, msg, ##__VA_ARGS__);                                             \
     }                                                                                    \
   } while (0)
+
+#define wsyserr2(assertion, action, msg, ...)                                                     \
+  do {                                                                                            \
+    if (assertion) {                                                                              \
+      fprintf(stderr, "[syserr in %s:%d] " msg ": %s\n", __FILE__, __LINE__, ##__VA_ARGS__,       \
+                                                         strerror(errno));                        \
+      if (!privacy) {                                                                             \
+        add_log(ERR_MSG, msg, ##__VA_ARGS__);                                                     \
+      }                                                                                           \
+      action;                                                                                     \
+    }                                                                                             \
+  } while (0)
+
 
 #endif /* _INTERNALS_H */

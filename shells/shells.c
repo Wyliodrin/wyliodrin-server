@@ -383,7 +383,9 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
       sprintf(projectid_attr_with_colon, "%s:", projectid_attr);
       int write_rc = write(open_rc, projectid_attr_with_colon,
           strlen(projectid_attr_with_colon));
-      werr2(write_rc == -1, "Error while writing to " RUNNING_PROJECTS_PATH);
+      if (write_rc == -1) {
+        werr("Error while writing to " RUNNING_PROJECTS_PATH);
+      }
     }
   }
 
