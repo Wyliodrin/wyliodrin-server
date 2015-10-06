@@ -54,7 +54,7 @@ extern bool signal_fail;
 
 extern const char *owner; /* from wtalk.c */
 extern bool is_fuse_available; /* from wtalk.c */
-extern bool is_connected;
+extern bool is_xmpp_connection_set;
 
 
 /* Module function signature */
@@ -83,7 +83,7 @@ void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, cons
   /* Connection success */
   if (status == XMPP_CONN_CONNECT) {
     wlog("XMPP connection success");
-    is_connected = true;
+    is_xmpp_connection_set = true;
 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
 

@@ -191,7 +191,9 @@ static void *send_logs_routine(void *args) {
       list = curl_slist_append(list, "Content-Type: application/json");
       list = curl_slist_append(list, "Connection: close");
       curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-      // curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+      #ifdef VERBOSE
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+      #endif /* VERBOSE */
 
       CURLcode res = curl_easy_perform(curl);
 

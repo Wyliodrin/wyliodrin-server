@@ -1,72 +1,89 @@
 /**************************************************************************************************
- * XMPP connection
+ * XMPP implementation
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: July 2015
+ * Date last modified: October 2015
  *************************************************************************************************/
 
-#include <string.h>                   /* strcmp */
-#include <unistd.h>                   /* usleep */
+
+
+/*** INCLUDES ************************************************************************************/
+
+#include <unistd.h> /* usleep */
 
 #include "../winternals/winternals.h" /* logs and errs */
-#include "wxmpp.h"                    /* XMPP stuff    */
+
+#include "wxmpp.h" /* API */
+
+/*************************************************************************************************/
 
 
 
-/* These variables must be set to NULL whenever there is not a connection to the XMPP server */
+/*** DEFINES *************************************************************************************/
+
+#define XMPP_PORT 5222 /* XMPP server port */
+
+#define CONN_INTERVAL 1 /* Time in seconds between connection attempts */
+
+/*************************************************************************************************/
+
+
+
+/*** VARIABLES ***********************************************************************************/
+
 xmpp_ctx_t *ctx = NULL;   /* XMPP context    */
 xmpp_conn_t *conn = NULL; /* XMPP connection */
-bool is_connected = false;
 
-extern char *board;   /* board name from wtalk.c */
+bool is_xmpp_connection_set = false;
+
+/*************************************************************************************************/
 
 
 
-/* Connection handler from wxmpp/wxmpp_handlers.h */
+/*** EXTERN VARIABLES ****************************************************************************/
+
+extern char *board;
+
+/*************************************************************************************************/
+
+
+/*** STATIC FUNCTIONS DECLARATIONS ***************************************************************/
+
 extern void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, const int error,
                          xmpp_stream_error_t * const stream_error, void * const userdata);
 
+/*************************************************************************************************/
 
+
+/*** API implementation **************************************************************************/
 
 /* Connect to XMPP */
 void xmpp_connect(const char *jid, const char *pass) {
-  wlog("wxmpp_connect(%s, %s)", jid, pass);
-
   xmpp_initialize();
 
-  #ifdef LOG
-    xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_DEBUG); /* Strophe logger */
+  #ifdef VERBOSE
+    xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_DEBUG);
   #else
-    xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_WARN);  /* Strophe logger */
+    xmpp_log_t *log = xmpp_get_default_logger(XMPP_LEVEL_WARN);
   #endif
 
-  ctx  = xmpp_ctx_new(NULL, log); /* Strophe context */
-  if(ctx == NULL) {
-    xmpp_shutdown();
-
-    wlog("Could not get Strophe context");
-    return;
-  }
+  ctx = xmpp_ctx_new(NULL, log);
+  werr2(ctx == NULL, xmpp_shutdown(); return, "Could not get XMPP context");
 
   conn = xmpp_conn_new(ctx); /* Strophe connection */
-  if(conn == NULL) {
-    xmpp_ctx_free(ctx);
-    xmpp_shutdown();
-
-    wlog("Could not get Strophe connection");
-    return;
-  }
+  werr2(conn == NULL, xmpp_ctx_free(ctx); xmpp_shutdown(); return,
+        "Could not create XMPP connection");
 
   /* Setup authentication information */
   xmpp_conn_set_jid(conn, jid);
   xmpp_conn_set_pass(conn, pass);
 
   /* Initiate connection in loop */
-  int conn_rc;
   while (1) {
-    conn_rc = xmpp_connect_client(conn, NULL, XMPP_PORT, conn_handler, ctx);
+    int conn_rc = xmpp_connect_client(conn, NULL, XMPP_PORT, conn_handler, ctx);
     if (conn_rc < 0) {
-      usleep(1000000);
+      werr("Attempt to connect to XMPP server failed. Retrying...");
+      sleep(CONN_INTERVAL);
     } else {
       break;
     }
@@ -79,7 +96,7 @@ void xmpp_connect(const char *jid, const char *pass) {
   werr("XMPP event loop completed. Retrying to connect...");
 
   /* Cleaning */
-  is_connected = false;
+  is_xmpp_connection_set = false;
   xmpp_conn_release(conn);
   xmpp_ctx_free(ctx);
   xmpp_shutdown();
@@ -88,7 +105,9 @@ void xmpp_connect(const char *jid, const char *pass) {
 
   /* Retry to connect */
   if (strcmp(board, "server") != 0) {
-    usleep(1000000);
+    sleep(CONN_INTERVAL);
     return xmpp_connect(jid, pass);
   }
 }
+
+/*************************************************************************************************/

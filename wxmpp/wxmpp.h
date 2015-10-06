@@ -1,18 +1,37 @@
 /**************************************************************************************************
- * XMPP stuff: Wyliodrin namespace and XMPP connection port
+ * XMPP API
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: July 2015
+ * Date last modified: October 2015
  *************************************************************************************************/
 
 #ifndef _WXMPP_H
 #define _WXMPP_H
 
-#include <strophe.h> /* Strophe stuff */
 
-#define WNS       "wyliodrin"  /* Wyliodrin namespace */
-#define XMPP_PORT 5222         /* XMPP server port    */
 
-void xmpp_connect(const char *jid, const char *pass); /* from wxmpp/wxmpp.c */
+/*** INCLUDES ************************************************************************************/
+
+#include <strophe.h> /* xmpp library */
+
+/*************************************************************************************************/
+
+
+
+/*** DEFINES *************************************************************************************/
+
+#define WNS "wyliodrin"  /* Wyliodrin namespace */
+
+/*************************************************************************************************/
+
+
+
+/*** API *****************************************************************************************/
+
+void xmpp_connect(const char *jid, const char *pass);
+
+/*************************************************************************************************/
+
+
 
 #endif /* _WXMPP_H */

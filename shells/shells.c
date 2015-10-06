@@ -50,7 +50,7 @@ extern bool sudo;
 extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
 
-extern bool is_connected;
+extern bool is_xmpp_connection_set;
 
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
@@ -653,7 +653,7 @@ void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 }
 
 void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
-  while (!is_connected) {
+  while (!is_xmpp_connection_set) {
     usleep(500000);
   }
 
