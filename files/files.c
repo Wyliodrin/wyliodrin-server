@@ -213,7 +213,6 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     signal_read = false;
     signal_fail = false;
   } else {
-    // wfatal(root == NULL, "root is NULL");
 
     (void) offset;
     (void) fi;
@@ -370,7 +369,7 @@ void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     if (action_attr == NULL) {
       werr("xmpp_stanza_get_attribute attribute = action");
     }
-    wfatal(action_attr == NULL, "xmpp_stanza_get_attribute [attribute = action]");
+    werr2(action_attr == NULL, return, "There is no action attribute in file stanza");
 
     if (strcmp(action_attr, "attributes") == 0) {
       files_attr(stanza);
@@ -395,14 +394,15 @@ static void files_attr(xmpp_stanza_t *stanza) {
   wsyserr(rc != 0, "pthread_mutex_lock");
 
   char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* error attribute */
-  wfatal(error_attr == NULL, "no error attribute in files stanza");
+  werr2(error_attr == NULL, return, "There is no error attribute in files stanza");
+
 
   if (strcmp(error_attr, "0") != 0) {
     wlog("Error in attributes: %s", error_attr);
     attributes.is_valid = -1;
   } else {
     char *type_attr = xmpp_stanza_get_attribute(stanza, "type"); /* type attribute */
-    wfatal(type_attr == NULL, "no type attribute in files stanza");
+    werr2(type_attr == NULL, return, "There is no type attribute in files stanza");
 
     if (strcmp(type_attr, "directory") == 0) {
       attributes.is_valid = 1;
@@ -446,13 +446,13 @@ static void files_list(xmpp_stanza_t *stanza) {
   wsyserr(rc != 0, "pthread_mutex_lock");
 
   char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* error attribute */
-  wfatal(error_attr == NULL, "no error attribute in files stanza");
+  werr2(error_attr == NULL, return, "There is no error attribute in files stanza");
 
   if (strcmp(error_attr, "0") != 0) {
     wlog("Error in attributes: %s", error_attr);
   } else {
     char *path_attr = xmpp_stanza_get_attribute(stanza, "path"); /* path attribute */
-    wfatal(path_attr == NULL, "xmpp_stanza_get_attribute [attribute = path]");
+    werr2(path_attr == NULL, return, "There is no path attribute in files stanza");
 
     xmpp_stanza_t *child = xmpp_stanza_get_children(stanza);
     while (child != NULL) {
@@ -462,7 +462,7 @@ static void files_list(xmpp_stanza_t *stanza) {
       elem->next = NULL;
 
       char *name = xmpp_stanza_get_name(child);
-      wfatal(name == NULL, "xmpp_stanza_get_name");
+      werr2(name == NULL, return, "There is no name attribute in files stanza");
 
       if (strcmp(name, "directory") == 0) {
         elem->type = DIR;
@@ -473,7 +473,7 @@ static void files_list(xmpp_stanza_t *stanza) {
       }
 
       char *filename_attr = xmpp_stanza_get_attribute(child, "filename");
-      wfatal(filename_attr == NULL, "xmpp_stanza_get_attribute [attribute = filename]");
+      werr2(filename_attr == NULL, return, "There is no filename attribute in files stanza");
 
       elem->filename = strdup(filename_attr);
       wsyserr(elem->filename == NULL, "strdup");
@@ -516,7 +516,7 @@ static void files_read(xmpp_stanza_t *stanza) {
     int dec_size = strlen(text) * 3 / 4 + 1;
     uint8_t *dec_text = (uint8_t *)calloc(dec_size, sizeof(uint8_t));
     rc = base64_decode(dec_text, text, dec_size);
-    wfatal(rc < 0, "base64_decode");
+    werr2(rc < 0, return, "Could not decode");
 
     if (read_data != NULL) {
       free(read_data);

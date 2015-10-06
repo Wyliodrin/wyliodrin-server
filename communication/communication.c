@@ -210,7 +210,7 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     wsyserr(encoded_data == NULL, "malloc");
     encoded_data = base64_encode(encoded_data, BASE64_SIZE(strlen(data_str)),
       (const unsigned char *)data_str, strlen(data_str));
-    wfatal(encoded_data == NULL, "encoded_data failed");
+    werr2(encoded_data == NULL, return, "Could not encode");
 
     /* Send it */
     xmpp_stanza_t *message = xmpp_stanza_new(ctx);
@@ -505,7 +505,7 @@ void *start_subscriber_routine(void *arg) {
   struct event_base *base = event_base_new();
 
   c = redisAsyncConnect(REDIS_HOST, REDIS_PORT);
-  wfatal(c->err != 0, "redisAsyncConnect: %s", c->errstr);
+  werr2(c->err != 0, return NULL, "redisAsyncConnect error: %s", c->errstr);
 
   redisLibeventAttach(c, base);
   redisAsyncSetConnectCallback(c, connectCallback);
@@ -523,7 +523,7 @@ void *start_wyliodrin_subscriber_routine(void *arg) {
   struct event_base *base = event_base_new();
 
   c = redisAsyncConnect(REDIS_HOST, REDIS_PORT);
-  wfatal(c->err != 0, "redisAsyncConnect: %s", c->errstr);
+  werr2(c->err != 0, return NULL, "redisAsyncConnect error: %s", c->errstr);
 
   redisLibeventAttach(c, base);
   redisAsyncSetConnectCallback(c, wyliodrinConnectCallback);
@@ -599,7 +599,7 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
 
   /* Get port attribute from the received stanza */
   char *port_attr = xmpp_stanza_get_attribute(stanza, "port"); /* port attribute */
-  wfatal(port_attr == NULL, "No port attribute in communication");
+  werr2(port_attr == NULL, return, "No port attribute in communication");
 
   /* Get the text from the received stanza */
   char *text = xmpp_stanza_get_text(stanza); /* text */

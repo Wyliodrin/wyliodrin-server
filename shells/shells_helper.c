@@ -86,7 +86,7 @@ void *read_thread(void *args) {
         struct winsize ws = {shell->height, shell->width, 0, 0};
         int fdm;
         int pid = forkpty(&fdm, NULL, NULL, &ws);
-        wfatal(pid == -1, "forkpty");
+        werr2(pid == -1, return NULL, "forkpty error");
 
         if (pid == 0) { /* Child*/
           char cd_path[256];
@@ -151,7 +151,7 @@ void *read_thread(void *args) {
 
         pthread_t rt; /* Read thread */
         int pthread_create_rc = pthread_create(&rt, NULL, &(read_thread), shell);
-        wfatal(pthread_create_rc < 0, "pthread_create");
+        werr2(pthread_create_rc < 0, return NULL, "pthread_create error");
         pthread_detach(rt);
 
         return NULL;
