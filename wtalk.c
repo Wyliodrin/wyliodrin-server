@@ -166,17 +166,21 @@ int main(int argc, char *argv[]) {
     wifi_edison();
   }
 
-  /* Configure wifi for Raspberry Pi boards */
+  /* Configure wifi of Raspberry Pi boards */
   if (strcmp(board, "raspberrypi") == 0) {
-    change_owner_of_directories_for_raspberry_pi();
     wifi_raspberrypi();
   }
-
-  create_running_projects_file_if_does_not_exist();
 
   umount_mount_file();
 
   create_home_mount_and_build_directories();
+
+  /* Configure wifi for Raspberry Pi boards */
+  if (strcmp(board, "raspberrypi") == 0) {
+    change_owner_of_directories_for_raspberry_pi();
+  }
+
+  create_running_projects_file_if_does_not_exist();
 
   check_is_fuse_available();
 
