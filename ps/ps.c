@@ -29,7 +29,7 @@
 
 bool keep_sending = false;
 
-extern const char *owner_str; /* owner_str from init.c */
+extern const char *owner; /* owner from init.c */
 
 static void ps_kill(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 static void ps_send(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
@@ -63,7 +63,7 @@ static void *send_tasks_routine(void *args) {
 
       xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
       xmpp_stanza_set_name(message, "message");
-      xmpp_stanza_set_attribute(message, "to", owner_str);
+      xmpp_stanza_set_attribute(message, "to", owner);
 
       xmpp_stanza_t *info = xmpp_stanza_new(ctx); /* info stanza */
       xmpp_stanza_set_name(info, "info");

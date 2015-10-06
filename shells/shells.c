@@ -39,13 +39,13 @@
 
 
 /* Variables from wtalk.c */
-extern const char *build_file_str; /* build_file_str */
-extern const char *board_str;      /* board name */
-extern const char *jid_str;        /* jid */
-extern const char *owner_str;      /* owner_str */
-extern const char *sudo_str;       /* sudo command from wtalk.c */
-extern const char *shell_cmd;      /* start shell command from wtalk.c */
-extern const char *run_cmd;        /* start shell command from wtalk.c */
+extern const char *build_file; /* build_file */
+extern const char *board;      /* board name */
+extern const char *jid;        /* jid */
+extern const char *owner;      /* owner */
+extern const char *shell;      /* start shell command from wtalk.c */
+extern const char *run;        /* start shell command from wtalk.c */
+extern bool sudo;
 
 extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
@@ -208,7 +208,7 @@ static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
   if (pid == 0) { /* Child from forkpty */
     /* Build local environment variables */
     char wyliodrin_board_env[64];
-    snprintf(wyliodrin_board_env, 63, "wyliodrin_board=%s", board_str);
+    snprintf(wyliodrin_board_env, 63, "wyliodrin_board=%s", board);
 
     char wyliodrin_server[64];
     snprintf(wyliodrin_server, 63, "wyliodrin_server=%d.%d", WTALK_VERSION_MAJOR,
@@ -222,7 +222,7 @@ static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
     /* Start bash */
     chdir("/wyliodrin");
     int exec_argv_size;
-    char **exec_argv = string_to_array((char *)shell_cmd, &exec_argv_size);
+    char **exec_argv = string_to_array((char *)shell, &exec_argv_size);
     execvpe(exec_argv[0], exec_argv, all_env);
 
     werr("bash failed");
@@ -318,7 +318,7 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
     close(projectid_fd);
 
     char cd_path[256];
-    snprintf(cd_path, 255, "%s/%s", build_file_str, projectid_attr);
+    snprintf(cd_path, 255, "%s/%s", build_file, projectid_attr);
     if (chdir(cd_path) == -1) {
       werr("Could not chdir in %s", cd_path);
       return;
@@ -334,9 +334,9 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
     snprintf(wyliodrin_session_env, 63, "wyliodrin_session=%s",
       request_attr != NULL ? request_attr : "null");
     char wyliodrin_board_env[64];
-    snprintf(wyliodrin_board_env, 63, "wyliodrin_board=%s", board_str);
+    snprintf(wyliodrin_board_env, 63, "wyliodrin_board=%s", board);
     char wyliodrin_jid_env[64];
-    snprintf(wyliodrin_jid_env, 63, "wyliodrin_jid=%s", jid_str);
+    snprintf(wyliodrin_jid_env, 63, "wyliodrin_jid=%s", jid);
     char wyliodrin_server[64];
     snprintf(wyliodrin_server, 63, "wyliodrin_server=%d.%d", WTALK_VERSION_MAJOR,
       WTALK_VERSION_MINOR);
@@ -358,7 +358,7 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
     char **all_env = concatenation_of_local_and_user_env(local_env, local_env_size);
 
     int exec_argv_size;
-    char **exec_argv = string_to_array((char *)run_cmd, &exec_argv_size);
+    char **exec_argv = string_to_array((char *)run, &exec_argv_size);
 
     execvpe(exec_argv[0], exec_argv, all_env);
 
@@ -511,7 +511,7 @@ void send_shells_open_response(char *request_attr, xmpp_conn_t *const conn,
   xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
   xmpp_stanza_t *message = xmpp_stanza_new(ctx);
   xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner_str);
+  xmpp_stanza_set_attribute(message, "to", owner);
   xmpp_stanza_t *done = xmpp_stanza_new(ctx);
   xmpp_stanza_set_name(done, "shells");
   xmpp_stanza_set_ns(done, WNS);
@@ -586,7 +586,7 @@ void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const us
     /* Child from fork */
     if (pid == 0) {
       char screen_quit_cmd[32];
-      if (strcmp(board_str, "raspberrypi") == 0) {
+      if (strcmp(board, "raspberrypi") == 0) {
         snprintf(screen_quit_cmd, 31, "sudo kill -9 %d", shells_vector[shellid]->pid);
       } else {
         snprintf(screen_quit_cmd, 31, "kill -9 %d", shells_vector[shellid]->pid);
@@ -664,7 +664,7 @@ void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
 
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner_str);
+  xmpp_stanza_set_attribute(message, "to", owner);
   xmpp_stanza_t *keys = xmpp_stanza_new(ctx); /* shells action done stanza */
   xmpp_stanza_set_name(keys, "shells");
   xmpp_stanza_set_ns(keys, WNS);
@@ -702,7 +702,7 @@ void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const use
 
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with close */
   xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner_str);
+  xmpp_stanza_set_attribute(message, "to", owner);
   xmpp_stanza_t *list = xmpp_stanza_new(ctx); /* close stanza */
   xmpp_stanza_set_name(list, "shells");
   xmpp_stanza_set_ns(list, WNS);
@@ -736,7 +736,7 @@ void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const u
 
     xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message with close */
     xmpp_stanza_set_name(message_stz, "message");
-    xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+    xmpp_stanza_set_attribute(message_stz, "to", owner);
 
     xmpp_stanza_t *status_stz = xmpp_stanza_new(ctx); /* status stanza */
     xmpp_stanza_set_name(status_stz, "shells");
@@ -759,9 +759,9 @@ void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const u
 }
 
 void shells_poweroff() {
-  if (strcmp(board_str, "server") != 0) {
+  if (strcmp(board, "server") != 0) {
     char cmd[64];
-    snprintf(cmd, 63, "%s poweroff", sudo_str);
+    snprintf(cmd, 63, "%spoweroff", strcmp(board, "raspberrypi") == 0 ? "sudo " : "");
     system(cmd);
   }
 

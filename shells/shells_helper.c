@@ -31,10 +31,10 @@
 
 #define BUFSIZE (1 * 1024) /* Size of buffer used for reading */
 
-extern const char *build_file_str; /* build_file_str */
-extern const char *owner_str; /* owner_str from wtalk.c */
-extern const char *board_str; /* board name */
-extern const char *jid_str;   /* jid */
+extern const char *build_file; /* build_file */
+extern const char *owner; /* owner from wtalk.c */
+extern const char *board; /* board name */
+extern const char *jid;   /* jid */
 
 extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
@@ -90,12 +90,12 @@ void *read_thread(void *args) {
 
         if (pid == 0) { /* Child*/
           char cd_path[256];
-          snprintf(cd_path, 255, "%s/%s", build_file_str, shell->projectid);
+          snprintf(cd_path, 255, "%s/%s", build_file, shell->projectid);
           int chdir_rc = chdir(cd_path);
           wsyserr(chdir_rc == -1, "chdir");
 
           char makefile_name[64];
-          snprintf(makefile_name, 63, "Makefile.%s", board_str);
+          snprintf(makefile_name, 63, "Makefile.%s", board);
 
           char *make_run[] = {"make", "-f", makefile_name, "run", NULL};
 
@@ -109,10 +109,10 @@ void *read_thread(void *args) {
           snprintf(wyliodrin_session_env, 63, "wyliodrin_session=%s", shell->request_attr);
 
           char wyliodrin_board_env[64];
-          snprintf(wyliodrin_board_env, 63, "wyliodrin_board=%s", board_str);
+          snprintf(wyliodrin_board_env, 63, "wyliodrin_board=%s", board);
 
           char wyliodrin_jid_env[64];
-          snprintf(wyliodrin_jid_env, 63, "wyliodrin_jid=%s", jid_str);
+          snprintf(wyliodrin_jid_env, 63, "wyliodrin_jid=%s", jid);
 
           char home_env[] = "HOME=/wyliodrin";
           char term_env[] = "TERM=xterm";
@@ -160,7 +160,7 @@ void *read_thread(void *args) {
       /* Send close stanza */
       xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza */
       xmpp_stanza_set_name(message_stz, "message");
-      xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+      xmpp_stanza_set_attribute(message_stz, "to", owner);
       xmpp_stanza_t *close_stz = xmpp_stanza_new(ctx); /* close stanza */
       xmpp_stanza_set_name(close_stz, "shells");
       xmpp_stanza_set_ns(close_stz, WNS);

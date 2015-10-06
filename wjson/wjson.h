@@ -1,19 +1,29 @@
 /**************************************************************************************************
- * JSON handling
+ * JSON handling API
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: August 2015
+ * Date last modified: October 2015
  *************************************************************************************************/
 
 #ifndef _WJSON_H
 #define _WJSON_H
 
+
+
+/*** INCLUDES ************************************************************************************/
+
 #include <jansson.h>
 
+/*************************************************************************************************/
+
+
+
+/*** API *****************************************************************************************/
+
 /**
- * TODO: doc
+ * Load json content in json_t from filename. Returns NULL in case of error.
  */
-json_t* file_to_json_t(const char *filename);
+json_t* file_to_json(const char *filename);
 
 /**
  * Get the string value of the key <key> in the json object <json>.
@@ -26,5 +36,9 @@ json_t* file_to_json_t(const char *filename);
  * It is valid as long as string exists, i.e. as long as its reference count has not dropped to 0.
  */
 const char *get_str_value(json_t *json, char *key);
+
+/*************************************************************************************************/
+
+
 
 #endif /* _WJSON_H */

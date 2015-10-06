@@ -31,7 +31,7 @@ redisContext *c = NULL;
 
 extern xmpp_ctx_t *ctx;
 extern xmpp_conn_t *conn;
-extern const char *jid_str;
+extern const char *jid;
 
 static bool is_connetion_in_progress = false;
 
@@ -291,7 +291,7 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
         const char *data_to_send;
         json_t *json_to_send = json_object();
         json_object_set_new(json_to_send, "projectid", json_string(projectId));
-        json_object_set_new(json_to_send, "gadgetid",  json_string(jid_str));
+        json_object_set_new(json_to_send, "gadgetid",  json_string(jid));
 
         #ifdef USEMSGPACK
           int i, j, k;
@@ -437,9 +437,9 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
           werr("Curl init failed");
           return;
         }
-        char *domain = strrchr(jid_str, '@');
+        char *domain = strrchr(jid, '@');
         if (domain == NULL) {
-          werr("jid does not contain an at: %s", jid_str);
+          werr("jid does not contain an at: %s", jid);
           char static_domain[] = "projects.wyliodrin.com";
           domain = static_domain;
         } else {

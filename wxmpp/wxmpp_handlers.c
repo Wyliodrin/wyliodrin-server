@@ -52,7 +52,7 @@ extern bool signal_list;
 extern bool signal_read;
 extern bool signal_fail;
 
-extern const char *owner_str; /* from wtalk.c */
+extern const char *owner; /* from wtalk.c */
 extern bool is_fuse_available; /* from wtalk.c */
 extern bool is_connected;
 
@@ -150,7 +150,7 @@ void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status, cons
     xmpp_stanza_t *subscribe_stz = xmpp_stanza_new(ctx); /* subscribe stanza */
     xmpp_stanza_set_name(subscribe_stz, "presence");
     xmpp_stanza_set_type(subscribe_stz, "subscribe");
-    xmpp_stanza_set_attribute(subscribe_stz, "to", owner_str);
+    xmpp_stanza_set_attribute(subscribe_stz, "to", owner);
     xmpp_send(conn, subscribe_stz);
     xmpp_stanza_release(subscribe_stz);
   }
@@ -252,7 +252,7 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
       xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
       xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx);
       xmpp_stanza_set_name(message_stz, "message");
-      xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+      xmpp_stanza_set_attribute(message_stz, "to", owner);
       xmpp_stanza_t *version_stz = xmpp_stanza_new(ctx);
       xmpp_stanza_set_name(version_stz, "version");
       xmpp_stanza_set_ns(version_stz, WNS);
@@ -277,7 +277,7 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
     xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
     xmpp_stanza_t *subscribed_stz = xmpp_stanza_new(ctx); /* subscribed stanza */
     xmpp_stanza_set_name(subscribed_stz, "presence");
-    xmpp_stanza_set_attribute(subscribed_stz, "to", owner_str);
+    xmpp_stanza_set_attribute(subscribed_stz, "to", owner);
     xmpp_stanza_set_type(subscribed_stz, "subscribed");
     xmpp_send(conn, subscribed_stz);
     xmpp_stanza_release(subscribed_stz);

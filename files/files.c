@@ -31,8 +31,8 @@
 extern xmpp_ctx_t *ctx;   /* Context    */
 extern xmpp_conn_t *conn; /* Connection */
 
-extern const char *owner_str; /* owner_str from init.c */
-extern const char *mount_file_str; /* mount file */
+extern const char *owner; /* owner from init.c */
+extern const char *mount_file; /* mount file */
 
 extern bool is_owner_online; /* connection checker from wxmpp_handlers.c */
 
@@ -98,7 +98,7 @@ static int wfuse_getattr(const char *path, struct stat *stbuf) {
   /* Send attributes stanza */
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with files */
   xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner_str);
+  xmpp_stanza_set_attribute(message, "to", owner);
 
   xmpp_stanza_t *files = xmpp_stanza_new(ctx); /* files */
   xmpp_stanza_set_name(files, "files");
@@ -182,7 +182,7 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner_str);
+  xmpp_stanza_set_attribute(message, "to", owner);
 
   xmpp_stanza_t *files = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(files, "files");
@@ -283,7 +283,7 @@ static int wfuse_read(const char *path, char *buf, size_t size, off_t offset,
 
   xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner_str);
+  xmpp_stanza_set_attribute(message, "to", owner);
 
   xmpp_stanza_t *files = xmpp_stanza_new(ctx); /* message with done */
   xmpp_stanza_set_name(files, "files");
@@ -343,7 +343,7 @@ static struct fuse_operations wfuse_oper = {
 };
 
 void *init_files_thread(void *a) {
-  char *argv[] = {"dummy", "-s", "-f", (char *)mount_file_str};
+  char *argv[] = {"dummy", "-s", "-f", (char *)mount_file};
   fuse_main(4, argv, &wfuse_oper, NULL);
   return NULL;
 }

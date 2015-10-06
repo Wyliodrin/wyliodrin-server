@@ -23,7 +23,7 @@ static char **logs;
 static unsigned int logs_size = 0;
 static bool are_logs_sent = false;
 
-extern const char *jid_str;
+extern const char *jid;
 
 static void *send_logs_routine(void *args) {
   int rc_int;
@@ -58,16 +58,16 @@ static void *send_logs_routine(void *args) {
         return NULL;
       }
 
-      char *domain = strrchr(jid_str, '@');
+      char *domain = strrchr(jid, '@');
       if (domain == NULL) {
-        werr("jid does not contain an at: %s", jid_str);
+        werr("jid does not contain an at: %s", jid);
         char static_domain[] = "wyliodrin.com";
         domain = static_domain;
       } else {
         domain++;
       }
 
-      snprintf(URL, 255, "https://%s/gadgets/logs/%s", domain, jid_str);
+      snprintf(URL, 255, "https://%s/gadgets/logs/%s", domain, jid);
       curl_easy_setopt(curl, CURLOPT_URL, URL);
       curl_easy_setopt(curl, CURLOPT_TIMEOUT, 50L);
       curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);

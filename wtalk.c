@@ -15,7 +15,9 @@
 #include <signal.h>    /* SIGTERM      */
 #include <string.h>    /* string stuff */
 #include <sys/stat.h>  /* mkdir        */
+#include <sys/types.h> /* stat         */
 #include <sys/wait.h>  /* waitpid      */
+#include <unistd.h>    /* stat         */
 #include <Wyliodrin.h> /* lw version   */
 
 #include "winternals/winternals.h" /* logs and errs   */
@@ -27,21 +29,28 @@
 /*************************************************************************************************/
 
 
+
 /*** VARIABLES ***********************************************************************************/
 
-/* Variables found in wyliodrin.json */
-const char *jid_str;
-const char *owner_str;
-const char *mount_file_str;
-const char *build_file_str;
-const char *board_str;
-const char *sudo_str;
-const char *shell_cmd;
-const char *run_cmd;
+/* Values from settings configuration file */
+const char *board;
+const char *home;
+const char *mount_file;
+const char *build_file;
+const char *shell;
+const char *run;
+const char *stop;
+static const char *config_file;
 
-bool privacy = false; /* privacy value from wylliodrin.json */
+/* Values from wyliodrin.json */
+const char *jid;
+const char *owner;
+static const char *password;
+static const char *ssid;
+static const char *psk;
+bool privacy = false;
 
-bool is_fuse_available; /* fuse checker */
+bool is_fuse_available = false;
 
 /*************************************************************************************************/
 
@@ -49,38 +58,278 @@ bool is_fuse_available; /* fuse checker */
 
 /*** STATIC FUNCTIONS DECLARATIONS ***************************************************************/
 
-/* Returns the boardtype or NULL in case of errors.
+/**
+ * Returns the boardtype or NULL in case of errors.
  * Return value must be freed.
  */
 static char *get_boardtype();
 
-/*************************************************************************************************/
+/**
+ * Load values from settings file in separate variables. Return true if every expected value is
+ * found in the settings file, or false otherwise.
+ * settings_file is used to print error logs.
+ */
+static bool load_content_from_settings_file(json_t *settings_json, const char *settings_file);
+
+/**
+ * Load values from config file in separate variables. Return true if every expected value is
+ * found in the config file, or false otherwise.
+ * config_file is used to print error logs.
+ */
+static bool load_content_from_config_file(json_t *config_json, const char *config_file);
 
 /**
  * Check whether fuse is available or not by stat /dev/fuse.
  */
-static void check_for_fuse() {
-  if (strcmp(board_str, "raspberrypi") == 0) {
-    is_fuse_available = system("sudo stat /dev/fuse > /dev/null 2>&1") == 0 ? true : false;
+static void check_is_fuse_available();
+
+/**
+ * Create running projects if this file does not exists.
+ */
+static void create_running_projects_file_if_does_not_exist();
+
+/**
+ * Signal handler used to catch SIGTERM.
+ */
+static void signal_handler(int signum);
+
+/**
+ * Umount mount file.
+ */
+static void umount_mount_file();
+
+/**
+ * Create home, mount and build directories.
+ */
+static void create_home_mount_and_build_directories();
+
+/**
+ * Change owner of home, mount and build directories for Raspberry Pi.
+ */
+static void change_owner_of_directories_for_raspberry_pi();
+
+/**
+ * Wifi connection for Edison.
+ */
+static void wifi_edison();
+
+/**
+ * Wifi connection for Raspberry Pi.
+ */
+static void wifi_raspberrypi();
+
+/*************************************************************************************************/
+
+
+
+/*** MAIN ****************************************************************************************/
+
+int main(int argc, char *argv[]) {
+  /* Catch SIGTERM */
+  if (signal(SIGTERM, signal_handler) == SIG_ERR) {
+    werr("Unable to catch SIGTERM");
+  }
+
+  /* Get boartype */
+  char *boardtype = get_boardtype();
+  werr2(boardtype == NULL, goto _finish, "Could not get boardtype");
+
+  /* Build path of settings_<boardtype>.json */
+  char settings_file[128];
+  int snprintf_rc = snprintf(settings_file, 128, "%s%s.json", SETTINGS_PATH, boardtype);
+  wsyserr2(snprintf_rc < 0, goto _finish, "Could not build the settings configuration file");
+  werr2(snprintf_rc >= 128, goto _finish, "File path of settings configuration file too long");
+
+  /* Get the content from the settings_<boardtype> file in a json_object */
+  json_t *settings_json = file_to_json(settings_file);
+  werr2(settings_json == NULL, goto _finish, "Could not load JSON from %s", settings_file);
+
+  /* Load content from settings_<boardtype> in variables */
+  bool load_settings_rc = load_content_from_settings_file(settings_json, settings_file);
+  werr2(!load_settings_rc, goto _finish, "Invalid settings in %s", settings_file);
+
+  werr2(strcmp(board, boardtype) != 0, goto _finish,
+    "Content of boardtype does not coincide with board value from settings file");
+
+  free(boardtype);
+
+  /* Load content from wyliodrin.json. The path to this file is indicated by the config_file
+   * entry from the settings configuration file. */
+  json_t *config_json = file_to_json(config_file);
+  werr2(config_json == NULL, goto _finish, "Could not load JSON from %s", config_file);
+
+  bool load_config_rc = load_content_from_config_file(config_json, config_file);
+  werr2(!load_config_rc, goto _finish, "Invalid configuration in %s", config_file);
+
+  /* Configure wifi of Edison boards */
+  if (strcmp(board, "edison") == 0) {
+    wifi_edison();
+  }
+
+  /* Configure wifi for Raspberry Pi boards */
+  if (strcmp(board, "raspberrypi") == 0) {
+    change_owner_of_directories_for_raspberry_pi();
+    wifi_raspberrypi();
+  }
+
+  create_running_projects_file_if_does_not_exist();
+
+  umount_mount_file();
+
+  create_home_mount_and_build_directories();
+
+  check_is_fuse_available();
+
+  winfo("Starting wyliodrin-server v%d.%d with libwyliodrin v%d.%d",
+    WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR,
+    get_version_major(), get_version_minor());
+
+  xmpp_connect(jid, password);
+
+  _finish: ;
+    /* Let it sleep for a while for error messages to be sent */
+    sleep(3);
+
+    return -1;
+}
+
+/*************************************************************************************************/
+
+
+
+/*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
+
+static char *get_boardtype() {
+  char *return_value = NULL;
+  bool error = true;
+
+  /* Open boardtype */
+  int boardtype_fd = open(BOARDTYPE_PATH, O_RDONLY);
+  wsyserr2(boardtype_fd == -1, goto _finish, "Could not open %s", BOARDTYPE_PATH);
+
+  /* Allocate space for return value */
+  char *boardtype = calloc(64, sizeof(char));
+  wsyserr2(boardtype == NULL, goto _finish, "Could not calloc space for boardtype");
+
+  /* Read the content of the boartype file */
+  int read_rc = read(boardtype_fd, boardtype, 63);
+  wsyserr2(read_rc == -1, goto _finish, "Could not read from %s", BOARDTYPE_PATH);
+  werr2(read_rc == 63, goto _finish, "Board name too long in %s", BOARDTYPE_PATH);
+
+  /* Success */
+  return_value = boardtype;
+  error = false;
+
+  _finish: ;
+    if (boardtype_fd != -1) {
+      int close_rc = close(boardtype_fd);
+      wsyserr2(close_rc == -1, error = true; return_value = NULL,
+               "Could not close %s", BOARDTYPE_PATH);
+    }
+
+    if (error) {
+      if (boardtype != NULL) {
+        free(boardtype);
+      }
+    }
+
+    return return_value;
+}
+
+
+static bool load_content_from_settings_file(json_t *settings_json, const char *settings_file) {
+  bool return_value = false;
+
+  board = get_str_value(settings_json, "board");
+  werr2(board == NULL, goto _finish, "There is no board entry in %s", settings_file);
+
+  config_file = get_str_value(settings_json, "config_file");
+  werr2(config_file == NULL, goto _finish, "There is no config_file entry in %s", settings_file);
+
+  home = get_str_value(settings_json, "home");
+  werr2(home == NULL, goto _finish, "There is no home entry in %s", settings_file);
+
+  mount_file = get_str_value(settings_json, "mount_file");
+  werr2(mount_file == NULL, goto _finish, "There is no mount_file entry in %s", settings_file);
+
+  build_file = get_str_value(settings_json, "build_file");
+  werr2(build_file == NULL, goto _finish, "There is no build_file entry in %s", settings_file);
+
+  shell = get_str_value(settings_json, "shell");
+  werr2(shell == NULL, goto _finish, "There is no shell entry in %s", settings_file);
+
+  run = get_str_value(settings_json, "run");
+  werr2(run == NULL, goto _finish, "There is no run entry in %s", settings_file);
+
+  stop = get_str_value(settings_json, "stop");
+  werr2(stop == NULL, goto _finish, "There is no stop entry in %s", settings_file);
+
+  /* Success */
+  return_value = true;
+
+  _finish: ;
+    return return_value;
+}
+
+
+static bool load_content_from_config_file(json_t *config_json, const char *config_file) {
+  bool return_value = false;
+
+  jid = get_str_value(config_json, "jid");
+  werr2(jid == NULL, goto _finish, "There is no jid entry in %s", config_file);
+
+  password = get_str_value(config_json, "password");
+  werr2(password == NULL, goto _finish, "There is no password entry in %s", config_file);
+
+  owner = get_str_value(config_json, "owner");
+  werr2(owner == NULL, goto _finish, "There is no owner entry in %s", config_file);
+
+  ssid = get_str_value(config_json, "ssid");
+  psk  = get_str_value(config_json, "psk");
+
+  /* Set privacy based on privacy value from wyliodrin.json (if exists) */
+  json_t *privacy_json = json_object_get(config_json, "privacy");
+  if (privacy_json != NULL && json_is_boolean(privacy_json) && json_is_true(privacy_json)) {
+    privacy = true;
+  }
+
+  /* Success */
+  return_value = true;
+
+  _finish: ;
+    return return_value;
+}
+
+
+static void check_is_fuse_available() {
+  if (strcmp(board, "server") == 0) {
+    is_fuse_available = false;
   } else {
-    is_fuse_available = system("stat /dev/fuse > /dev/null 2>&1") == 0 ? true : false;
+    char system_cmd[256];
+    int snprintf_rc = snprintf(system_cmd, 256, "%sstat /dev/fuse > /dev/null 2>&1",
+                               strcmp(board, "raspberrypi") == 0 ? "sudo " : "");
+
+    wsyserr2(snprintf_rc < 0, return, "Could not build the stat command");
+    werr2(snprintf_rc >= 256, return, "Command too long");
+
+    is_fuse_available = system(system_cmd) == 0 ? true : false;
   }
 }
 
-static void create_running_projects_file_if_does_not_exist() {
-  int open_rc;
 
+static void create_running_projects_file_if_does_not_exist() {
   /* Try to open RUNNING_PROJECTS_PATH */
-  open_rc = open(RUNNING_PROJECTS_PATH, O_RDONLY);
+  int open_rc = open(RUNNING_PROJECTS_PATH, O_RDONLY);
 
   /* Create RUNNING_PROJECTS_PATH if it does not exist */
   if (open_rc == -1) {
     open_rc = open(RUNNING_PROJECTS_PATH, O_CREAT | O_RDWR);
-    if (open_rc == -1) {
-      werr("Error while trying to create " RUNNING_PROJECTS_PATH);
-    }
+    wsyserr2(open_rc == -1, return, "Error while trying to create " RUNNING_PROJECTS_PATH);
   }
+
+  close(open_rc);
 }
+
 
 static void signal_handler(int signum) {
   if (signum == SIGTERM) {
@@ -89,280 +338,88 @@ static void signal_handler(int signum) {
 }
 
 
+static void umount_mount_file() {
+  char system_cmd[256];
 
-void wtalk() {
-  /* Get boartype */
-  char *boardtype = get_boardtype();
-  werr2(boardtype == NULL, return, "Could not get boardtype");
+  if (strcmp(board, "server") != 0) {
+    int snprintf_rc = snprintf(system_cmd, 256, "%sumount -f %s",
+      strcmp(board, "raspberrypi") == 0 ? "sudo " : "", mount_file);
+    wsyserr2(snprintf_rc < 0, return, "Could not build the umount command");
+    werr2(snprintf_rc >= 256, return, "Command too long");
 
-  /* Build path of settings_<boardtype>.json */
-  char settings_path[128];
-  int snprintf_rc = snprintf(settings_path, 128, "%s%s.json", SETTINGS_PATH, boardtype);
-  wsyserr2(snprintf_rc < 0, return, "Could not build the settings configuration file");
-  werr2(snprintf_rc >= 128, return, "File path of settings configuration file too long");
-
-  /* Now that the settings configuration file is built, free boardtype */
-  free(boardtype);
-
-  /* Get the content from the settings_<boardtype> file in a json_object */
-  json_t *settings_json = file_to_json_t(settings_path); /* JSON object of settings_<boardtype> */
-  wfatal(settings_json == NULL, "Invalid JSON in %s", settings_path);
-
-  /* Get the command that should be run when starting a shell */
-  shell_cmd = get_str_value(settings_json, "shell_cmd"); /* config_file value */
-  if (shell_cmd == NULL) {
-    shell_cmd = strdup("bash");
+    system(system_cmd);
   }
+}
 
-  run_cmd = get_str_value(settings_json, "run");
-  wfatal(run_cmd == NULL, "No entry named run in %s", settings_path);
 
-  /* Get config_file value. This value contains the path to wyliodrin.json */
-  const char *config_file_str = get_str_value(settings_json, "config_file"); /* config_file value */
-  wfatal(config_file_str == NULL, "Wrong config_file value in %s", settings_path);
+static void create_home_mount_and_build_directories() {
+  char system_cmd[256];
 
-  /* Get the content from the wyliodrin.json file in a json object */
-  json_t *config_json = file_to_json_t(config_file_str); /* config_file as JSON */
-  wfatal(config_json == NULL, "Invalid JSON in %s", config_file_str);
+  int snprintf_rc = snprintf(system_cmd, 256, "%smkdir -p %s %s %s",
+           strcmp(board, "raspberrypi") == 0 ? "sudo " : "",
+           home, mount_file, build_file);
+  wsyserr2(snprintf_rc < 0, return, "Could not build the mkdir command");
+  werr2(snprintf_rc >= 256, return, "Command used for mkdir too long");
 
-  /* Get sudo command */
-  sudo_str = get_str_value(settings_json, "sudo");
-  if (sudo_str == NULL) {
-    sudo_str = "";
-  }
+  int system_rc = system(system_cmd);
+  wsyserr2(system_rc < 0, return, "Could not create home, mount, and build directories");
+}
 
-  /* Set privacy based on privacy value from wyliodrin.json (if exists) */
-  json_t *privacy_json = json_object_get(config_json, "privacy");
-  if (privacy_json != NULL && json_is_boolean(privacy_json) && json_is_true(privacy_json)) {
-    privacy = true;
-  }
 
-  /* Get mountFile value. This value containts the path where the projects are to be mounted */
-  mount_file_str = get_str_value(settings_json, "mountFile");
-  wfatal(mount_file_str == NULL, "Wrong mountFile value in %s", settings_path);
-  mount_file_str = strdup(mount_file_str);
-  wsyserr(mount_file_str == NULL, "strdup");
+static void change_owner_of_directories_for_raspberry_pi() {
+  char system_cmd[512];
 
-  if (mount_file_str[0] != '/') {
-    werr("mountFile value does not begin with \"/\": %s", mount_file_str);
-    return;
-  }
+  int snprintf_rc = snprintf(system_cmd, 512, "sudo chown -R pi:pi %s %s %s",
+         home, mount_file, build_file);
+  wsyserr2(snprintf_rc < 0, return, "Could not build the chown command");
+  werr2(snprintf_rc >= 512, return, "Command used for chown too long");
+  int system_rc = system(system_cmd);
+  wsyserr2(system_rc < 0, return, "Could not chown for home, mount and build directories");
+}
 
-  /* Create mount file */
-  if (mkdir(mount_file_str, 0755) != 0) {
-    char *aux;
-    char *p = (char *)mount_file_str;
-    while (true) {
-      p = strchr(p + 1, '/');
-      if (p == NULL) { break; }
-      aux = strdup(mount_file_str);
-      aux[p - mount_file_str] = '\0';
-      mkdir(aux, 0755);
-      free(aux);
+
+static void wifi_edison() {
+  if (ssid != NULL) {
+    int wifi_pid = fork();
+    wsyserr2(wifi_pid == -1, return, "Fork failed");
+
+    if (wifi_pid == 0) { /* Child */
+      char *args[] = {"configure_edison", "--changeWiFi",
+                      psk == NULL ? "OPEN" : "WPA-PSK",
+                      (char *)ssid, psk == NULL ? "" : (char *)psk,
+                      NULL};
+      execvp(args[0], args);
+
+      werr("Could not set wifi connection");
+      exit(EXIT_FAILURE);
     }
-    mkdir(mount_file_str, 0755);
-  }
 
-  /* Get buildFile value. This value containts the path where the projects are to be mounted */
-  build_file_str = get_str_value(settings_json, "buildFile");
-  wfatal(build_file_str == NULL, "Wrong buildFile value in %s", settings_path);
-  build_file_str = strdup(build_file_str);
-  wsyserr(build_file_str == NULL, "strdup");
-
-  if (build_file_str[0] != '/') {
-    werr("buildFile value does not begin with \"/\": %s", build_file_str);
-    return;
-  }
-
-  /* Create build file */
-  if (mkdir(build_file_str, 0755) != 0) {
-    char *aux;
-    char *p = (char *)build_file_str + 1;
-    while (true) {
-      p = strchr(p + 1, '/');
-      if (p == NULL) { break; }
-      aux = strdup(build_file_str);
-      aux[p - build_file_str] = '\0';
-      mkdir(aux, 0755);
-      wlog("Creating: %s", aux);
-      free(aux);
-    }
-    mkdir(build_file_str, 0755);
-  }
-
-  /* Get the board value */
-  board_str = get_str_value(settings_json, "board");
-  wfatal(board_str == NULL, "No non-empty board key of type string in %s", settings_path);
-  board_str = strdup(board_str);
-  wsyserr(board_str == NULL, "strdup");
-
-  /* Get jid value from wyliodrin.json */
-  jid_str = get_str_value(config_json, "jid");
-  wfatal(jid_str == NULL, "No non-empty jid key of type string in %s", config_file_str);
-  jid_str = strdup(jid_str);
-
-  /* Get passwork value from wyliodrin.json */
-  const char* password_str = get_str_value(config_json, "password");
-  wfatal(password_str == NULL, "No non-empty password key of type string in %s", config_file_str);
-
-  /* Get owner value from wyliodrin.json */
-  owner_str = get_str_value(config_json, "owner");
-  wfatal(owner_str == NULL, "No non-empty owner key of type string in %s", config_file_str);
-  owner_str = strdup(owner_str);
-  wfatal(owner_str == NULL, "strdup");
-
-  /* Convert owner to lowercase */
-  int i; /* browser */
-  char *p = (char *)owner_str; /* remove const-ness of owner_str */
-  for (i = 0; i < strlen(p); i++) {
-    p[i] = tolower(p[i]);
-  }
-
-  /* Umount the mountFile */
-  if (strcmp(board_str, "server") != 0) {
-    char umount_cmd[128];
-    if (strcmp(board_str, "raspberrypi") == 0) {
-      snprintf_rc = snprintf(umount_cmd, 127, "sudo umount -f %s", mount_file_str);
-    } else {
-      snprintf_rc = snprintf(umount_cmd, 127, "umount -f %s", mount_file_str);
-    }
-    wsyserr(snprintf_rc < 0, "snprintf");
-    int system_rc = system(umount_cmd);
-    wsyserr(system_rc == -1, "system");
-
-    check_for_fuse();
-  } else {
-    is_fuse_available = false;
-  }
-
-  /* Configure wifi of Edison boards */
-  int wifi_pid = -1; /* Pid of fork's child in which edison's wifi configuration is done */
-  if (strcmp(boardtype, "edison") == 0) {
-    const char *ssid_str = get_str_value(config_json, "ssid");
-
-    if (ssid_str != NULL && strlen(ssid_str) != 0) {
-      const char *psk_str = get_str_value(config_json, "psk");
-      if (psk_str != NULL) {
-        /* Set wifi type: OPEN or WPA-PSK */
-        char wifi_type[16];
-        if (strlen(psk_str) == 0) {
-          snprintf_rc = snprintf(wifi_type, 15, "OPEN");
-        } else {
-          snprintf_rc = snprintf(wifi_type, 15, "WPA-PSK");
-        }
-        wsyserr(snprintf_rc < 0, "snprintf");
-
-        /* Fork and exec configure_edison */
-        wifi_pid = fork();
-        wfatal(wifi_pid == -1, "fork");
-        if (wifi_pid == 0) { /* Child */
-          char *args[] = {"configure_edison", "--changeWiFi",
-            wifi_type, (char *)ssid_str, (char *)psk_str, NULL};
-          execvp(args[0], args);
-          werr("configure_edison failed");
-          exit(EXIT_FAILURE);
-        }
-      }
-    }
-  }
-
-  /* Wifi for rpi */
-  if (strcmp(boardtype, "raspberrypi") == 0) {
-    const char *ssid_str = get_str_value(config_json, "ssid");
-
-    if (ssid_str != NULL && strlen(ssid_str) != 0) {
-      const char *psk_str = get_str_value(config_json, "psk");
-      if (psk_str != NULL) {
-        wifi_pid = fork();
-
-        /* Return if fork failed */
-        if (wifi_pid == -1) {
-          werr("Fork used for setup_wifi_rpi failed: %s", strerror(errno));
-        }
-
-        /* Child from fork */
-        else if (wifi_pid == 0) {
-          char *env[] = {"sudo", "setup_wifi_rpi", (char *)ssid_str, (char *)psk_str, NULL};
-          execvp(env[0], env);
-
-          werr("setup_wifi_rpi failed");
-          exit(EXIT_FAILURE);
-        }
-      }
-    }
-  }
-
-  /* Update /etc/resolv.conf if nameserver is a valid entry in wyliodrin.json */
-  const char *nameserver_str = get_str_value(config_json, "nameserver");
-  if (nameserver_str != NULL && strlen(nameserver_str) != 0) {
-    int resolv_fd = open("/etc/resolv.conf", O_WRONLY | O_TRUNC);
-    if (resolv_fd < 0) {
-      werr("Could not open resolv.conf");
-    } else {
-      char to_write[128];
-      snprintf_rc = snprintf(to_write, 127, "nameserver %s", nameserver_str);
-      wsyserr(snprintf_rc < 0, "snprintf");
-      int write_rc = write(resolv_fd, to_write, strlen(to_write));
-      wsyserr(write_rc == -1, "write");
-    }
-  }
-
-  /* Create /wyliodrin directory */
-  mkdir("/wyliodrin", 0755);
-
-  /* Wait for wifi configuration */
-  if (wifi_pid != -1) {
+    winfo("Connecting to wifi...");
     waitpid(wifi_pid, NULL, 0);
+    winfo("Wifi connection established");
   }
-
-  create_running_projects_file_if_does_not_exist();
-
-  winfo("Starting wyliodrin-server v%d.%d with libwyliodrin v%d.%d",
-    WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR,
-    get_version_major(), get_version_minor());
-
-  /* Connect to XMPP server */
-  xmpp_connect(jid_str, password_str);
-
-  /* Cleaning */
-  json_decref(config_json);
-  json_decref(settings_json);
-}
-
-int main(int argc, char *argv[]) {
-  /* Catch SIGTERM */
-  if (signal(SIGTERM, signal_handler) == SIG_ERR) {
-    werr("Unable to catch SIGTERM");
-  }
-
-  wtalk();
-
-  return 0;
 }
 
 
+static void wifi_raspberrypi() {
+  if (ssid) {
+    int wifi_pid = fork();
+    wsyserr2(wifi_pid == -1, return, "Fork failed");
 
-/*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
+    /* Child from fork */
+    if (wifi_pid == 0) {
+      char *args[] = {"sudo", "setup_wifi_rpi",
+                      (char *)ssid, psk != NULL ? (char *)psk : "", NULL};
+      execvp(args[0], args);
 
-static char *get_boardtype() {
-  /* Open boardtype */
-  int boardtype_fd = open(BOARDTYPE_PATH, O_RDONLY);
-  wsyserr2(boardtype_fd == -1, return NULL, "Could not open %s", BOARDTYPE_PATH);
+      werr("Could not set wifi connection");
+      exit(EXIT_FAILURE);
+    }
 
-  /* Allocate space for return value */
-  char *boardtype = calloc(64, sizeof(char));
-  wsyserr2(boardtype == NULL, return NULL, "Could not calloc space for boardtype");
-
-  /* Read the content of the boartype file */
-  int read_rc = read(boardtype_fd, boardtype, 63);
-  wsyserr2(read_rc == -1, return NULL, "Could not read from %s", BOARDTYPE_PATH);
-  werr2(read_rc == 63, return NULL, "Board name too long in %s", BOARDTYPE_PATH);
-
-  /* Close boardtype file */
-  int close_rc = close(boardtype_fd);
-  wsyserr2(close_rc == -1, return NULL, "Could not close %s", BOARDTYPE_PATH);
-
-  return boardtype;
+    winfo("Connecting to wifi...");
+    waitpid(wifi_pid, NULL, 0);
+    winfo("Wifi connection established");
+  }
 }
 
 /*************************************************************************************************/

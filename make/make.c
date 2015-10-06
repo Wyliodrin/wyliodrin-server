@@ -26,10 +26,10 @@
 
 #define BUFSIZE (1 * 1024) /* 1 KB */
 
-extern const char *owner_str;      /* owner_str from wtalk.c */
-extern const char *mount_file_str; /* mount file */
-extern const char *build_file_str; /* build file */
-extern const char *board_str;      /* board_str from wtalk.c */
+extern const char *owner;      /* owner from wtalk.c */
+extern const char *mount_file; /* mount file */
+extern const char *build_file; /* build file */
+extern const char *board;      /* board from wtalk.c */
 extern bool is_fuse_available;     /* from wtalk.c */
 
 void init_make() { }
@@ -62,7 +62,7 @@ void *out_read_thread(void *args) {
 
       xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza with make */
       xmpp_stanza_set_name(message_stz, "message");
-      xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+      xmpp_stanza_set_attribute(message_stz, "to", owner);
       xmpp_stanza_t *make_stz = xmpp_stanza_new(ctx); /* make stanza */
       xmpp_stanza_set_name(make_stz, "make");
       xmpp_stanza_set_ns(make_stz, WNS);
@@ -109,7 +109,7 @@ void *err_read_thread(void *args) {
 
       xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza with make */
       xmpp_stanza_set_name(message_stz, "message");
-      xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+      xmpp_stanza_set_attribute(message_stz, "to", owner);
       xmpp_stanza_t *make_stz = xmpp_stanza_new(ctx); /* make stanza */
       xmpp_stanza_set_name(make_stz, "make");
       xmpp_stanza_set_ns(make_stz, WNS);
@@ -157,7 +157,7 @@ void *status_read_thread(void *args) {
 
       xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza with make */
       xmpp_stanza_set_name(message_stz, "message");
-      xmpp_stanza_set_attribute(message_stz, "to", owner_str);
+      xmpp_stanza_set_attribute(message_stz, "to", owner);
       xmpp_stanza_t *make_stz = xmpp_stanza_new(ctx); /* make stanza */
       xmpp_stanza_set_name(make_stz, "make");
       xmpp_stanza_set_ns(make_stz, WNS);
@@ -242,19 +242,19 @@ void *fork_thread(void *args) {
     if (!is_fuse_available) {
       snprintf(cmd, 2047, "cd %s && curl -L -k %s > %s.tar && rm -rf %s && "
                           "tar xf %s.tar && rm -rf %s.tar && cd %s && make -f Makefile.%s",
-          build_file_str,
+          build_file,
           arg->address_attr,
           projectid_attr,
           projectid_attr,
           projectid_attr,
           projectid_attr,
           projectid_attr,
-          board_str);
+          board);
     } else {
       snprintf(cmd, 1023, "cp -rf %s/%s %s && cd %s/%s && make -f Makefile.%s",
-        mount_file_str, projectid_attr, build_file_str,
-        build_file_str, projectid_attr,
-        board_str);
+        mount_file, projectid_attr, build_file,
+        build_file, projectid_attr,
+        board);
     }
 
     rc = dup2(out_fd[1], STDOUT_FILENO); /* Redirect output to write end of out_fd */

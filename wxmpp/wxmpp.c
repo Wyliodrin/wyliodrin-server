@@ -18,7 +18,7 @@ xmpp_ctx_t *ctx = NULL;   /* XMPP context    */
 xmpp_conn_t *conn = NULL; /* XMPP connection */
 bool is_connected = false;
 
-extern char *board_str;   /* board name from wtalk.c */
+extern char *board;   /* board name from wtalk.c */
 
 
 
@@ -87,7 +87,7 @@ void xmpp_connect(const char *jid, const char *pass) {
   conn = NULL;
 
   /* Retry to connect */
-  if (strcmp(board_str, "server") != 0) {
+  if (strcmp(board, "server") != 0) {
     usleep(1000000);
     return xmpp_connect(jid, pass);
   }
