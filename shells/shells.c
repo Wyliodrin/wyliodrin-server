@@ -2,7 +2,7 @@
  * Shells module
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: July 2015
+ * Date last modified: October 2015
  *************************************************************************************************/
 
 #ifdef SHELLS

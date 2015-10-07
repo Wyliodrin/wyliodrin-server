@@ -1,33 +1,54 @@
 /**************************************************************************************************
- * Shells module
+ * Shells module API
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: July 2015
+ * Date last modified: October 2015
  *************************************************************************************************/
+
+#ifdef SHELLS
 
 #ifndef _SHELLS_H
 #define _SHELLS_H
 
-#ifdef SHELLS
+
+
+/*** INCLUDES ************************************************************************************/
 
 #include <strophe.h>
 
+/*************************************************************************************************/
+
+
+
+/*** DEFINES *************************************************************************************/
+
 #define MAX_SHELLS 256 /* Maximum number of shells */
 
-#define DEFAULT_WIDTH  12
-#define DEFAULT_HEIGHT 103
+#define DEFAULT_WIDTH  12  /* Default shells width  */
+#define DEFAULT_HEIGHT 103 /* Default shells height */
+
+/*************************************************************************************************/
+
+
+
+/*** TYPEDEFS ************************************************************************************/
 
 typedef struct {
   long int width;     /* width */
   long int height;    /* height */
   int pid;            /* PID */
-  int id;             /* Shell id */
+  int id;             /* shell id */
   int fdm;            /* PTY file descriptor */
   int close_request;  /* close request */
   char *request_attr; /* open request */
   char *projectid;    /* projectid in case of make shell */
   char *userid;       /* userid in case of make shell */
 } shell_t;
+
+/*************************************************************************************************/
+
+
+/*** API *****************************************************************************************/
 
 /* Initialize with NULL shells_vector */
 void init_shells();
@@ -63,6 +84,10 @@ void shells_poweroff();
 
 void start_dead_projects(xmpp_conn_t *const conn, void *const userdata);
 
-#endif /* SHELLS */
+/*************************************************************************************************/
+
+
 
 #endif /* _SHELLS_H */
+
+#endif /* SHELLS */

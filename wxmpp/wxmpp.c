@@ -46,6 +46,13 @@
 typedef void (*module_hander)(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
                               xmpp_conn_t *const conn, void *const userdata);
 
+typedef struct {
+  module_hander *handler;
+  xmpp_stanza_t *stz;
+  char *from_attr;
+  char *to_attr;
+} exec_handler_args_t;
+
 /*************************************************************************************************/
 
 
@@ -98,11 +105,6 @@ static void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t statu
                          xmpp_stream_error_t * const stream_error, void * const userdata);
 
 /**
- * Create modules hashmap
- */
-static void create_modules_hashmap();
-
-/**
  * Ping handler
  */
 static int ping_handler     (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza,
@@ -119,6 +121,16 @@ static int presence_handler (xmpp_conn_t *const conn, xmpp_stanza_t *const stanz
  */
 static int message_handler  (xmpp_conn_t *const conn, xmpp_stanza_t *const stanza,
                              void *const userdata);
+
+/**
+ * Create modules hashmap
+ */
+static void create_modules_hashmap();
+
+/**
+ * Exec handler routine
+ */
+static void *exec_handler_routine(void *raw_args);
 
 /*************************************************************************************************/
 
@@ -165,7 +177,6 @@ void xmpp_connect(const char *jid, const char *pass) {
   werr("XMPP event loop completed. Retrying to connect...");
 
   /* Cleaning */
-  is_xmpp_connection_set = false;
   xmpp_conn_release(global_conn);
   xmpp_ctx_free(global_ctx);
   xmpp_shutdown();
@@ -241,6 +252,7 @@ static void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t statu
   /* Connection error */
   else {
     werr("XMPP connection error");
+    is_xmpp_connection_set = false;
 
     is_owner_online = false;
 
@@ -262,40 +274,6 @@ static void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t statu
 }
 
 
-static void create_modules_hashmap() {
-  modules = create_hashmap();
-  module_hander addr;
-
-  #ifdef SHELLS
-    addr = shells;
-    hashmap_put(modules, "shells", &addr, sizeof(void *));
-    init_shells();
-    start_dead_projects(global_conn, global_ctx);
-  #endif
-  #ifdef FILES
-    if (is_fuse_available) {
-      addr = files;
-      hashmap_put(modules, "files", &addr, sizeof(void *));
-      init_files();
-    }
-  #endif
-  #ifdef MAKE
-    addr = make;
-    hashmap_put(modules, "make", &addr, sizeof(void *));
-    init_make();
-  #endif
-  #ifdef COMMUNICATION
-    addr = communication;
-    hashmap_put(modules, "communication", &addr, sizeof(void *));
-    init_communication();
-  #endif
-  #ifdef PS
-    addr = ps;
-    hashmap_put(modules, "ps", &addr, sizeof(void *));
-  #endif
-}
-
-
 int ping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
   /* Update XMPP context and connection */
   global_ctx = (xmpp_ctx_t *)userdata;
@@ -305,7 +283,7 @@ int ping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *con
   werr2(from_attr == NULL, return 1, "Received ping without from attribute");
 
   char *id_attr = xmpp_stanza_get_id(stanza);
-  werr2(id_attr == NULL, return 1, "Received ping without id attribute");
+  werr2(id_attr == NULL, return 1, "Received ping without id attribute from %s", from_attr);
 
   /* Send pong stanza:
    * <iq id=<id> type="result" to="<from>"/>
@@ -322,11 +300,16 @@ int ping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *con
 }
 
 
-/* Presence handler */
 int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
   /* Update XMPP context and connection */
   global_ctx = (xmpp_ctx_t *)userdata;
   global_conn = conn;
+
+  char *from_attr = xmpp_stanza_get_attribute(stanza, "from");
+  werr2(from_attr == NULL, return 1, "Received presence stanza without from attribute");
+
+  werr2(strncasecmp(owner, from_attr, strlen(owner)) != 0, return 1,
+    "Ignore presence stanza received from %s", from_attr);
 
   char *type = xmpp_stanza_get_type(stanza);
 
@@ -414,15 +397,34 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
     "Got message with error type from %s", from_attr);
 
   /* Get every module function from stanza and execute it */
-  module_hander *f;
+  module_hander *handler;
   xmpp_stanza_t *child_stz = xmpp_stanza_get_children(stanza);
   while (child_stz != NULL) {
     char *ns = xmpp_stanza_get_ns(child_stz);
     if (ns != NULL && strcmp(ns, WNS) == 0) {
       char *name = xmpp_stanza_get_name(child_stz);
-      f = (module_hander *)hashmap_get(modules, name);
-      if (f != NULL) {
-        (*f)(from_attr, to_attr, 0, child_stz, conn, userdata);
+      handler = (module_hander *)hashmap_get(modules, name);
+      if (handler != NULL) {
+        /* Build routine arguments */
+        exec_handler_args_t *args = (exec_handler_args_t *)malloc(sizeof(exec_handler_args_t));
+        wsyserr2(args == NULL, /* Do nothing */, "Could not allocate memory for thread argument");
+        args->handler = handler;
+        args->stz = xmpp_stanza_copy(child_stz);
+        args->from_attr = strdup(from_attr);
+        wsyserr2(args->from_attr == NULL, /* Do nothing */,
+                 "Could not allocate memory for from attribute");
+        args->to_attr = strdup(to_attr);
+        wsyserr2(args->from_attr == NULL, /* Do nothing */,
+                 "Could not allocate memory for to attribute");
+
+        pthread_t exec_handler_thread;
+        int pthread_create_rc = pthread_create(&exec_handler_thread, NULL,
+                                               exec_handler_routine, args);
+        if (pthread_create_rc != 0) {
+          werr("Could not create thread to execute the handler");
+        } else {
+          pthread_detach(exec_handler_thread);
+        }
       } else {
         werr("Got message from %s that is trying to trigger unavailable module %s",
              from_attr, name);
@@ -432,6 +434,54 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
   }
 
   return 1;
+}
+
+
+static void create_modules_hashmap() {
+  modules = create_hashmap();
+  module_hander addr;
+
+  #ifdef SHELLS
+    addr = shells;
+    hashmap_put(modules, "shells", &addr, sizeof(void *));
+    init_shells();
+    start_dead_projects(global_conn, global_ctx);
+  #endif
+  #ifdef FILES
+    if (is_fuse_available) {
+      addr = files;
+      hashmap_put(modules, "files", &addr, sizeof(void *));
+      init_files();
+    }
+  #endif
+  #ifdef MAKE
+    addr = make;
+    hashmap_put(modules, "make", &addr, sizeof(void *));
+    init_make();
+  #endif
+  #ifdef COMMUNICATION
+    addr = communication;
+    hashmap_put(modules, "communication", &addr, sizeof(void *));
+    init_communication();
+  #endif
+  #ifdef PS
+    addr = ps;
+    hashmap_put(modules, "ps", &addr, sizeof(void *));
+  #endif
+}
+
+
+static void *exec_handler_routine(void *raw_args) {
+  exec_handler_args_t *args = (exec_handler_args_t *)raw_args;
+
+  (*(args->handler))(args->from_attr, args->to_attr, 0, args->stz, global_conn, global_ctx);
+
+  /* Cleaning */
+  free(args->from_attr);
+  free(args->to_attr);
+  xmpp_stanza_release(args->stz);
+
+  return NULL;
 }
 
 /*************************************************************************************************/
