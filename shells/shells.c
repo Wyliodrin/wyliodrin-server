@@ -1,5 +1,5 @@
 /**************************************************************************************************
- * Shells module
+ * Shells module implementation
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
  * Date last modified: October 2015
@@ -7,11 +7,10 @@
 
 #ifdef SHELLS
 
-#include <strophe.h> /* Strophe XMPP stuff */
-#include <strings.h> /* strncasecmp */
-#include <string.h>
 
-#define _XOPEN_SOURCE 600
+/*** INCLUDES ************************************************************************************/
+
+#include <strings.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -24,25 +23,31 @@
 #include <pthread.h>
 #include <sys/wait.h>
 #include <pty.h>
-#include <sys/stat.h>  /* mkdir */
-#include <sys/types.h> /* mkdir */
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../wxmpp/wxmpp.h"           /* WNS */
 #include "../base64/base64.h"         /* encode decode */
 #include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
+
 #include "shells.h"                   /* shells module api */
 #include "shells_helper.h"            /* read routine */
-#include "wtalk_config.h"
+#include "wtalk_config.h"             /* version */
+
+/*************************************************************************************************/
 
 
-/* Variables from wtalk.c */
-extern const char *build_file; /* build_file */
-extern const char *board;      /* board name */
-extern const char *jid;        /* jid */
-extern const char *owner;      /* owner */
-extern const char *shell;      /* start shell command from wtalk.c */
-extern const char *run;        /* start shell command from wtalk.c */
+
+/*** EXTERN VARIABLES ****************************************************************************/
+
+extern const char *jid;
+extern const char *owner;
+extern const char *board;
+extern const char *shell;
+extern const char *run;
+extern const char *build_file;
+
 extern bool sudo;
 
 extern xmpp_ctx_t *global_ctx;
@@ -50,59 +55,51 @@ extern xmpp_conn_t *global_conn;
 
 extern bool is_xmpp_connection_set;
 
+/*************************************************************************************************/
+
+
+
+/*** STATIC VARIABLES ****************************************************************************/
+
+static pthread_mutex_t shells_lock;
+
+/*************************************************************************************************/
+
+
+
+/*** STATIC FUNCTIONS DECLARATIONS ***************************************************************/
+
+/**
+ * Open shell
+ */
+static void shells_open(const char *from, xmpp_stanza_t *stanza);
+
+/**
+ * Build and sent shells open response
+ */
+static void send_shells_open_response(char *request_attr, bool success, int shell_id,
+                                      bool running);
+
+/**
+ * Build array with words from str split by spaces. Append NULL at the end of the string.
+ * Value of size will be the number of entries in the returned array.
+ */
+static char **string_to_array(char *str, int *size);
+
+/**
+ * Return concatenation of local environment variables and user environment variables.
+ */
+static char **concatenation_of_local_and_user_env(char **local_env, int local_env_size);
+
+/************************************************************************************************/
+
+
+
 shell_t *shells_vector[MAX_SHELLS]; /* All shells */
 
-pthread_mutex_t shells_lock; /* shells mutex */
 
 extern char **environ;
 int execvpe(const char *file, char *const argv[], char *const envp[]);
-
-static char **string_to_array(char *str, int *size) {
-  char ** res  = NULL;
-  char *  p    = strtok (str, " ");
-  int n_spaces = 0;
-
-  while (p) {
-    res = realloc (res, sizeof (char*) * ++n_spaces);
-
-    if (res == NULL)
-      exit (-1); /* memory allocation failed */
-
-    res[n_spaces-1] = p;
-
-    p = strtok (NULL, " ");
-  }
-
-
-  n_spaces++;
-  res = realloc (res, sizeof (char*) * n_spaces);
-  res[n_spaces-1] = NULL;
-
-  *size = n_spaces;
-  return res;
-}
-
-static bool get_open_attributes(xmpp_stanza_t *stanza, char **request_attr, char **width_attr,
-  char **height_attr, char **projectid_attr, char **userid_attr)
-{
-  *request_attr   = xmpp_stanza_get_attribute(stanza, "request");
-  *width_attr     = xmpp_stanza_get_attribute(stanza, "width");
-  *height_attr    = xmpp_stanza_get_attribute(stanza, "height");
-  *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid");
-  *userid_attr    = xmpp_stanza_get_attribute(stanza, "userid");
-
-  if (*request_attr == NULL || *width_attr == NULL || *height_attr == NULL) {
-    werr("No request, width or height attribute in shells open");
-    return false;
-  }
-
-  if (*projectid_attr != NULL && *userid_attr == NULL) {
-    werr("No userid attribute but projectid attribute is provided");
-    return false;
-  }
-
-  return true;
-}
 
 static int get_entry_in_shells_vector() {
   int shell_index;
@@ -116,21 +113,6 @@ static int get_entry_in_shells_vector() {
   pthread_mutex_unlock(&shells_lock);
 
   return shell_index;
-}
-
-static char **concatenation_of_local_and_user_env(char **local_env, int local_env_size) {
-  /* Get size of user environmet variables */
-  int environ_size = 0;
-  while(environ[environ_size]) {
-    environ_size++;
-  }
-
-  /* Concatenate local and */
-  char **all_env = malloc((environ_size + local_env_size) * sizeof(char *));
-  memcpy(all_env, environ, environ_size * sizeof(char *));
-  memcpy(all_env + environ_size, local_env, local_env_size * sizeof(char *));
-
-  return all_env;
 }
 
 static bool allocate_memory_for_new_shell(xmpp_conn_t *const conn, void *const userdata,
@@ -244,12 +226,12 @@ static void open_normal_shell(xmpp_conn_t *const conn, void *const userdata,
   pthread_detach(rt);
 
   /* Send success response */
-  send_shells_open_response(request_attr, conn, userdata, true, shell_index, false);
+  send_shells_open_response(request_attr, true, shell_index, false);
 
   return;
 
   label_fail:
-    send_shells_open_response(request_attr, conn, userdata, false, -1, false);
+    send_shells_open_response(request_attr, false, -1, false);
 }
 
 
@@ -267,7 +249,7 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
     int projectid_fd = open(projectid_filepath, O_RDWR);
     if (projectid_fd != -1) {
       read(projectid_fd, &shell_index, sizeof(int));
-      send_shells_open_response(request_attr, conn, userdata, true, shell_index, true);
+      send_shells_open_response(request_attr, true, shell_index, true);
       return;
     }
   }
@@ -398,14 +380,14 @@ static void open_project_shell(xmpp_conn_t *const conn, void *const userdata, ch
 
   /* Send success response */
   if (request_attr != NULL) {
-    send_shells_open_response(request_attr, conn, userdata, true, shell_index, false);
+    send_shells_open_response(request_attr, true, shell_index, false);
   }
 
   return;
 
   label_fail:
   if (request_attr != NULL) {
-    send_shells_open_response(request_attr, conn, userdata, false, -1, false);
+    send_shells_open_response(request_attr, false, -1, false);
   }
 }
 
@@ -431,8 +413,7 @@ void start_dead_projects(xmpp_conn_t *const conn, void *const userdata) {
   fclose(fp);
 }
 
-void init_shells()
-{
+void init_shells() {
   static bool shells_initialized = false;
 
   mkdir("/tmp/wyliodrin", 0700);
@@ -441,7 +422,7 @@ void init_shells()
     int i;
 
     pthread_mutex_lock(&shells_lock);
-    for(i = 0; i < MAX_SHELLS; i++) {
+    for (i = 0; i < MAX_SHELLS; i++) {
       shells_vector[i] = NULL;
     }
     pthread_mutex_unlock(&shells_lock);
@@ -452,82 +433,28 @@ void init_shells()
 
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
             xmpp_conn_t *const conn, void *const userdata) {
-  wlog("shells(%s, %s, %d, stanza)", from, to, error);
+  werr2(strncasecmp(owner, from, strlen(owner)) != 0, return,
+        "Ignore shells stanza received from %s", from);
 
-  char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
-  if (action_attr == NULL) {
-    werr("Error while getting action attribute");
-    return;
-  }
+  char *action_attr = xmpp_stanza_get_attribute(stanza, "action");
+  werr2(action_attr == NULL, return, "Received shells stanza without action attribute");
 
-  if(strncasecmp(action_attr, "open", 4) == 0) {
-    shells_open(stanza, conn, userdata);
-  } else if(strncasecmp(action_attr, "close", 5) == 0) {
+  if (strncasecmp(action_attr, "open", 4) == 0) {
+    shells_open(from, stanza);
+  } else if (strncasecmp(action_attr, "close", 5) == 0) {
     shells_close(stanza, conn, userdata);
-  } else if(strncasecmp(action_attr, "keys", 4) == 0) {
+  } else if (strncasecmp(action_attr, "keys", 4) == 0) {
     shells_keys(stanza, conn, userdata);
-  } else if(strncasecmp(action_attr, "list", 4) == 0) {
+  } else if (strncasecmp(action_attr, "list", 4) == 0) {
     shells_list(stanza, conn, userdata);
-  } else if(strncasecmp(action_attr, "status", 6) == 0) {
+  } else if (strncasecmp(action_attr, "status", 6) == 0) {
     shells_status(stanza, conn, userdata);
-  } else if(strncasecmp(action_attr, "poweroff", 8) == 0) {
+  } else if (strncasecmp(action_attr, "poweroff", 8) == 0) {
     shells_poweroff();
   } else {
-    werr("Unknown action attribute: %s", action_attr);
+    werr("Received shells stanza with unknown action attribute %s from %s",
+         action_attr, from);
   }
-
-  wlog("Return from shells");
-}
-
-void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
-  wlog("shells_open(...)");
-
-  /* Get attributes */
-  char *request_attr   = NULL;
-  char *width_attr     = NULL;
-  char *height_attr    = NULL;
-  char *projectid_attr = NULL;
-  char *userid_attr    = NULL;
-  if (!get_open_attributes(stanza, &request_attr, &width_attr, &height_attr, &projectid_attr,
-    &userid_attr))
-  {
-    send_shells_open_response(request_attr, conn, userdata, false, -1, false);
-    return;
-  }
-
-  if (projectid_attr == NULL) { /* A normal shell must be open */
-    open_normal_shell(conn, userdata, request_attr, width_attr, height_attr);
-  } else { /* A project must be run */
-    open_project_shell(conn, userdata, request_attr, width_attr, height_attr,
-      projectid_attr, userid_attr);
-  }
-}
-
-void send_shells_open_response(char *request_attr, xmpp_conn_t *const conn,
-  void *const userdata, bool success, int8_t id, bool running)
-{
-  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata;
-  xmpp_stanza_t *message = xmpp_stanza_new(ctx);
-  xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner);
-  xmpp_stanza_t *done = xmpp_stanza_new(ctx);
-  xmpp_stanza_set_name(done, "shells");
-  xmpp_stanza_set_ns(done, WNS);
-  xmpp_stanza_set_attribute(done, "action", "open");
-  if (success) {
-    xmpp_stanza_set_attribute(done, "response", "done");
-    char id_str[8];
-    snprintf(id_str, 7, "%d", id);
-    xmpp_stanza_set_attribute(done, "shellid", id_str);
-  } else {
-    xmpp_stanza_set_attribute(done, "response", "error");
-  }
-  xmpp_stanza_set_attribute(done, "request", request_attr);
-  xmpp_stanza_set_attribute(done, "running", running ? "true" : "false");
-  xmpp_stanza_add_child(message, done);
-  xmpp_send(conn, message);
-  xmpp_stanza_release(done);
-  xmpp_stanza_release(message);
 }
 
 void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
@@ -765,5 +692,107 @@ void shells_poweroff() {
 
   exit(EXIT_SUCCESS);
 }
+
+
+/*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
+
+
+static void shells_open(const char *from, xmpp_stanza_t *stanza) {
+  char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
+  werr2(request_attr == NULL, goto _error,
+        "Received shells open stanza from %s without request attribute", from);
+
+  char *width_attr = xmpp_stanza_get_attribute(stanza, "width");
+  werr2(width_attr == NULL, goto _error,
+        "Received shells open stanza from %s without width attribute", from);
+
+  char *height_attr = xmpp_stanza_get_attribute(stanza, "height");
+  werr2(height_attr == NULL, goto _error,
+        "Received shells open stanza from %s without height attribute", from);
+
+  char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid");
+  char *userid_attr    = xmpp_stanza_get_attribute(stanza, "userid");
+
+  if (projectid_attr == NULL) {
+    open_normal_shell(global_conn, global_ctx, request_attr, width_attr, height_attr);
+  } else {
+    open_project_shell(global_conn, global_ctx, request_attr, width_attr, height_attr,
+      projectid_attr, userid_attr);
+  }
+
+  _error: ;
+    send_shells_open_response(request_attr, false, 0, false);
+}
+
+
+static void send_shells_open_response(char *request_attr, bool success, int shell_id, bool running) {
+  xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
+  xmpp_stanza_set_name(message_stz, "message");
+  xmpp_stanza_set_attribute(message_stz, "to", owner);
+  xmpp_stanza_t *shells_stz = xmpp_stanza_new(global_ctx);
+  xmpp_stanza_set_name(shells_stz, "shells");
+  xmpp_stanza_set_ns(shells_stz, WNS);
+  xmpp_stanza_set_attribute(shells_stz, "action", "open");
+  xmpp_stanza_set_attribute(shells_stz, "request", request_attr);
+  if (success) {
+    xmpp_stanza_set_attribute(shells_stz, "response", "done");
+    char shell_id_str[8];
+    snprintf(shell_id_str, 8, "%d", shell_id);
+    xmpp_stanza_set_attribute(shells_stz, "shellid", shell_id_str);
+    xmpp_stanza_set_attribute(shells_stz, "running", running ? "true" : "false");
+  } else {
+    xmpp_stanza_set_attribute(shells_stz, "response", "error");
+  }
+  xmpp_stanza_add_child(message_stz, shells_stz);
+  xmpp_send(global_conn, message_stz);
+  xmpp_stanza_release(shells_stz);
+  xmpp_stanza_release(message_stz);
+}
+
+
+static char **string_to_array(char *str, int *size) {
+  char **return_value = NULL;
+  int num_spaces = 0;
+
+  char *saveptr;
+  char *p = strtok_r(str, " ", &saveptr);
+  while (p) {
+    num_spaces++;
+    return_value = realloc(return_value, sizeof(char*) * num_spaces);
+    wsyserr2(return_value == NULL, return NULL, "Could not reallocate memory");
+
+    return_value[num_spaces-1] = p;
+
+    p = strtok_r(NULL, " ", &saveptr);
+  }
+
+  num_spaces++;
+  return_value = realloc(return_value, sizeof(char*) * num_spaces);
+  wsyserr2(return_value == NULL, return NULL, "Could not reallocate memory");
+  return_value[num_spaces-1] = NULL;
+
+  *size = num_spaces;
+
+  return return_value;
+}
+
+
+static char **concatenation_of_local_and_user_env(char **local_env, int local_env_size) {
+  int environ_size = 0;
+  while (environ[environ_size]) {
+    environ_size++;
+  }
+
+  char **all_env = malloc((environ_size + local_env_size) * sizeof(char *));
+  wsyserr2(all_env == NULL, return NULL, "Could not allocate memory for environment variables");
+  memcpy(all_env, environ, environ_size * sizeof(char *));
+  memcpy(all_env + environ_size, local_env, local_env_size * sizeof(char *));
+
+  return all_env;
+}
+
+/*************************************************************************************************/
+
+
 
 #endif /* SHELLS */

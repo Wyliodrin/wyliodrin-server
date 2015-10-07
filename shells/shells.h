@@ -14,7 +14,7 @@
 
 /*** INCLUDES ************************************************************************************/
 
-#include <strophe.h>
+#include <strophe.h> /* xmpp library */
 
 /*************************************************************************************************/
 
@@ -56,13 +56,6 @@ void init_shells();
 /* Parse shells commands */
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
             xmpp_conn_t *const conn, void *const userdata);
-
-/* Open shell */
-void shells_open(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
-
-/* Send shells open response */
-void send_shells_open_response(char *request_attr, xmpp_conn_t *const conn,
-    void *const userdata, bool success, int8_t id, bool running);
 
 /* Close shell */
 void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);

@@ -309,7 +309,7 @@ int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void 
   werr2(from_attr == NULL, return 1, "Received presence stanza without from attribute");
 
   werr2(strncasecmp(owner, from_attr, strlen(owner)) != 0, return 1,
-    "Ignore presence stanza received from %s", from_attr);
+        "Ignore presence stanza received from %s", from_attr);
 
   char *type = xmpp_stanza_get_type(stanza);
 
