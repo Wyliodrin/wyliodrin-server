@@ -10,6 +10,8 @@
 
 #ifdef SHELLS
 
+#include <strophe.h>
+
 #define MAX_SHELLS 256 /* Maximum number of shells */
 
 #define DEFAULT_WIDTH  12

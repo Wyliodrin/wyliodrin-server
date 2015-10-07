@@ -46,7 +46,7 @@ extern bool privacy; /* Don't add logs if privacy is set to true */
 #define werr(msg, ...)                                                                            \
   do {                                                                                            \
     fprintf(stderr, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);              \
-    if (privacy == true) {                                                                        \
+    if (!privacy) {                                                                               \
       add_log(ERROR_LOG, msg, ##__VA_ARGS__);                                                     \
     }                                                                                             \
   } while (0)
@@ -67,7 +67,7 @@ extern bool privacy; /* Don't add logs if privacy is set to true */
 #define winfo(msg, ...)                                                                           \
   do {                                                                                            \
     fprintf(stderr, "[winfo in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);             \
-    if (privacy == true) {                                                                        \
+    if (!privacy) {                                                                               \
       add_log(INFO_LOG, msg, ##__VA_ARGS__);                                                      \
     }                                                                                             \
   } while (0)

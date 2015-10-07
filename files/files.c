@@ -28,8 +28,8 @@
 
 #include "files.h"
 
-extern xmpp_ctx_t *ctx;   /* Context    */
-extern xmpp_conn_t *conn; /* Connection */
+extern xmpp_ctx_t *global_ctx;   /* Context    */
+extern xmpp_conn_t *global_conn; /* Connection */
 
 extern const char *owner; /* owner from init.c */
 extern const char *mount_file; /* mount file */
@@ -96,18 +96,18 @@ static int wfuse_getattr(const char *path, struct stat *stbuf) {
   wsyserr(rc != 0, "pthread_mutex_lock");
 
   /* Send attributes stanza */
-  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with files */
+  xmpp_stanza_t *message = xmpp_stanza_new(global_ctx); /* message with files */
   xmpp_stanza_set_name(message, "message");
   xmpp_stanza_set_attribute(message, "to", owner);
 
-  xmpp_stanza_t *files = xmpp_stanza_new(ctx); /* files */
+  xmpp_stanza_t *files = xmpp_stanza_new(global_ctx); /* files */
   xmpp_stanza_set_name(files, "files");
   xmpp_stanza_set_ns(files, WNS);
   xmpp_stanza_set_attribute(files, "action", "attributes");
   xmpp_stanza_set_attribute(files, "path", path);
 
   xmpp_stanza_add_child(message, files);
-  xmpp_send(conn, message);
+  xmpp_send(global_conn, message);
   xmpp_stanza_release(files);
   xmpp_stanza_release(message);
 
@@ -180,18 +180,18 @@ static int wfuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
   rc = pthread_mutex_lock(&mutex);
   wsyserr(rc != 0, "pthread_mutex_lock");
 
-  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
+  xmpp_stanza_t *message = xmpp_stanza_new(global_ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
   xmpp_stanza_set_attribute(message, "to", owner);
 
-  xmpp_stanza_t *files = xmpp_stanza_new(ctx); /* message with done */
+  xmpp_stanza_t *files = xmpp_stanza_new(global_ctx); /* message with done */
   xmpp_stanza_set_name(files, "files");
   xmpp_stanza_set_ns(files, WNS);
   xmpp_stanza_set_attribute(files, "action", "list");
   xmpp_stanza_set_attribute(files, "path", path);
 
   xmpp_stanza_add_child(message, files);
-  xmpp_send(conn, message);
+  xmpp_send(global_conn, message);
   xmpp_stanza_release(files);
   xmpp_stanza_release(message);
 
@@ -280,18 +280,18 @@ static int wfuse_read(const char *path, char *buf, size_t size, off_t offset,
   rc = pthread_mutex_lock(&mutex);
   wsyserr(rc != 0, "pthread_mutex_lock");
 
-  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
+  xmpp_stanza_t *message = xmpp_stanza_new(global_ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
   xmpp_stanza_set_attribute(message, "to", owner);
 
-  xmpp_stanza_t *files = xmpp_stanza_new(ctx); /* message with done */
+  xmpp_stanza_t *files = xmpp_stanza_new(global_ctx); /* message with done */
   xmpp_stanza_set_name(files, "files");
   xmpp_stanza_set_ns(files, WNS);
   xmpp_stanza_set_attribute(files, "action", "read");
   xmpp_stanza_set_attribute(files, "path", path);
 
   xmpp_stanza_add_child(message, files);
-  xmpp_send(conn, message);
+  xmpp_send(global_conn, message);
   xmpp_stanza_release(files);
   xmpp_stanza_release(message);
 

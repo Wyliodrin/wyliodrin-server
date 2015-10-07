@@ -7,8 +7,6 @@
 
 #ifdef SHELLS
 
-
-
 #include <strophe.h> /* Strophe XMPP stuff */
 #include <strings.h> /* strncasecmp */
 #include <string.h>
@@ -47,8 +45,8 @@ extern const char *shell;      /* start shell command from wtalk.c */
 extern const char *run;        /* start shell command from wtalk.c */
 extern bool sudo;
 
-extern xmpp_ctx_t *ctx;
-extern xmpp_conn_t *conn;
+extern xmpp_ctx_t *global_ctx;
+extern xmpp_conn_t *global_conn;
 
 extern bool is_xmpp_connection_set;
 
@@ -662,10 +660,10 @@ void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
     return;
   }
 
-  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with done */
+  xmpp_stanza_t *message = xmpp_stanza_new(global_ctx); /* message with done */
   xmpp_stanza_set_name(message, "message");
   xmpp_stanza_set_attribute(message, "to", owner);
-  xmpp_stanza_t *keys = xmpp_stanza_new(ctx); /* shells action done stanza */
+  xmpp_stanza_t *keys = xmpp_stanza_new(global_ctx); /* shells action done stanza */
   xmpp_stanza_set_name(keys, "shells");
   xmpp_stanza_set_ns(keys, WNS);
   char shell_id_str[8];
@@ -673,7 +671,7 @@ void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
   xmpp_stanza_set_attribute(keys, "shellid", shell_id_str);
   xmpp_stanza_set_attribute(keys, "action", "keys");
   xmpp_stanza_set_attribute(keys, "request", shells_vector[shell_id]->request_attr);
-  xmpp_stanza_t *data = xmpp_stanza_new(ctx); /* data */
+  xmpp_stanza_t *data = xmpp_stanza_new(global_ctx); /* data */
   char *encoded_data = (char *)malloc(BASE64_SIZE(data_len));
   encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len),
     (const unsigned char *)data_str, data_len);
@@ -686,7 +684,7 @@ void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
   xmpp_stanza_set_text(data, encoded_data);
   xmpp_stanza_add_child(keys, data);
   xmpp_stanza_add_child(message, keys);
-  xmpp_send(conn, message);
+  xmpp_send(global_conn, message);
   xmpp_stanza_release(keys);
   xmpp_stanza_release(data);
   xmpp_stanza_release(message);

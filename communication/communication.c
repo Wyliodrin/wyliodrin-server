@@ -29,8 +29,8 @@
 
 redisContext *c = NULL;
 
-extern xmpp_ctx_t *ctx;
-extern xmpp_conn_t *conn;
+extern xmpp_ctx_t *global_ctx;
+extern xmpp_conn_t *global_conn;
 extern const char *jid;
 
 static bool is_connetion_in_progress = false;
@@ -213,20 +213,20 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     werr2(encoded_data == NULL, return, "Could not encode");
 
     /* Send it */
-    xmpp_stanza_t *message = xmpp_stanza_new(ctx);
+    xmpp_stanza_t *message = xmpp_stanza_new(global_ctx);
     xmpp_stanza_set_name(message, "message");
     xmpp_stanza_set_attribute(message, "to", id_str);
-    xmpp_stanza_t *communication = xmpp_stanza_new(ctx);
+    xmpp_stanza_t *communication = xmpp_stanza_new(global_ctx);
     xmpp_stanza_set_name(communication, "communication");
     xmpp_stanza_set_ns(communication, WNS);
     xmpp_stanza_set_attribute(communication, "port", port);
 
-    xmpp_stanza_t *data_stz = xmpp_stanza_new(ctx);
+    xmpp_stanza_t *data_stz = xmpp_stanza_new(global_ctx);
     xmpp_stanza_set_text(data_stz, encoded_data);
 
     xmpp_stanza_add_child(communication, data_stz);
     xmpp_stanza_add_child(message, communication);
-    xmpp_send(conn, message);
+    xmpp_send(global_conn, message);
     xmpp_stanza_release(message);
   } else {
     werr("Got message on subscription different from REDIS_REPLY_ARRAY");

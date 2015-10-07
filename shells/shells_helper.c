@@ -36,8 +36,8 @@ extern const char *owner; /* owner from wtalk.c */
 extern const char *board; /* board name */
 extern const char *jid;   /* jid */
 
-extern xmpp_ctx_t *ctx;
-extern xmpp_conn_t *conn;
+extern xmpp_ctx_t *global_ctx;
+extern xmpp_conn_t *global_conn;
 
 static pthread_mutex_t projectid_lock; /* shells mutex */
 
@@ -158,10 +158,10 @@ void *read_thread(void *args) {
       }
 
       /* Send close stanza */
-      xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message stanza */
+      xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx); /* message stanza */
       xmpp_stanza_set_name(message_stz, "message");
       xmpp_stanza_set_attribute(message_stz, "to", owner);
-      xmpp_stanza_t *close_stz = xmpp_stanza_new(ctx); /* close stanza */
+      xmpp_stanza_t *close_stz = xmpp_stanza_new(global_ctx); /* close stanza */
       xmpp_stanza_set_name(close_stz, "shells");
       xmpp_stanza_set_ns(close_stz, WNS);
       if (shell->close_request != -1) {
@@ -173,7 +173,7 @@ void *read_thread(void *args) {
       xmpp_stanza_set_attribute(close_stz, "shellid", shellid_str);
       xmpp_stanza_set_attribute(close_stz, "code", exit_status);
       xmpp_stanza_add_child(message_stz, close_stz);
-      xmpp_send(conn, message_stz);
+      xmpp_send(global_conn, message_stz);
       xmpp_stanza_release(close_stz);
       xmpp_stanza_release(message_stz);
 
