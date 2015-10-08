@@ -41,7 +41,6 @@ set (wyliodrind_SRCS
   ${PROJECT_SOURCE_DIR}/wtalk.c
   ${PROJECT_SOURCE_DIR}/wxmpp/wxmpp.c
   ${PROJECT_SOURCE_DIR}/shells/shells.c
-  ${PROJECT_SOURCE_DIR}/shells/shells_helper.c
   ${PROJECT_SOURCE_DIR}/wjson/wjson.c
   ${PROJECT_SOURCE_DIR}/ps/ps.c
   ${PROJECT_SOURCE_DIR}/make/make.c

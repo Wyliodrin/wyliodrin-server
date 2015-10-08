@@ -20,62 +20,23 @@
 
 
 
-/*** DEFINES *************************************************************************************/
-
-#define MAX_SHELLS 256 /* Maximum number of shells */
-
-#define DEFAULT_WIDTH  12  /* Default shells width  */
-#define DEFAULT_HEIGHT 103 /* Default shells height */
-
-/*************************************************************************************************/
-
-
-
-/*** TYPEDEFS ************************************************************************************/
-
-typedef struct {
-  long int width;     /* width */
-  long int height;    /* height */
-  int pid;            /* PID */
-  int id;             /* shell id */
-  int fdm;            /* PTY file descriptor */
-  int close_request;  /* close request */
-  char *request_attr; /* open request */
-  char *projectid;    /* projectid in case of make shell */
-  char *userid;       /* userid in case of make shell */
-} shell_t;
-
-/*************************************************************************************************/
-
-
 /*** API *****************************************************************************************/
 
-/* Initialize with NULL shells_vector */
+/**
+ * Initialize with NULL shells_vector
+ */
 void init_shells();
 
-/* Parse shells commands */
+/**
+ * Parse shells commands
+*/
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
             xmpp_conn_t *const conn, void *const userdata);
 
-/* Close shell */
-void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
-
-/* Keys from shell */
-void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
-
-/* Keys response */
-void send_shells_keys_response(char *data_str, int data_len, int shell_id);
-
-/* List */
-void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
-
-/* Status */
-void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
-
-/* Poweroff */
-void shells_poweroff();
-
-void start_dead_projects(xmpp_conn_t *const conn, void *const userdata);
+/**
+ * Start projects that died on board shutdown.
+ */
+void start_dead_projects();
 
 /*************************************************************************************************/
 

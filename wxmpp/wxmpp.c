@@ -445,7 +445,7 @@ static void create_modules_hashmap() {
     addr = shells;
     hashmap_put(modules, "shells", &addr, sizeof(void *));
     init_shells();
-    start_dead_projects(global_conn, global_ctx);
+    start_dead_projects();
   #endif
   #ifdef FILES
     if (is_fuse_available) {

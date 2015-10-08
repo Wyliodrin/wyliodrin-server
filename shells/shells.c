@@ -32,8 +32,42 @@
 #include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
 
 #include "shells.h"                   /* shells module api */
-#include "shells_helper.h"            /* read routine */
 #include "wtalk_config.h"             /* version */
+
+/*************************************************************************************************/
+
+
+
+/*** DEFINES *************************************************************************************/
+
+#define BUFSIZE        1024   /* Size of buffer used in the read routine */
+
+#define MAX_SHELLS     256    /* Maximum number of shells */
+
+#define DEFAULT_WIDTH  "12"   /* Default shells width  */
+#define DEFAULT_HEIGHT "103"  /* Default shells height */
+
+/*************************************************************************************************/
+
+
+
+/*** TYPEDEFS ************************************************************************************/
+
+typedef struct {
+  long int width;      /* width */
+  long int height;     /* height */
+  int pid;             /* PID */
+  int fdm;             /* PTY file descriptor */
+  int id;              /* shell id */
+  char *request;       /* open request */
+  char *projectid;     /* projectid in case of make shell */
+  char *userid;        /* userid in case of make shell */
+} shell_t;
+
+typedef enum {
+  SHELL,
+  PROJECT
+} shell_type_t;
 
 /*************************************************************************************************/
 
@@ -42,13 +76,12 @@
 /*** EXTERN VARIABLES ****************************************************************************/
 
 extern const char *jid;
+extern const char *home;
 extern const char *owner;
 extern const char *board;
 extern const char *shell;
 extern const char *run;
 extern const char *build_file;
-
-extern bool sudo;
 
 extern xmpp_ctx_t *global_ctx;
 extern xmpp_conn_t *global_conn;
@@ -62,6 +95,7 @@ extern bool is_xmpp_connection_set;
 /*** STATIC VARIABLES ****************************************************************************/
 
 static pthread_mutex_t shells_lock;
+static shell_t *shells_vector[MAX_SHELLS];
 
 /*************************************************************************************************/
 
@@ -81,15 +115,41 @@ static void send_shells_open_response(char *request_attr, bool success, int shel
                                       bool running);
 
 /**
- * Open normal shell
+ * Open shell or project
  */
-static void open_normal_shell(char *request_attr, char *width_attr, char *height_attr);
+static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
+                                  char *width_attr, char *height_attr,
+                                  char *projectid_attr, char *userid_attr);
 
 /**
- * Open project shell
+ * Close shell
  */
-static void open_project_shell(char *request_attr, char *width_attr, char *height_attr,
-                               char *projectid_attr, char *userid_attr);
+static void shells_close(const char *from, xmpp_stanza_t *stanza);
+
+/**
+ * Send shells close response
+ */
+static void send_shells_close_response(char *request_attr, char *shellid_attr, char *code);
+
+/**
+ * Get keys.
+ */
+static void shells_keys(const char *from, xmpp_stanza_t *stanza);
+
+/**
+ * Status of project (running or not).
+ */
+static void shells_status(const char * from, xmpp_stanza_t *stanza);
+
+/**
+ * Poweroff board.
+ */
+static void shells_poweroff();
+
+/**
+ * Send shells keys response.
+ */
+static void send_shells_keys_response(char *data_str, int data_len, int shell_id);
 
 /**
  * Build array with words from str split by spaces. Append NULL at the end of the string.
@@ -115,39 +175,47 @@ static bool allocate_memory_for_new_shell(int shell_index, int pid, int fdm,
                                           char *request_attr, char *projectid_attr,
                                           char *userid_attr);
 
+/**
+ * Generic build local env
+ */
+static char **build_local_env(shell_type_t shell_type, int *num_env,
+                              char *request_attr, char *projectid_attr, char *userid_attr);
+
+/**
+ * Build local env for shell.
+ */
+static char **build_local_env_for_shell(int *num_env, char *request_attr, char *projectid_attr,
+                                        char *userid_attr);
+
+/**
+ * Build local env for project.
+ */
+static char **build_local_env_for_project(int *num_env, char *request_attr, char *projectid_attr,
+                                          char *userid_attr);
+
+/**
+ * Remove project id from running projects file.
+ */
+static void remove_project_id_from_running_projects(char *projectid_attr);
+
+/**
+ * Routine for shell or project.
+ */
+static void *read_routine(void *args);
+
 /************************************************************************************************/
 
 
 
-shell_t *shells_vector[MAX_SHELLS]; /* All shells */
-
+/*** ENVIRONMENT *********************************************************************************/
 
 extern char **environ;
 int execvpe(const char *file, char *const argv[], char *const envp[]);
 
+/************************************************************************************************/
 
 
-
-void start_dead_projects(xmpp_conn_t *const conn, void *const userdata) {
-  FILE *fp;
-
-  fp = fopen(RUNNING_PROJECTS_PATH, "r");
-  if (fp == NULL) {
-    werr("Error on open " RUNNING_PROJECTS_PATH);
-    return;
-  }
-
-  char projectid[128];
-  while (fscanf(fp, "%[^:]:", projectid) != EOF) {
-    wlog("projectid = %s\n\n\n", projectid);
-    if (strlen(projectid) > 0) {
-      open_project_shell(NULL, NULL, NULL, projectid, NULL);
-    }
-    sleep(1);
-  }
-
-  fclose(fp);
-}
+/*** API IMPLEMENTATION **************************************************************************/
 
 void init_shells() {
   static bool shells_initialized = false;
@@ -167,6 +235,7 @@ void init_shells() {
   }
 }
 
+
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
             xmpp_conn_t *const conn, void *const userdata) {
   werr2(strncasecmp(owner, from, strlen(owner)) != 0, return,
@@ -178,13 +247,11 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   if (strncasecmp(action_attr, "open", 4) == 0) {
     shells_open(from, stanza);
   } else if (strncasecmp(action_attr, "close", 5) == 0) {
-    shells_close(stanza, conn, userdata);
+    shells_close(from, stanza);
   } else if (strncasecmp(action_attr, "keys", 4) == 0) {
-    shells_keys(stanza, conn, userdata);
-  } else if (strncasecmp(action_attr, "list", 4) == 0) {
-    shells_list(stanza, conn, userdata);
+    shells_keys(from, stanza);
   } else if (strncasecmp(action_attr, "status", 6) == 0) {
-    shells_status(stanza, conn, userdata);
+    shells_status(from, stanza);
   } else if (strncasecmp(action_attr, "poweroff", 8) == 0) {
     shells_poweroff();
   } else {
@@ -193,245 +260,27 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   }
 }
 
-void shells_close(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
-  wlog("shells_close(...)");
 
-  char *endptr; /* strtol endptr */
+void start_dead_projects() {
+  FILE *fp = fopen(RUNNING_PROJECTS_PATH, "r");
+  werr2(fp == NULL, return, "Could no open %s", RUNNING_PROJECTS_PATH);
 
-  /* Get request attribute */
-  char *request_attr = xmpp_stanza_get_attribute(stanza, "request"); /* request attribute */
-  if(request_attr == NULL) {
-    werr("Error while getting request attribute");
-    return;
-  }
-  long int request = strtol(request_attr, &endptr, 10);
-  if (*endptr != '\0') {
-    werr("strtol error: str = %s, val = %ld", request_attr, request);
-    return;
-  }
-
-  /* Get shellid attribute */
-  char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid"); /* shellid attribute */
-  if(shellid_attr == NULL) {
-    werr("Error while getting shellid attribute");
-    return;
-  }
-  long int shellid = strtol(shellid_attr, &endptr, 10); /* shellid value */
-  if (*endptr != '\0') {
-    werr("strtol error: str = %s, val = %ld", shellid_attr, shellid);
-    return;
-  }
-
-  /* Set close request or ignore it if it comes from unopened shell */
-  pthread_mutex_lock(&shells_lock);
-  if (shells_vector[shellid] != NULL) {
-    shells_vector[shellid]->close_request = request;
-    close(shells_vector[shellid]->fdm);
-  } else {
-    pthread_mutex_unlock(&shells_lock);
-    return;
-  }
-  pthread_mutex_unlock(&shells_lock);
-
-  /* Detach from screen session */
-  if (xmpp_stanza_get_attribute(stanza, "background") == NULL) {
-    int pid = fork();
-
-    /* Return if fork failed */
-    if (pid == -1) {
-      werr("SYSERR fork");
-      perror("fork");
-      return;
+  char projectid[128];
+  while (fscanf(fp, "%[^:]:", projectid) != EOF) {
+    if (strlen(projectid) > 0) {
+      winfo("Starting project %s", projectid);
+      open_shell_or_project(PROJECT, NULL, DEFAULT_WIDTH, DEFAULT_HEIGHT, projectid, NULL);
     }
-
-    /* Child from fork */
-    if (pid == 0) {
-      char screen_quit_cmd[32];
-      if (strcmp(board, "raspberrypi") == 0) {
-        snprintf(screen_quit_cmd, 31, "sudo kill -9 %d", shells_vector[shellid]->pid);
-      } else {
-        snprintf(screen_quit_cmd, 31, "kill -9 %d", shells_vector[shellid]->pid);
-      }
-      system(screen_quit_cmd);
-      waitpid(shells_vector[shellid]->pid, NULL, 0);
-      exit(EXIT_SUCCESS);
-    }
-    waitpid(pid, NULL, 0);
   }
 
-  wlog("Return from shells_close");
+  fclose(fp);
 }
 
-void shells_keys(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
-  wlog("shells_keys(...)");
+/*************************************************************************************************/
 
-  char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
-  if (request_attr == NULL) {
-    werr("Received keys with no request");
-    return;
-  }
-
-  char *endptr; /* strtol endptr */
-
-  char *data_str = xmpp_stanza_get_text(stanza); /* data string */
-  if(data_str == NULL) {
-    wlog("Return from shells_keys due to NULL data");
-    return;
-  }
-
-  /* Decode */
-  int dec_size = strlen(data_str) * 3 / 4 + 1; /* decoded data length */
-  uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded data */
-  int rc = base64_decode(decoded, data_str, dec_size); /* decode */
-
-  char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid");
-  if (shellid_attr == NULL) {
-    werr("No shellid attribute in shells keys");
-    return;
-  }
-
-  long int shellid = strtol(shellid_attr, &endptr, 10);
-  if (*endptr != '\0') {
-    werr("strtol error: str = %s, val = %ld", shellid_attr, shellid);
-    return;
-  }
-
-  if (shells_vector[shellid] == NULL) {
-    werr("Got keys from not existent shell");
-    return;
-  }
-
-  /* Update shell request */
-  if (shells_vector[shellid]->request_attr != NULL) {
-    free(shells_vector[shellid]->request_attr);
-  }
-  shells_vector[shellid]->request_attr = strdup(request_attr);
-
-  /* Send decoded data to screen */
-  write(shells_vector[shellid]->fdm, decoded, rc);
-
-  wlog("Return from shells_keys");
-}
-
-void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
-  while (!is_xmpp_connection_set) {
-    usleep(500000);
-  }
-
-  if (shells_vector[shell_id]->request_attr == NULL) {
-    werr("Trying to send keys but shell has no request attribute");
-    return;
-  }
-
-  xmpp_stanza_t *message = xmpp_stanza_new(global_ctx); /* message with done */
-  xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner);
-  xmpp_stanza_t *keys = xmpp_stanza_new(global_ctx); /* shells action done stanza */
-  xmpp_stanza_set_name(keys, "shells");
-  xmpp_stanza_set_ns(keys, WNS);
-  char shell_id_str[8];
-  snprintf(shell_id_str, 7, "%d", shell_id);
-  xmpp_stanza_set_attribute(keys, "shellid", shell_id_str);
-  xmpp_stanza_set_attribute(keys, "action", "keys");
-  xmpp_stanza_set_attribute(keys, "request", shells_vector[shell_id]->request_attr);
-  xmpp_stanza_t *data = xmpp_stanza_new(global_ctx); /* data */
-  char *encoded_data = (char *)malloc(BASE64_SIZE(data_len));
-  encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len),
-    (const unsigned char *)data_str, data_len);
-
-  if (encoded_data == NULL) {
-    werr("Could not encode");
-    return;
-  }
-
-  xmpp_stanza_set_text(data, encoded_data);
-  xmpp_stanza_add_child(keys, data);
-  xmpp_stanza_add_child(message, keys);
-  xmpp_send(global_conn, message);
-  xmpp_stanza_release(keys);
-  xmpp_stanza_release(data);
-  xmpp_stanza_release(message);
-
-  free(encoded_data);
-}
-
-void shells_list(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
-  wlog("shells_list(...)");
-
-  /* Send list */
-  xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-
-  xmpp_stanza_t *message = xmpp_stanza_new(ctx); /* message with close */
-  xmpp_stanza_set_name(message, "message");
-  xmpp_stanza_set_attribute(message, "to", owner);
-  xmpp_stanza_t *list = xmpp_stanza_new(ctx); /* close stanza */
-  xmpp_stanza_set_name(list, "shells");
-  xmpp_stanza_set_ns(list, WNS);
-  xmpp_stanza_set_attribute(list, "action", "list");
-  xmpp_stanza_set_attribute(list, "request",
-    (const char *)xmpp_stanza_get_attribute(stanza, "request"));
-  xmpp_stanza_t *project = xmpp_stanza_new(ctx); /* project stanza */
-  xmpp_stanza_set_attribute(project, "projectid", "0");
-  xmpp_stanza_add_child(list, project);
-  xmpp_stanza_add_child(message, list);
-  xmpp_send(conn, message);
-  xmpp_stanza_release(list);
-  xmpp_stanza_release(message);
-
-  wlog("Return from shell_list");
-}
-
-void shells_status(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
-  char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid");
-
-  if (projectid_attr != NULL) {
-    char projectid_filepath[128];
-    snprintf(projectid_filepath, 127, "/tmp/wyliodrin/%s", projectid_attr);
-    int projectid_fd = open(projectid_filepath, O_RDWR);
-    bool is_project_running = projectid_fd != -1;
-    if (is_project_running) {
-      close(projectid_fd);
-    }
-
-    xmpp_ctx_t *ctx = (xmpp_ctx_t*)userdata; /* Strophe context */
-
-    xmpp_stanza_t *message_stz = xmpp_stanza_new(ctx); /* message with close */
-    xmpp_stanza_set_name(message_stz, "message");
-    xmpp_stanza_set_attribute(message_stz, "to", owner);
-
-    xmpp_stanza_t *status_stz = xmpp_stanza_new(ctx); /* status stanza */
-    xmpp_stanza_set_name(status_stz, "shells");
-    xmpp_stanza_set_ns(status_stz, WNS);
-    xmpp_stanza_set_attribute(status_stz, "action", "status");
-    xmpp_stanza_set_attribute(status_stz, "request",
-      (const char *)xmpp_stanza_get_attribute(stanza, "request"));
-    xmpp_stanza_set_attribute(status_stz, "projectid",
-      (const char *)xmpp_stanza_get_attribute(stanza, "projectid"));
-    xmpp_stanza_set_attribute(status_stz, "running",
-      is_project_running ? "true" : "false");
-
-    xmpp_stanza_add_child(message_stz, status_stz);
-    xmpp_send(conn, message_stz);
-    xmpp_stanza_release(status_stz);
-    xmpp_stanza_release(message_stz);
-  } else {
-    werr("No projectid attribute in status");
-  }
-}
-
-void shells_poweroff() {
-  if (strcmp(board, "server") != 0) {
-    char cmd[64];
-    snprintf(cmd, 63, "%spoweroff", strcmp(board, "raspberrypi") == 0 ? "sudo " : "");
-    system(cmd);
-  }
-
-  exit(EXIT_SUCCESS);
-}
 
 
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
-
 
 static void shells_open(const char *from, xmpp_stanza_t *stanza) {
   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
@@ -450,10 +299,10 @@ static void shells_open(const char *from, xmpp_stanza_t *stanza) {
   char *userid_attr    = xmpp_stanza_get_attribute(stanza, "userid");
 
   if (projectid_attr == NULL) {
-    open_normal_shell(request_attr, width_attr, height_attr);
+    open_shell_or_project(SHELL, request_attr, width_attr, height_attr, NULL, NULL);
   } else {
-    open_project_shell(request_attr, width_attr, height_attr,
-      projectid_attr, userid_attr);
+    open_shell_or_project(PROJECT, request_attr, width_attr, height_attr, projectid_attr,
+                          userid_attr);
   }
 
   _error: ;
@@ -461,7 +310,16 @@ static void shells_open(const char *from, xmpp_stanza_t *stanza) {
 }
 
 
-static void send_shells_open_response(char *request_attr, bool success, int shell_id, bool running) {
+static void send_shells_open_response(char *request_attr, bool success, int shell_id,
+                                      bool running) {
+  if (!is_xmpp_connection_set) {
+    /* Don't send keys if not connected */
+    return;
+  }
+
+  werr2(request_attr == NULL, return,
+        "Trying to send shells open response without request attribute");
+
   xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
   xmpp_stanza_set_name(message_stz, "message");
   xmpp_stanza_set_attribute(message_stz, "to", owner);
@@ -486,98 +344,43 @@ static void send_shells_open_response(char *request_attr, bool success, int shel
 }
 
 
-static void open_normal_shell(char *request_attr, char *width_attr, char *height_attr) {
-  /* Get width and height for winsize */
-  char *endptr;
+static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
+                                  char *width_attr, char *height_attr,
+                                  char *projectid_attr, char *userid_attr) {
+  werr2(shell_type != SHELL && shell_type != PROJECT, goto _error, "Unrecognized shell type");
 
-  long width = strtol(width_attr, &endptr, 10);
-  werr2(*endptr != '\0', goto _error, "Invalid width attribute: %s", width_attr);
-
-  long height = strtol(height_attr, &endptr, 10);
-  werr2(*endptr != '\0', goto _error, "Invalid height attribute: %s", height_attr);
-
-  struct winsize ws = { height, width, 0, 0 };
-
-  /* Fork */
-  int fdm;
-  int pid = forkpty(&fdm, NULL, NULL, &ws);
-  wsyserr2(pid == -1, goto _error, "Forkpty failed");
-
-  if (pid == 0) { /* Child from forkpty */
-    /* Build local environment variables */
-    char wyliodrin_board_env[64];
-    snprintf(wyliodrin_board_env, 64, "wyliodrin_board=%s", board);
-
-    char wyliodrin_server[64];
-    snprintf(wyliodrin_server, 64, "wyliodrin_server=%d.%d",
-             WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR);
-
-    char *local_env[] = { wyliodrin_board_env, wyliodrin_server, "HOME=/wyliodrin", "TERM=xterm",
-                          NULL };
-
-    /* Build all environment variables */
-    int local_env_size = sizeof(local_env) / sizeof(*local_env);
-    char **all_env = concatenation_of_local_and_user_env(local_env, local_env_size);
-
-    chdir("/wyliodrin");
-    char **exec_argv = string_to_array((char *)shell);
-    execvpe(exec_argv[0], exec_argv, all_env);
-
-    wsyserr2(true, /* Do nothing */, "Running the shell command failed");
-    exit(EXIT_FAILURE);
+  /* Sanity checks */
+  // werr2(request_attr   == NULL, return, "Trying to open shell with NULL request");
+  werr2(width_attr     == NULL, return, "Trying to open shell with NULL width");
+  werr2(height_attr    == NULL, return, "Trying to open shell with NULL height");
+  if (shell_type == PROJECT) {
+    werr2(projectid_attr == NULL, return, "Trying to open project with NULL projectid");
+    // werr2(userid_attr    == NULL, return, "Trying to open project with NULL userid");
   }
 
-  /* NOTE: If an error occurs after this point, the child process should be killed. */
+  if (shell_type == PROJECT) {
+    int shell_index;
+    char projectid_filepath[128];
+    snprintf(projectid_filepath, 128, "/tmp/wyliodrin/%s", projectid_attr);
 
-  /* Get an entry in the shells_vector */
-  pthread_mutex_lock(&shells_lock);
-
-  int shell_index = get_entry_in_shells_vector();
-  werr2(shell_index == MAX_SHELLS, goto _error, "Only %d open shells are allowed", MAX_SHELLS);
-
-  bool new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, pid, fdm, width, height,
-                                                          request_attr, NULL, NULL);
-  werr2(!new_shell_alloc_rc, goto _error, "Could not add new shell");
-
-  pthread_mutex_unlock(&shells_lock);
-
-  /* Create new thread for read routine */
-  pthread_t rt;
-  int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]);
-  wsyserr2(rc < 0, goto _error, "Could not create thread for read routine");
-  pthread_detach(rt);
-
-  winfo("Open new shell");
-  send_shells_open_response(request_attr, true, shell_index, false);
-
-  return;
-
-  _error:
-    werr("Failed to open new shell");
-    send_shells_open_response(request_attr, false, 0, false);
-}
-
-
-static void open_project_shell(char *request_attr, char *width_attr, char *height_attr,
-                               char *projectid_attr, char *userid_attr) {
-  /* Sanity checks */
-  werr2(request_attr   == NULL, return, "Trying to open new project with NULL request");
-  werr2(width_attr     == NULL, return, "Trying to open new project with NULL width");
-  werr2(height_attr    == NULL, return, "Trying to open new project with NULL height");
-  werr2(projectid_attr == NULL, return, "Trying to open new project with NULL projectid");
-  werr2(userid_attr    == NULL, return, "Trying to open new project with NULL userid");
-
-  winfo("Starting project %s", projectid_attr);
-
-  /* Get the shell_index in case of a running project */
-  int shell_index;
-  char projectid_filepath[128];
-  snprintf(projectid_filepath, 128, "/tmp/wyliodrin/%s", projectid_attr);
-  if (request_attr != NULL) {
     int projectid_fd = open(projectid_filepath, O_RDONLY);
     if (projectid_fd != -1) {
+      werr2(request_attr == NULL, return, "There should be a request for this shell");
+      werr2(userid_attr == NULL, return, "There should be an userid for this shell");
+
       read(projectid_fd, &shell_index, sizeof(int));
       close(projectid_fd);
+
+      werr2(shells_vector[shell_index] == NULL, return,
+            "There should be an allocated shell");
+
+      /* Update shell */
+      pthread_mutex_lock(&shells_lock);
+      free(shells_vector[shell_index]->request);
+      shells_vector[shell_index]->request = strdup(request_attr);
+      free(shells_vector[shell_index]->userid);
+      shells_vector[shell_index]->userid = strdup(userid_attr);
+      pthread_mutex_unlock(&shells_lock);
 
       winfo("Project %s is running", projectid_attr);
       send_shells_open_response(request_attr, true, shell_index, true);
@@ -602,53 +405,29 @@ static void open_project_shell(char *request_attr, char *width_attr, char *heigh
   wsyserr2(pid == -1, goto _error, "Forkpty failed");
 
   if (pid == 0) { /* Child from forkpty */
-    /* Write the shells index in the tmp project's file */
-    int projectid_fd = open(projectid_filepath, O_CREAT | O_WRONLY, 0600);
-    wsyserr2(projectid_fd == -1, sleep(3); exit(EXIT_FAILURE),
-             "Could not open %s", projectid_filepath);
-    write(projectid_fd, &shell_index, sizeof(int));
-    close(projectid_fd);
+    int local_env_size;
+    char **local_env = build_local_env(shell_type, &local_env_size, request_attr,
+                                       projectid_attr, userid_attr);
 
-    /* Build local environment variables */
-    char wyliodrin_project_env[64];
-    snprintf(wyliodrin_project_env, 64, "wyliodrin_project=%s", projectid_attr);
-    char wyliodrin_userid_env[64];
-    snprintf(wyliodrin_userid_env, 64, "wyliodrin_userid=%s", userid_attr);
-    char wyliodrin_session_env[64];
-    snprintf(wyliodrin_session_env, 64, "wyliodrin_session=%s", request_attr);
-    char wyliodrin_board_env[64];
-    snprintf(wyliodrin_board_env, 64, "wyliodrin_board=%s", board);
-    char wyliodrin_jid_env[64];
-    snprintf(wyliodrin_jid_env, 64, "wyliodrin_jid=%s", jid);
-    char wyliodrin_server[64];
-    snprintf(wyliodrin_server, 64, "wyliodrin_server=%d.%d",
-             WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR);
-
-    #ifdef USEMSGPACK
-      char wyliodrin_usemsgpack_env[64];
-      snprintf(wyliodrin_usemsgpack_env, 64, "wyliodrin_usemsgpack=1");
-
-      char *local_env[] = { wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
-        wyliodrin_board_env, wyliodrin_jid_env, wyliodrin_server, "HOME=/wyliodrin", "TERM=xterm",
-        wyliodrin_usemsgpack_env, NULL };
-    #else
-      char *local_env[] = { wyliodrin_project_env, wyliodrin_userid_env, wyliodrin_session_env,
-        wyliodrin_board_env, wyliodrin_jid_env, wyliodrin_server, "HOME=/wyliodrin", "TERM=xterm",
-        NULL };
-    #endif
-
-    int local_env_size = sizeof(local_env) / sizeof(*local_env);
     char **all_env = concatenation_of_local_and_user_env(local_env, local_env_size);
 
-    char **exec_argv = string_to_array((char *)run);
+    char **exec_argv;
 
-    char cd_path[256];
-    snprintf(cd_path, 256, "%s/%s", build_file, projectid_attr);
-    chdir(cd_path);
+    if (shell_type == SHELL) {
+      chdir(home);
+      exec_argv = string_to_array((char *)shell);
+    } else if (shell_type == PROJECT) {
+      char cd_path[256];
+      snprintf(cd_path, 256, "%s/%s", build_file, projectid_attr);
+      chdir(cd_path);
+      exec_argv = string_to_array((char *)run);
+    } else {
+      werr("Unrecognized shell type");
+    }
 
     execvpe(exec_argv[0], exec_argv, all_env);
 
-    wsyserr2(true, /* Do nothing */, "Running the run command failed");
+    wsyserr2(true, /* Do nothing */, "Exec failed");
     exit(EXIT_FAILURE);
   }
 
@@ -657,38 +436,238 @@ static void open_project_shell(char *request_attr, char *width_attr, char *heigh
   /* Get an entry in the shells_vector */
   pthread_mutex_lock(&shells_lock);
 
-  shell_index = get_entry_in_shells_vector();
+  int shell_index = get_entry_in_shells_vector();
   werr2(shell_index == MAX_SHELLS, goto _error, "Only %d open shells are allowed", MAX_SHELLS);
 
-  bool new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, pid, fdm, width, height,
-                                                          request_attr, projectid_attr,
-                                                          userid_attr);
+  bool new_shell_alloc_rc;
+  if (shell_type == SHELL) {
+    new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, pid, fdm, width, height,
+                                                       request_attr, NULL, NULL);
+  } else {
+    new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, pid, fdm, width, height,
+                                                       request_attr, projectid_attr,
+                                                       userid_attr);
+  }
   werr2(!new_shell_alloc_rc, goto _error, "Could not add new shell");
 
   pthread_mutex_unlock(&shells_lock);
 
-  /* Write the project in RUNNING_PROJECTS_PATH */
-  int open_rc = open(RUNNING_PROJECTS_PATH, O_WRONLY | O_APPEND);
-  wsyserr2(open_rc == -1, goto _error, "Failed to open %s", RUNNING_PROJECTS_PATH);
-  char projectid_attr_with_colon[64];
-  sprintf(projectid_attr_with_colon, "%s:", projectid_attr);
-  write(open_rc, projectid_attr_with_colon, strlen(projectid_attr_with_colon));
+  if (shell_type == PROJECT) {
+    char projectid_filepath[128];
+    snprintf(projectid_filepath, 128, "/tmp/wyliodrin/%s", projectid_attr);
+    int projectid_fd = open(projectid_filepath, O_CREAT | O_WRONLY, 0600);
+    write(projectid_fd, &shell_index, sizeof(int));
+    close(projectid_fd);
+
+    int open_rc = open(RUNNING_PROJECTS_PATH, O_WRONLY | O_APPEND);
+    char projectid_attr_with_colon[64];
+    sprintf(projectid_attr_with_colon, "%s:", projectid_attr);
+    write(open_rc, projectid_attr_with_colon, strlen(projectid_attr_with_colon));
+    close(open_rc);
+  }
 
   /* Create new thread for read routine */
   pthread_t rt;
-  int rc = pthread_create(&rt, NULL, &(read_thread), shells_vector[shell_index]);
-  wsyserr2(rc > 0, goto _error, "Failed to create new thread");
+  int rc = pthread_create(&rt, NULL, &read_routine, shells_vector[shell_index]);
+  wsyserr2(rc < 0, goto _error, "Could not create thread for read routine");
   pthread_detach(rt);
 
-  /* Send success response */
-  send_shells_open_response(request_attr, true, shell_index, false);
+  winfo("Open new shell");
+  if (request_attr != NULL) {
+    /* Not starting a dead project */
+    send_shells_open_response(request_attr, true, shell_index, false);
+  }
 
-  winfo("Open project %s", projectid_attr);
+  return;
+
+  _error:
+    werr("Failed to open new shell");
+    if (request_attr != NULL) {
+      /* Not starting a dead project */
+      send_shells_open_response(request_attr, false, 0, false);
+    }
+}
+
+
+static void shells_close(const char *from, xmpp_stanza_t *stanza) {
+  char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
+  werr2(request_attr == NULL, return,
+        "Received shells close stanza without request attribute from %s", from);
+
+  char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid");
+  werr2(shellid_attr == NULL, return,
+        "Received shells close stanza without shellid attribute from %s", from);
+
+  char *endptr;
+  long int shellid = strtol(shellid_attr, &endptr, 10);
+  werr2(*endptr != '\0', goto _error, "Invalid shellid attribute: %s", shellid_attr);
+
+  werr2(shells_vector[shellid] == NULL, goto _error, "Shell %ld already closed", shellid);
+
+  /* Set close request or ignore it if it comes from unopened shell */
+  pthread_mutex_lock(&shells_lock);
+  free(shells_vector[shellid]->request);
+  shells_vector[shellid]->request = strdup(request_attr);
+  pthread_mutex_unlock(&shells_lock);
+
+  if (xmpp_stanza_get_attribute(stanza, "background") == NULL) {
+    char screen_quit_cmd[64];
+    snprintf(screen_quit_cmd, 64, "%skill -9 %d",
+             strncmp(board, "raspberrypi", 11) == 0 ? "sudo " : "", shells_vector[shellid]->pid);
+    system(screen_quit_cmd);
+  }
+
   return;
 
   _error: ;
-    winfo("Failed to open project %s", projectid_attr);
-    send_shells_open_response(request_attr, false, -1, false);
+    send_shells_close_response(request_attr, shellid_attr, NULL);
+}
+
+
+static void send_shells_close_response(char *request_attr, char *shellid_attr, char *code) {
+  if (!is_xmpp_connection_set) {
+    /* Don't send keys if not connected */
+    return;
+  }
+
+  werr2(request_attr == NULL, return, "Trying to send close response without request attribute");
+  werr2(shellid_attr == NULL, return, "Trying to send close response without shellid attribute");
+
+  xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
+  xmpp_stanza_set_name(message_stz, "message");
+  xmpp_stanza_set_attribute(message_stz, "to", owner);
+  xmpp_stanza_t *close_stz = xmpp_stanza_new(global_ctx);
+  xmpp_stanza_set_name(close_stz, "shells");
+  xmpp_stanza_set_ns(close_stz, WNS);
+  xmpp_stanza_set_attribute(close_stz, "request", request_attr);
+  xmpp_stanza_set_attribute(close_stz, "action", "close");
+  xmpp_stanza_set_attribute(close_stz, "shellid", shellid_attr);
+  xmpp_stanza_set_attribute(close_stz, "code", code != NULL ? code : "-1");
+  xmpp_stanza_add_child(message_stz, close_stz);
+  xmpp_send(global_conn, message_stz);
+  xmpp_stanza_release(close_stz);
+  xmpp_stanza_release(message_stz);
+}
+
+
+static void shells_keys(const char *from, xmpp_stanza_t *stanza) {
+  char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
+  werr2(request_attr == NULL, return,
+        "Received shells keys with no request attribute from %s", from);
+
+  char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid");
+  werr2(shellid_attr == NULL, return,
+        "Received shells keys with no shellid attribute from %s", from);
+
+  char *data_str = xmpp_stanza_get_text(stanza);
+  werr2(data_str == NULL, return, "Got keys with no data");
+
+  /* Decode */
+  int dec_size = strlen(data_str) * 3 / 4 + 1;
+  uint8_t *decoded = calloc(dec_size, sizeof(uint8_t));
+  werr2(decoded == NULL, return, "Could not allocate memory for decoding keys");
+  int decode_rc = base64_decode(decoded, data_str, dec_size);
+
+  char *endptr;
+  long int shellid = strtol(shellid_attr, &endptr, 10);
+  werr2(*endptr != '\0', return, "Invalid shellid %s", shellid_attr);
+
+  werr2(shells_vector[shellid] == NULL, return, "Got keys from not existent shell %ld", shellid);
+
+  /* Update shell request */
+  pthread_mutex_lock(&shells_lock);
+  if (shells_vector[shellid]->request != NULL) {
+    free(shells_vector[shellid]->request);
+  }
+  shells_vector[shellid]->request = strdup(request_attr);
+  pthread_mutex_unlock(&shells_lock);
+
+  /* Send decoded data to screen */
+  write(shells_vector[shellid]->fdm, decoded, decode_rc);
+}
+
+
+static void shells_status(const char * from, xmpp_stanza_t *stanza) {
+  char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
+  werr2(request_attr == NULL, return,
+        "Received shells status with no request attribute from %s", from);
+
+  char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid");
+  werr2(projectid_attr == NULL, return,
+        "Received shells status with no projectid attribute from %s", from);
+
+  char projectid_filepath[128];
+  snprintf(projectid_filepath, 127, "/tmp/wyliodrin/%s", projectid_attr);
+  int projectid_fd = open(projectid_filepath, O_RDWR);
+  bool is_project_running = projectid_fd != -1;
+  if (is_project_running) {
+    close(projectid_fd);
+  }
+
+  xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
+  xmpp_stanza_set_name(message_stz, "message");
+  xmpp_stanza_set_attribute(message_stz, "to", owner);
+  xmpp_stanza_t *shells_stz = xmpp_stanza_new(global_ctx);
+  xmpp_stanza_set_name(shells_stz, "shells");
+  xmpp_stanza_set_ns(shells_stz, WNS);
+  xmpp_stanza_set_attribute(shells_stz, "action", "status");
+  xmpp_stanza_set_attribute(shells_stz, "request", request_attr);
+  xmpp_stanza_set_attribute(shells_stz, "projectid", projectid_attr);
+  xmpp_stanza_set_attribute(shells_stz, "running",
+    is_project_running ? "true" : "false");
+
+  xmpp_stanza_add_child(message_stz, shells_stz);
+  xmpp_send(global_conn, message_stz);
+  xmpp_stanza_release(shells_stz);
+  xmpp_stanza_release(message_stz);
+}
+
+
+static void shells_poweroff() {
+  if (strncmp(board, "server", 6) != 0) {
+    char cmd[64];
+    snprintf(cmd, 64, "%spoweroff", strcmp(board, "raspberrypi") == 0 ? "sudo " : "");
+    system(cmd);
+  }
+
+  exit(EXIT_SUCCESS);
+}
+
+
+static void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
+  if (!is_xmpp_connection_set) {
+    /* Don't send keys if not connected */
+    return;
+  }
+
+  xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
+  xmpp_stanza_set_name(message_stz, "message");
+  xmpp_stanza_set_attribute(message_stz, "to", owner);
+  xmpp_stanza_t *keys_stz = xmpp_stanza_new(global_ctx);
+  xmpp_stanza_set_name(keys_stz, "shells");
+  xmpp_stanza_set_ns(keys_stz, WNS);
+  char shell_id_str[8];
+  snprintf(shell_id_str, 8, "%d", shell_id);
+  xmpp_stanza_set_attribute(keys_stz, "shellid", shell_id_str);
+  xmpp_stanza_set_attribute(keys_stz, "action", "keys");
+  xmpp_stanza_set_attribute(keys_stz, "request", shells_vector[shell_id]->request);
+  xmpp_stanza_t *data = xmpp_stanza_new(global_ctx);
+
+  char *encoded_data = malloc(BASE64_SIZE(data_len) * sizeof(char));
+  wsyserr2(encoded_data == NULL, return, "Could not allocate memory for keys");
+  encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len),
+    (const unsigned char *)data_str, data_len);
+  werr2(encoded_data == NULL, return, "Could not encode keys data");
+
+  xmpp_stanza_set_text(data, encoded_data);
+  xmpp_stanza_add_child(keys_stz, data);
+  xmpp_stanza_add_child(message_stz, keys_stz);
+  xmpp_send(global_conn, message_stz);
+  xmpp_stanza_release(data);
+  xmpp_stanza_release(keys_stz);
+  xmpp_stanza_release(message_stz);
+
+  free(encoded_data);
 }
 
 
@@ -762,7 +741,11 @@ static bool allocate_memory_for_new_shell(int shell_index, int pid, int fdm,
   shells_vector[shell_index]->fdm            = fdm;
   shells_vector[shell_index]->width          = width;
   shells_vector[shell_index]->height         = height;
-  shells_vector[shell_index]->request_attr   = strdup(request_attr);
+  if (request_attr != NULL) {
+    shells_vector[shell_index]->request      = strdup(request_attr);
+  } else {
+    shells_vector[shell_index]->request      = NULL;
+  }
   if (projectid_attr != NULL) {
     shells_vector[shell_index]->projectid    = strdup(projectid_attr);
   } else {
@@ -773,9 +756,126 @@ static bool allocate_memory_for_new_shell(int shell_index, int pid, int fdm,
   } else {
     shells_vector[shell_index]->userid       = NULL;
   }
-  shells_vector[shell_index]->close_request  = -1;
 
   return true;
+}
+
+
+static char **build_local_env(shell_type_t shell_type, int *num_env,
+                              char *request_attr, char *projectid_attr, char *userid_attr) {
+  if (shell_type == SHELL) {
+    return build_local_env_for_shell(num_env, NULL, NULL, NULL);
+  } else if (shell_type == PROJECT) {
+    return build_local_env_for_project(num_env, request_attr, projectid_attr, userid_attr);
+  } else {
+    werr("Unrecognized shell type");
+    return NULL;
+  }
+}
+
+
+static char **build_local_env_for_shell(int *num_env, char *request_attr, char *projectid_attr,
+                                        char *userid_attr) {
+  *num_env = 5;
+
+  char **local_env = malloc((*num_env) * sizeof(char *));
+  int i;
+  for (i = 0; i < *num_env - 1; i++) {
+    local_env[i] = malloc(64 * sizeof(char));
+  }
+  local_env[*num_env - 1] = NULL;
+
+  snprintf(local_env[0], 64, "wyliodrin_board=%s", board);
+  snprintf(local_env[1], 64, "wyliodrin_server=%d.%d", WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR);
+  snprintf(local_env[2], 64, "HOME=%s", home);
+  snprintf(local_env[3], 64, "TERM=xterm");
+
+  return local_env;
+}
+
+
+static char **build_local_env_for_project(int *num_env, char *request_attr, char *projectid_attr,
+                                          char *userid_attr) {
+  *num_env = 7;
+
+  char **local_env = malloc((*num_env) * sizeof(char *));
+  int i;
+  for (i = 0; i < *num_env - 1; i++) {
+    local_env[i] = malloc(64 * sizeof(char));
+  }
+  local_env[*num_env - 1] = NULL;
+
+  snprintf(local_env[0], 64, "wyliodrin_project=%s", projectid_attr);
+  snprintf(local_env[1], 64, "wyliodrin_userid=%s", userid_attr != NULL ? userid_attr : "null");
+  snprintf(local_env[2], 64, "wyliodrin_session=%s", request_attr != NULL ? request_attr : "null");
+  snprintf(local_env[3], 64, "wyliodrin_board=%s", board);
+  snprintf(local_env[4], 64, "wyliodrin_jid=%s", jid);
+  snprintf(local_env[5], 64, "wyliodrin_server=%d.%d", WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR);
+
+  return local_env;
+}
+
+
+static void remove_project_id_from_running_projects(char *projectid_attr) {
+  char cmd[256];
+  snprintf(cmd, 256, "sed -i -e 's/%s://g' %s", projectid_attr, RUNNING_PROJECTS_PATH);
+  system(cmd);
+}
+
+
+static void *read_routine(void *args) {
+  shell_t *shell = (shell_t *)args;
+
+  int num_reads = 0;
+
+  char buf[BUFSIZE];
+  while (true) {
+    int read_rc = read(shell->fdm, buf, sizeof(buf));
+    if (read_rc > 0) {
+      if (shell->request != NULL) {
+        /* Send keys only to active shells */
+        send_shells_keys_response(buf, read_rc, shell->id);
+      }
+      num_reads++;
+      if (num_reads == 10) {
+        usleep(100000);
+        num_reads = 0;
+      }
+    } else if (read_rc < 0) {
+      char shellid_str[8];
+      snprintf(shellid_str, 8, "%d", shell->id);
+
+      int status;
+      waitpid(shell->pid, &status, 0);
+      char status_str[8];
+      snprintf(status_str, 8, "%d", WEXITSTATUS(status));
+
+      /* Send close stanza */
+      if (shell->request != NULL) {
+        /* Project died before attaching to shell */
+        send_shells_close_response(shell->request, shellid_str, status_str);
+      }
+
+      pthread_mutex_lock(&shells_lock);
+      free(shell->request);
+      if (shell->projectid != NULL) {
+        remove_project_id_from_running_projects(shell->projectid);
+
+        char projectid_path[64];
+        snprintf(projectid_path, 64, "/tmp/wyliodrin/%s", shell->projectid);
+        remove(projectid_path);
+
+        free(shell->projectid);
+        free(shell->userid);
+      }
+      close(shell->fdm);
+      free(shell);
+      shells_vector[shell->id] = NULL;
+      pthread_mutex_unlock(&shells_lock);
+
+      return NULL;
+    }
+  }
 }
 
 /*************************************************************************************************/
