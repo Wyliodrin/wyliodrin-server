@@ -62,6 +62,7 @@ typedef struct {
   char *request;       /* open request */
   char *projectid;     /* projectid in case of make shell */
   char *userid;        /* userid in case of make shell */
+  bool is_connected;   /* is project connected */
 } shell_t;
 
 typedef enum {
@@ -140,6 +141,11 @@ static void shells_keys(const char *from, xmpp_stanza_t *stanza);
  * Status of project (running or not).
  */
 static void shells_status(const char * from, xmpp_stanza_t *stanza);
+
+/**
+ * Disconnect shell.
+ */
+static void shells_disconnect(const char *from, xmpp_stanza_t *stanza);
 
 /**
  * Poweroff board.
@@ -254,6 +260,8 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     shells_status(from, stanza);
   } else if (strncasecmp(action_attr, "poweroff", 8) == 0) {
     shells_poweroff();
+  } else if (strncasecmp(action_attr, "disconnect", 10) == 0) {
+    shells_disconnect(from, stanza);
   } else {
     werr("Received shells stanza with unknown action attribute %s from %s",
          action_attr, from);
@@ -268,6 +276,7 @@ void start_dead_projects() {
   char projectid[128];
   while (fscanf(fp, "%[^:]:", projectid) != EOF) {
     if (strlen(projectid) > 0) {
+      remove_project_id_from_running_projects(projectid);
       winfo("Starting project %s", projectid);
       open_shell_or_project(PROJECT, NULL, DEFAULT_WIDTH, DEFAULT_HEIGHT, projectid, NULL);
     }
@@ -304,6 +313,8 @@ static void shells_open(const char *from, xmpp_stanza_t *stanza) {
     open_shell_or_project(PROJECT, request_attr, width_attr, height_attr, projectid_attr,
                           userid_attr);
   }
+
+  return;
 
   _error: ;
     send_shells_open_response(request_attr, false, 0, false);
@@ -380,6 +391,7 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
       shells_vector[shell_index]->request = strdup(request_attr);
       free(shells_vector[shell_index]->userid);
       shells_vector[shell_index]->userid = strdup(userid_attr);
+      shells_vector[shell_index]->is_connected = true;
       pthread_mutex_unlock(&shells_lock);
 
       winfo("Project %s is running", projectid_attr);
@@ -623,6 +635,27 @@ static void shells_status(const char * from, xmpp_stanza_t *stanza) {
 }
 
 
+static void shells_disconnect(const char *from, xmpp_stanza_t *stanza) {
+  char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
+  werr2(request_attr == NULL, return,
+        "Received shells disconnect stanza without request attribute from %s", from);
+
+  char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid");
+  werr2(shellid_attr == NULL, return,
+        "Received shells disconnect stanza without shellid attribute from %s", from);
+
+  char *endptr;
+  long int shellid = strtol(shellid_attr, &endptr, 10);
+  werr2(*endptr != '\0', return, "Invalid shellid attribute: %s", shellid_attr);
+
+  werr2(shells_vector[shellid] == NULL, return, "Shell %ld already disconnected", shellid);
+
+  pthread_mutex_lock(&shells_lock);
+  shells_vector[shellid]->is_connected = false;
+  pthread_mutex_unlock(&shells_lock);
+}
+
+
 static void shells_poweroff() {
   if (strncmp(board, "server", 6) != 0) {
     char cmd[64];
@@ -637,6 +670,11 @@ static void shells_poweroff() {
 static void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
   if (!is_xmpp_connection_set) {
     /* Don't send keys if not connected */
+    return;
+  }
+
+  if (!shells_vector[shell_id]->is_connected) {
+    /* Don't send keys to not connected shell */
     return;
   }
 
@@ -742,8 +780,10 @@ static bool allocate_memory_for_new_shell(int shell_index, int pid, int fdm,
   shells_vector[shell_index]->width          = width;
   shells_vector[shell_index]->height         = height;
   if (request_attr != NULL) {
+    shells_vector[shell_index]->is_connected = true;
     shells_vector[shell_index]->request      = strdup(request_attr);
   } else {
+    shells_vector[shell_index]->is_connected = false;
     shells_vector[shell_index]->request      = NULL;
   }
   if (projectid_attr != NULL) {
