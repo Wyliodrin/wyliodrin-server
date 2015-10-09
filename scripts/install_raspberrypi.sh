@@ -9,17 +9,16 @@
 # Select 1 Expand Filesystem.
 # Select 8 Advanced Options and then  A6 SPI - Enable/Disable automatic loading.
 # Select 8 Advanced Options and then  A7 I2C - Enable/Disable automatic loading.
-# Add "dtparam=i2c1=on" and "dtparam=i2c_arm=on" in /boot/config.txt.
-# Add "i2c-dev" in /etc/modules.
-# Add "i2c-bcm2708" in /etc/modules.
+# Add "dtparam=i2c1=on" in /boot/config.txt.
+# Add "i2c-dev" and "i2c-bcm2708" in /etc/modules.
 # Follow [1] for more details on how to enable I2C on your raspberry pi.
 #
 # [1] https://www.abelectronics.co.uk/i2c-raspbian-wheezy/info.aspx
 #
-# Tested on 2015-05-05-raspbian-wheezy
+# Tested on 2015-05-05-raspbian-wheezy.
 #
 # Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
-# Date last modified: September 2015
+# Date last modified: October 2015
 ###################################################################################################
 
 
@@ -56,7 +55,7 @@ fi
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v2.19
+WVERSION=v2.20
 LWVERSION=v1.16
 
 
@@ -98,9 +97,9 @@ cd $SANDBOX_PATH
 git clone https://github.com/Wyliodrin/pybass.git
 cd pybass
 python setup.py install
-cd $SANDBOX_PATH
 cp lib/hardfp/libbass* /usr/local/lib
 ldconfig
+cd $SANDBOX_PATH
 rm -rf pybass
 
 # Install BrickPi
@@ -186,7 +185,7 @@ ln -s /usr/lib/node_modules /usr/lib/node
 
 # Install wyliodrin-server
 cd $SANDBOX_PATH
-git clone https://github.com/alexandruradovici/wyliodrin-server.git
+git clone https://github.com/Wyliodrin/wyliodrin-server.git
 cd wyliodrin-server
 git checkout $WVERSION
 mkdir build
@@ -202,7 +201,7 @@ mkdir -p /etc/wyliodrin
 echo -n raspberrypi > /etc/wyliodrin/boardtype
 
 # Create settings_raspberry.json
-printf '{
+printf '
   "config_file": "/boot/wyliodrin.json",
   "home": "/wyliodrin",
   "mount_file": "/wyliodrin/projects/mnt",
@@ -229,7 +228,7 @@ user=pi
 autostart=true
 autorestart=true
 environment=HOME="/wyliodrin"
-'>> /etc/supervisor/supervisord.conf
+' >> /etc/supervisor/supervisord.conf
 
 # Wifi
 cp /etc/network/interfaces /etc/network/interfaces.orig
