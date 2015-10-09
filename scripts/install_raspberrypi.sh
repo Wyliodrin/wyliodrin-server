@@ -56,7 +56,7 @@ fi
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v2.18
+WVERSION=v2.19
 LWVERSION=v1.16
 
 
@@ -204,12 +204,12 @@ echo -n raspberrypi > /etc/wyliodrin/boardtype
 # Create settings_raspberry.json
 printf '{
   "config_file": "/boot/wyliodrin.json",
-  "mountFile": "/wyliodrin/projects/mnt",
-  "buildFile": "/wyliodrin/projects/build\",
+  "home": "/wyliodrin",
+  "mount_file": "/wyliodrin/projects/mnt",
+  "build_file": "/wyliodrin/projects/build\",
   "board": "raspberrypi",
   "run": "sudo -E make -f Makefile.raspberrypi run",
-  "shell_cmd": "bash",
-  "sudo": "sudo"
+  "shell": "bash"
 }\n' > /etc/wyliodrin/settings_raspberrypi.json
 
 # Create running_projects file

@@ -475,10 +475,8 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
     char projectid_attr_with_colon[64];
     sprintf(projectid_attr_with_colon, "%s:", projectid_attr);
     write(open_rc, projectid_attr_with_colon, strlen(projectid_attr_with_colon));
+    fsync(open_rc);
     close(open_rc);
-    if (strncmp(board, "raspberrypi", 11) == 0) {
-      system("sync");
-    }
   }
 
   /* Create new thread for read routine */
