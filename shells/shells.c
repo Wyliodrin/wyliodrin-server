@@ -878,7 +878,7 @@ static void *read_routine(void *args) {
         send_shells_keys_response(buf, read_rc, shell->id);
       }
       num_reads++;
-      if (num_reads == 10) {
+      if (num_reads == 1000) {
         usleep(100000);
         num_reads = 0;
       }
