@@ -255,6 +255,8 @@ cp /home/pi/.bashrc /wyliodrin
 # Clean
 apt-get clean
 rm -rf $SANDBOX_PATH
+rm -rf /home/pi/.npm
+rm -rf /home/root/.npm
 
 # Reboot
 reboot
