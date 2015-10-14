@@ -565,7 +565,10 @@ static void shells_keys(const char *from, xmpp_stanza_t *stanza) {
         "Received shells keys with no shellid attribute from %s", from);
 
   char *data_str = xmpp_stanza_get_text(stanza);
-  werr2(data_str == NULL, return, "Got keys with no data");
+  if (data_str == NULL) {
+    /* Ignore stanza with no data */
+    return;
+  }
 
   /* Decode */
   int dec_size = strlen(data_str) * 3 / 4 + 1;
