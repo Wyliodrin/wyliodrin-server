@@ -6,7 +6,7 @@
 
 SANDBOX_PATH=/wyliodrin/sandbox
 HOME=/wyliodrin
-WVERSION=v2.21
+WVERSION=v2.22
 LWVERSION=v1.16
 
 
@@ -33,7 +33,8 @@ printf '{
   "build_file": "/wyliodrin/projects/build\",
   "board": "raspberrypi",
   "run": "sudo -E make -f Makefile.raspberrypi run",
-  "shell": "bash"
+  "shell": "bash",
+  "stop": "sudo kill -9"
 }\n' > /etc/wyliodrin/settings_raspberrypi.json
 
 elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
@@ -46,7 +47,8 @@ printf '{
   "build_file": "/wyliodrin/projects/build\",
   "board": "beagleboneblack",
   "run": "make -f Makefile.beagleboneblack run",
-  "shell": "bash"
+  "shell": "bash",
+  "stop": "kill -9"
 }\n' > /etc/wyliodrin/settings_beagleboneblack.json
 
 elif [ "$wyliodrin_board" = "arduinogalileo" ]; then
@@ -59,7 +61,8 @@ printf '{
   "build_file": "/wyliodrin/projects/build\",
   "board": "arduinogalileo",
   "run": "make -f Makefile.arduinogalileo run",
-  "shell": "bash"
+  "shell": "bash",
+  "stop": "kill -9"
 }\n' > /etc/wyliodrin/settings_arduinogalileo.json
 
 elif [ "$wyliodrin_board" = "edison" ]; then
@@ -72,7 +75,8 @@ printf '{
   "build_file": "/wyliodrin/projects/build\",
   "board": "edison",
   "run": "make -f Makefile.edison run",
-  "shell": "bash"
+  "shell": "bash",
+  "stop": "kill -9"
 }\n' > /etc/wyliodrin/settings_edison.json
 
 elif [ "$wyliodrin_board" = "redpitaya" ]; then
@@ -85,7 +89,8 @@ printf '{
   "build_file": "/wyliodrin/projects/build\",
   "board": "redpitaya",
   "run": "make -f Makefile.redpitaya run",
-  "shell": "bash"
+  "shell": "bash",
+  "stop": "kill -9"
 }\n' > /etc/wyliodrin/settings_redpitaya.json
 
 elif [ "$wyliodrin_board" = "" ]; then

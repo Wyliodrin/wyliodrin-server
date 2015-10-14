@@ -39,6 +39,7 @@ const char *mount_file;
 const char *build_file;
 const char *shell;
 const char *run;
+const char *stop;
 static const char *config_file;
 
 /* Values from wyliodrin.json */
@@ -263,6 +264,9 @@ static bool load_content_from_settings_file(json_t *settings_json, const char *s
 
   run = get_str_value(settings_json, "run");
   werr2(run == NULL, goto _finish, "There is no run entry in %s", settings_file);
+
+  stop = get_str_value(settings_json, "stop");
+  werr2(stop == NULL, goto _finish, "There is no stop entry in %s", settings_file);
 
   /* Success */
   return_value = true;

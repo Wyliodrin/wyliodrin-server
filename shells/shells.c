@@ -42,8 +42,6 @@
 
 #define BUFSIZE        1024   /* Size of buffer used in the read routine */
 
-#define MAX_SHELLS     256    /* Maximum number of shells */
-
 #define DEFAULT_WIDTH  "12"   /* Default shells width  */
 #define DEFAULT_HEIGHT "103"  /* Default shells height */
 
@@ -52,18 +50,6 @@
 
 
 /*** TYPEDEFS ************************************************************************************/
-
-typedef struct {
-  long int width;      /* width */
-  long int height;     /* height */
-  int pid;             /* PID */
-  int fdm;             /* PTY file descriptor */
-  int id;              /* shell id */
-  char *request;       /* open request */
-  char *projectid;     /* projectid in case of make shell */
-  char *userid;        /* userid in case of make shell */
-  bool is_connected;   /* is project connected */
-} shell_t;
 
 typedef enum {
   SHELL,
@@ -82,6 +68,7 @@ extern const char *owner;
 extern const char *board;
 extern const char *shell;
 extern const char *run;
+extern const char *stop;
 extern const char *build_file;
 
 extern xmpp_ctx_t *global_ctx;
@@ -96,7 +83,13 @@ extern bool is_xmpp_connection_set;
 /*** STATIC VARIABLES ****************************************************************************/
 
 static pthread_mutex_t shells_lock;
-static shell_t *shells_vector[MAX_SHELLS];
+
+/*************************************************************************************************/
+
+
+/*** VARIABLES ***********************************************************************************/
+
+shell_t *shells_vector[MAX_SHELLS];
 
 /*************************************************************************************************/
 
@@ -525,8 +518,7 @@ static void shells_close(const char *from, xmpp_stanza_t *stanza) {
 
   if (xmpp_stanza_get_attribute(stanza, "background") == NULL) {
     char screen_quit_cmd[64];
-    snprintf(screen_quit_cmd, 64, "%skill -9 %d",
-             strncmp(board, "raspberrypi", 11) == 0 ? "sudo " : "", shells_vector[shellid]->pid);
+    snprintf(screen_quit_cmd, 64, "%s %d", stop, shells_vector[shellid]->pid);
     system(screen_quit_cmd);
   }
 

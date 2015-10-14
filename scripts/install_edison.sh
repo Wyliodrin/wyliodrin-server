@@ -10,7 +10,7 @@
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v2.21
+WVERSION=v2.22
 LWVERSION=v1.16
 
 ###################################################################################################
@@ -127,14 +127,16 @@ make install
 mkdir -p /etc/wyliodrin
 echo -n edison > /etc/wyliodrin/boardtype
 
-echo "{
-\"config_file\": \"/media/storage/wyliodrin.json\",
-\"mountFile\": \"/wyliodrin/mnt\",
-\"buildFile\": \"/wyliodrin/build\",
-\"run\": \"make -f Makefile.edison run\",
-\"board\": \"edison\",
-\"sudo:\": \"\"
-}" > /etc/wyliodrin/settings_edison.json
+printf '
+  "config_file": "/boot/wyliodrin.json",
+  "home": "/wyliodrin",
+  "mount_file": "/wyliodrin/projects/mnt",
+  "build_file": "/wyliodrin/projects/build\",
+  "board": "raspberrypi",
+  "run": "make -f Makefile.raspberrypi run",
+  "shell": "bash",
+  "stop": "kill -9"
+}\n' > /etc/wyliodrin/settings_edison.json
 
 mkdir -p /wyliodrin
 mkdir -p /wyliodrin/mnt

@@ -20,16 +20,21 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 #define BUF_SIZE 1024
 
 #include "ps.h"
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../wxmpp/wxmpp.h"
+#include "../shells/shells.h"
 
 bool keep_sending = false;
 
 extern const char *owner; /* owner from init.c */
+extern const char *stop;
+
+extern shell_t *shells_vector[];
 
 static void ps_kill(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 static void ps_send(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
@@ -52,6 +57,8 @@ static void *send_tasks_routine(void *args) {
     char fn[64];
     char buf[BUF_SIZE];
     int fd, rc;
+    int i;
+    bool found;
 
     char pid[32];
     char comm[32];
@@ -120,10 +127,28 @@ static void *send_tasks_routine(void *args) {
 
           xmpp_stanza_t *ps = xmpp_stanza_new(ctx); /* info stanza */
           xmpp_stanza_set_name(ps, "ps");
-          xmpp_stanza_set_attribute(ps, "name", comm);
           xmpp_stanza_set_attribute(ps, "pid", pid);
           xmpp_stanza_set_attribute(ps, "cpu", "50");
           xmpp_stanza_set_attribute(ps, "mem", vmSize);
+
+          found = false;
+          for (i = 0; i < MAX_SHELLS; i++) {
+            if (shells_vector[i] != NULL) {
+              char pid_str[16];
+              snprintf(pid_str, 16, "%d", shells_vector[i]->pid);
+
+              if (strcmp(pid_str, ep->d_name) == 0) {
+                if (shells_vector[i]->projectid != NULL) {
+                  xmpp_stanza_set_attribute(ps, "name", shells_vector[i]->projectid);
+                  found = true;
+                }
+                break;
+              }
+            }
+          }
+          if (!found) {
+            xmpp_stanza_set_attribute(ps, "name", comm);
+          }
 
           xmpp_stanza_add_child(info, ps);
         }
@@ -177,7 +202,7 @@ static void ps_kill(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const 
     return;
   }
   char cmd[64];
-  snprintf(cmd, 63, "kill -9 %s", pid_attr);
+  snprintf(cmd, 63, "%s %s", stop, pid_attr);
   system(cmd);
 }
 

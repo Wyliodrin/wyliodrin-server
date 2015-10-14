@@ -20,6 +20,32 @@
 
 
 
+/*** DEFINES *************************************************************************************/
+
+#define MAX_SHELLS 256 /* Maximum number of shells */
+
+/*************************************************************************************************/
+
+
+
+/*** TYPEDEFS ************************************************************************************/
+
+typedef struct {
+  long int width;      /* width */
+  long int height;     /* height */
+  int pid;             /* PID */
+  int fdm;             /* PTY file descriptor */
+  int id;              /* shell id */
+  char *request;       /* open request */
+  char *projectid;     /* projectid in case of make shell */
+  char *userid;        /* userid in case of make shell */
+  bool is_connected;   /* is project connected */
+} shell_t;
+
+/*************************************************************************************************/
+
+
+
 /*** API *****************************************************************************************/
 
 /**
