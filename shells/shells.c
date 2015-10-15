@@ -421,6 +421,12 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
 
   pthread_mutex_unlock(&shells_lock);
 
+  /* Create new thread for read routine */
+  pthread_t rt;
+  int rc = pthread_create(&rt, NULL, &read_routine, shells_vector[shell_index]);
+  wsyserr2(rc < 0, goto _error, "Could not create thread for read routine");
+  pthread_detach(rt);
+
   /* Fork */
   int fdm;
   int pid = forkpty(&fdm, NULL, NULL, &ws);
@@ -475,12 +481,6 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
     fsync(open_rc);
     close(open_rc);
   }
-
-  /* Create new thread for read routine */
-  pthread_t rt;
-  int rc = pthread_create(&rt, NULL, &read_routine, shells_vector[shell_index]);
-  wsyserr2(rc < 0, goto _error, "Could not create thread for read routine");
-  pthread_detach(rt);
 
   winfo("Open new shell");
   if (request_attr != NULL) {
@@ -871,6 +871,11 @@ static void *read_routine(void *args) {
 
   char buf[BUFSIZE];
   while (true) {
+    if (shell->fdm == -1) {
+      usleep(10000);
+      continue;
+    }
+
     int read_rc = read(shell->fdm, buf, sizeof(buf));
     if (read_rc > 0) {
       if (shell->request != NULL && shell->is_connected) {
