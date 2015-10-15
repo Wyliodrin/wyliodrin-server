@@ -428,9 +428,6 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
       werr("Unrecognized shell type");
     }
 
-    /* Give some time to create read_thread */
-    usleep(500000);
-
     execvpe(exec_argv[0], exec_argv, all_env);
 
     wsyserr2(true, /* Do nothing */, "Exec failed");
