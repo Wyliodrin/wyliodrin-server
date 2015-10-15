@@ -354,12 +354,10 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
   werr2(shell_type != SHELL && shell_type != PROJECT, goto _error, "Unrecognized shell type");
 
   /* Sanity checks */
-  // werr2(request_attr   == NULL, return, "Trying to open shell with NULL request");
   werr2(width_attr     == NULL, return, "Trying to open shell with NULL width");
   werr2(height_attr    == NULL, return, "Trying to open shell with NULL height");
   if (shell_type == PROJECT) {
     werr2(projectid_attr == NULL, return, "Trying to open project with NULL projectid");
-    // werr2(userid_attr    == NULL, return, "Trying to open project with NULL userid");
   }
 
   if (shell_type == PROJECT) {
@@ -404,6 +402,25 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
 
   struct winsize ws = { height, width, 0, 0 };
 
+  /* Get an entry in the shells_vector */
+  pthread_mutex_lock(&shells_lock);
+
+  int shell_index = get_entry_in_shells_vector();
+  werr2(shell_index == MAX_SHELLS, goto _error, "Only %d open shells are allowed", MAX_SHELLS);
+
+  bool new_shell_alloc_rc;
+  if (shell_type == SHELL) {
+    new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, -1, -1, width, height,
+                                                       request_attr, NULL, NULL);
+  } else {
+    new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, -1, -1, width, height,
+                                                       request_attr, projectid_attr,
+                                                       userid_attr);
+  }
+  werr2(!new_shell_alloc_rc, goto _error, "Could not add new shell");
+
+  pthread_mutex_unlock(&shells_lock);
+
   /* Fork */
   int fdm;
   int pid = forkpty(&fdm, NULL, NULL, &ws);
@@ -438,23 +455,10 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
 
   /* NOTE: If an error occurs after this point, the child process should be killed. */
 
-  /* Get an entry in the shells_vector */
+  /* Update pid and fdm */
   pthread_mutex_lock(&shells_lock);
-
-  int shell_index = get_entry_in_shells_vector();
-  werr2(shell_index == MAX_SHELLS, goto _error, "Only %d open shells are allowed", MAX_SHELLS);
-
-  bool new_shell_alloc_rc;
-  if (shell_type == SHELL) {
-    new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, pid, fdm, width, height,
-                                                       request_attr, NULL, NULL);
-  } else {
-    new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, pid, fdm, width, height,
-                                                       request_attr, projectid_attr,
-                                                       userid_attr);
-  }
-  werr2(!new_shell_alloc_rc, goto _error, "Could not add new shell");
-
+  shells_vector[shell_index]->pid = pid;
+  shells_vector[shell_index]->fdm = fdm;
   pthread_mutex_unlock(&shells_lock);
 
   if (shell_type == PROJECT) {
