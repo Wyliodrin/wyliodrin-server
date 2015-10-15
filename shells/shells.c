@@ -402,31 +402,6 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
 
   struct winsize ws = { height, width, 0, 0 };
 
-  /* Get an entry in the shells_vector */
-  pthread_mutex_lock(&shells_lock);
-
-  int shell_index = get_entry_in_shells_vector();
-  werr2(shell_index == MAX_SHELLS, goto _error, "Only %d open shells are allowed", MAX_SHELLS);
-
-  bool new_shell_alloc_rc;
-  if (shell_type == SHELL) {
-    new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, -1, -1, width, height,
-                                                       request_attr, NULL, NULL);
-  } else {
-    new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, -1, -1, width, height,
-                                                       request_attr, projectid_attr,
-                                                       userid_attr);
-  }
-  werr2(!new_shell_alloc_rc, goto _error, "Could not add new shell");
-
-  pthread_mutex_unlock(&shells_lock);
-
-  /* Create new thread for read routine */
-  pthread_t rt;
-  int rc = pthread_create(&rt, NULL, &read_routine, shells_vector[shell_index]);
-  wsyserr2(rc < 0, goto _error, "Could not create thread for read routine");
-  pthread_detach(rt);
-
   /* Fork */
   int fdm;
   int pid = forkpty(&fdm, NULL, NULL, &ws);
@@ -453,6 +428,9 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
       werr("Unrecognized shell type");
     }
 
+    /* Give some time to create read_thread */
+    usleep(500000);
+
     execvpe(exec_argv[0], exec_argv, all_env);
 
     wsyserr2(true, /* Do nothing */, "Exec failed");
@@ -461,10 +439,23 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
 
   /* NOTE: If an error occurs after this point, the child process should be killed. */
 
-  /* Update pid and fdm */
+  /* Get an entry in the shells_vector */
   pthread_mutex_lock(&shells_lock);
-  shells_vector[shell_index]->pid = pid;
-  shells_vector[shell_index]->fdm = fdm;
+
+  int shell_index = get_entry_in_shells_vector();
+  werr2(shell_index == MAX_SHELLS, goto _error, "Only %d open shells are allowed", MAX_SHELLS);
+
+  bool new_shell_alloc_rc;
+  if (shell_type == SHELL) {
+    new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, pid, fdm, width, height,
+                                                       request_attr, NULL, NULL);
+  } else {
+    new_shell_alloc_rc = allocate_memory_for_new_shell(shell_index, pid, fdm, width, height,
+                                                       request_attr, projectid_attr,
+                                                       userid_attr);
+  }
+  werr2(!new_shell_alloc_rc, goto _error, "Could not add new shell");
+
   pthread_mutex_unlock(&shells_lock);
 
   if (shell_type == PROJECT) {
@@ -481,6 +472,12 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
     fsync(open_rc);
     close(open_rc);
   }
+
+  /* Create new thread for read routine */
+  pthread_t rt;
+  int rc = pthread_create(&rt, NULL, &read_routine, shells_vector[shell_index]);
+  wsyserr2(rc < 0, goto _error, "Could not create thread for read routine");
+  pthread_detach(rt);
 
   winfo("Open new shell");
   if (request_attr != NULL) {
@@ -871,8 +868,6 @@ static void *read_routine(void *args) {
 
   char buf[BUFSIZE];
   while (true) {
-    while (shell->fdm == -1) {}
-
     int read_rc = read(shell->fdm, buf, sizeof(buf));
     if (read_rc > 0) {
       if (shell->request != NULL && shell->is_connected) {
