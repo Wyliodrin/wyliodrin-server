@@ -871,10 +871,7 @@ static void *read_routine(void *args) {
 
   char buf[BUFSIZE];
   while (true) {
-    if (shell->fdm == -1) {
-      usleep(10000);
-      continue;
-    }
+    while (shell->fdm == -1) {}
 
     int read_rc = read(shell->fdm, buf, sizeof(buf));
     if (read_rc > 0) {
