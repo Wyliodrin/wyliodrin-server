@@ -217,20 +217,11 @@ int execvpe(const char *file, char *const argv[], char *const envp[]);
 /*** API IMPLEMENTATION **************************************************************************/
 
 void init_shells() {
-  static bool shells_initialized = false;
-
   mkdir("/tmp/wyliodrin", 0700);
 
-  if (!shells_initialized) {
-    int i;
-
-    pthread_mutex_lock(&shells_lock);
-    for (i = 0; i < MAX_SHELLS; i++) {
-      shells_vector[i] = NULL;
-    }
-    pthread_mutex_unlock(&shells_lock);
-
-    shells_initialized = true;
+  int i;
+  for (i = 0; i < MAX_SHELLS; i++) {
+    shells_vector[i] = NULL;
   }
 }
 
