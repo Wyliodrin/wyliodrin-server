@@ -514,6 +514,7 @@ static void shells_close(const char *from, xmpp_stanza_t *stanza) {
   pthread_mutex_lock(&shells_lock);
   free(shells_vector[shellid]->request);
   shells_vector[shellid]->request = strdup(request_attr);
+  shells_vector[shellid]->is_connected = false;
   pthread_mutex_unlock(&shells_lock);
 
   if (xmpp_stanza_get_attribute(stanza, "background") == NULL) {
@@ -868,7 +869,7 @@ static void *read_routine(void *args) {
   while (true) {
     int read_rc = read(shell->fdm, buf, sizeof(buf));
     if (read_rc > 0) {
-      if (shell->request != NULL) {
+      if (shell->request != NULL && shell->is_connected) {
         /* Send keys only to active shells */
         send_shells_keys_response(buf, read_rc, shell->id);
       }
