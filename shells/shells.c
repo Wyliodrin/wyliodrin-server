@@ -467,10 +467,15 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
   wsyserr2(rc < 0, goto _error, "Could not create thread for read routine");
   pthread_detach(rt);
 
-  winfo("Open new shell");
   if (request_attr != NULL) {
     /* Not starting a dead project */
     send_shells_open_response(request_attr, true, shell_index, false);
+  }
+
+  if (shell_type == PROJECT) {
+    winfo("Project %s is now running in shell %d", projectid_attr, shell_index);
+  } else {
+    winfo("Opening shell %d", shell_index);
   }
 
   return;
@@ -635,6 +640,8 @@ static void shells_disconnect(const char *from, xmpp_stanza_t *stanza) {
   werr2(*endptr != '\0', return, "Invalid shellid attribute: %s", shellid_attr);
 
   werr2(shells_vector[shellid] == NULL, return, "Shell %ld already disconnected", shellid);
+
+  winfo("Shell %s disconnected", shellid_attr);
 
   pthread_mutex_lock(&shells_lock);
   shells_vector[shellid]->is_connected = false;
@@ -873,6 +880,9 @@ static void *read_routine(void *args) {
 
       int status;
       waitpid(shell->pid, &status, 0);
+
+      werr2(WIFSIGNALED(status), /* Do nothing */, "Shell closed on signal %d", WTERMSIG(status));
+
       char status_str[8];
       snprintf(status_str, 8, "%d", WEXITSTATUS(status));
 
@@ -882,8 +892,34 @@ static void *read_routine(void *args) {
         send_shells_close_response(shell->request, shellid_str, status_str);
       }
 
+      bool restart_project = false;
+      char width_str[8];
+      char height_str[8];
+      char *projectid;
+      char *userid;
+      if (!shell->is_connected && shell->projectid != NULL &&
+          ((WIFEXITED(status) && WEXITSTATUS(status) != 0) ||
+           (WIFSIGNALED(status) && WTERMSIG(status) == SIGSEGV))) {
+        /* Restart project */
+        if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+          winfo("Restarting project %s because it exited with code %d while running in background",
+                shell->projectid, WEXITSTATUS(status));
+        } else {
+          winfo("Restarting project %s because it received SIGSEGV while running in background",
+                shell->projectid);
+        }
+
+        snprintf(width_str, 8, "%ld", shell->width);
+        snprintf(height_str, 8, "%ld", shell->height);
+        projectid = strdup(shell->projectid);
+        userid = strdup(shell->userid);
+        restart_project = true;
+      }
+
       pthread_mutex_lock(&shells_lock);
-      free(shell->request);
+      if (shell->request != NULL) {
+        free(shell->request);
+      }
       if (shell->projectid != NULL) {
         remove_project_id_from_running_projects(shell->projectid);
 
@@ -895,9 +931,17 @@ static void *read_routine(void *args) {
         free(shell->userid);
       }
       close(shell->fdm);
-      free(shell);
+      winfo("Shell %d closed", shell->id);
       shells_vector[shell->id] = NULL;
+      free(shell);
       pthread_mutex_unlock(&shells_lock);
+
+      if (restart_project) {
+        open_shell_or_project(PROJECT, NULL, width_str, height_str,
+                              projectid, userid);
+        free(projectid);
+        free(userid);
+      }
 
       return NULL;
     }
