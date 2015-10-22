@@ -7,7 +7,7 @@
 SANDBOX_PATH=/wyliodrin/sandbox
 HOME=/wyliodrin
 WVERSION=v2.24
-LWVERSION=v1.16
+LWVERSION=v1.17
 
 
 
