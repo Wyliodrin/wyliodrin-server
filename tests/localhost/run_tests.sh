@@ -22,7 +22,8 @@ function replace_wyliodrin_json {
 
 
 test_name=(                                                                                       \
-  "Test logs are sent to <domain>/gadgets/logs/<jid>"
+  "Test logs are sent to <domain>/gadgets/logs/<jid>"                                             \
+  "Test first log is info about startup"                                                          \
 )
 
 
