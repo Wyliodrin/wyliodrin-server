@@ -24,6 +24,7 @@ function replace_wyliodrin_json {
 test_name=(                                                                                       \
   "Test logs are sent to <domain>/gadgets/logs/<jid>"                                             \
   "Test first log is info about startup"                                                          \
+  "Test connection error logs"                                                                    \
 )
 
 
@@ -62,4 +63,5 @@ done
 
 printf "\nTotal : %d/%d\n\n" "$num_tests_passed" "${#test_name[@]}"
 
+# Restore old wyliodrin.json
 sudo mv $WYLIODRIN_JSON_PATH.orig $WYLIODRIN_JSON_PATH
