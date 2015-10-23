@@ -1,0 +1,5 @@
+For these tests I used the eJabberd XMPP server. For configuration see [1].
+I added the user <user1> with the password <user1>.
+
+
+[1] https://www.digitalocean.com/community/tutorials/how-to-install-ejabberd-xmpp-server-on-ubuntu
