@@ -6,6 +6,7 @@ import ssl
 import os
 import json
 
+
 class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     def do_POST(self):

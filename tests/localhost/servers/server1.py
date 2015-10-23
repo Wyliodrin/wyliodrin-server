@@ -6,11 +6,13 @@ import ssl
 import os
 import sys
 
+
 if len(sys.argv) != 2:
     print "usage: %s <jid>" % (sys.argv[0])
     os._exit(1)
 
 jid = sys.argv[1]
+
 
 class ServerHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
