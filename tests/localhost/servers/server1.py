@@ -1,3 +1,5 @@
+# Test logs are sent to <domain>/gadgets/logs/<jid>
+
 import BaseHTTPServer, SimpleHTTPServer
 import SocketServer
 import ssl
