@@ -7,7 +7,7 @@
 SANDBOX_PATH=/wyliodrin/sandbox
 HOME=/wyliodrin
 WVERSION=v2.24
-LWVERSION=v1.16
+LWVERSION=v1.17
 
 
 
@@ -30,7 +30,7 @@ printf '{
   "config_file": "/boot/wyliodrin.json",
   "home": "/wyliodrin",
   "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build\",
+  "build_file": "/wyliodrin/projects/build",
   "board": "raspberrypi",
   "run": "sudo -E make -f Makefile.raspberrypi run",
   "shell": "bash",
@@ -44,7 +44,7 @@ printf '{
   "config_file": "/boot/wyliodrin.json",
   "home": "/wyliodrin",
   "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build\",
+  "build_file": "/wyliodrin/projects/build",
   "board": "beagleboneblack",
   "run": "make -f Makefile.beagleboneblack run",
   "shell": "bash",
@@ -58,7 +58,7 @@ printf '{
   "config_file": "/media/card/wyliodrin.json",
   "home": "/wyliodrin",
   "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build\",
+  "build_file": "/wyliodrin/projects/build",
   "board": "arduinogalileo",
   "run": "make -f Makefile.arduinogalileo run",
   "shell": "bash",
@@ -72,7 +72,7 @@ printf '{
   "config_file": "/media/storage/wyliodrin.json",
   "home": "/wyliodrin",
   "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build\",
+  "build_file": "/wyliodrin/projects/build",
   "board": "edison",
   "run": "make -f Makefile.edison run",
   "shell": "bash",
@@ -86,7 +86,7 @@ printf '{
   "config_file": "/boot/wyliodrin.json",
   "home": "/wyliodrin",
   "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build\",
+  "build_file": "/wyliodrin/projects/build",
   "board": "redpitaya",
   "run": "make -f Makefile.redpitaya run",
   "shell": "bash",
