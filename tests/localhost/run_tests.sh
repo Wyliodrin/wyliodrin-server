@@ -117,7 +117,49 @@ function run_test3 {
 }' $INVALID_JID $VALID_JID_PASSWORD $OWNER > $WYLIODRIN_JSON_PATH
 
   # Start server in background
-  sudo python servers/server2.py > /dev/null 2>&1 &
+  sudo python servers/server3.py > /dev/null 2>&1 &
+  server_pid=$!
+
+  # Wait for server to start
+  sleep 1
+
+  # Start wyliodrind in background
+  sudo wyliodrind > /dev/null 2>&1 &
+  wyliodrind_pid=$!
+
+  # Wait for server to finish
+  wait $server_pid
+  status=$?
+
+  # Clean
+  sudo kill $wyliodrind_pid
+
+  # Restore old wyliodrin.json
+  sudo mv $WYLIODRIN_JSON_PATH.orig $WYLIODRIN_JSON_PATH
+
+  return $status
+}
+
+###################################################################################################
+
+
+### TEST 3 ########################################################################################
+
+function run_test3 {
+  # Keep original wyliodrind.json
+  sudo mv $WYLIODRIN_JSON_PATH $WYLIODRIN_JSON_PATH.orig
+
+  # Write wyliodrin.json
+  printf '{
+  "jid": "%s",
+  "password": "%s",
+  "owner": "%s",
+  "ssid": "",
+  "psk": ""
+}' $VALID_JID $VALID_JID_PASSWORD $OWNER > $WYLIODRIN_JSON_PATH
+
+  # Start server in background
+  sudo python servers/server4.py > /dev/null 2>&1 &
   server_pid=$!
 
   # Wait for server to start
@@ -150,6 +192,7 @@ test_name=(                                                                     
   "Test logs are sent to <domain>/gadgets/logs/<jid>"                                             \
   "Test first log is info about startup"                                                          \
   "Test connection with invalid jid"                                                              \
+  "Test connection with valid jid"                                                                \
 )
 
 ###################################################################################################
