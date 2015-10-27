@@ -1,5 +1,2 @@
 *.o
-mnt/*
-build/*
-docs/build/*
-.Trash*
+wyliodrin-connect/build
