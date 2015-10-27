@@ -24,6 +24,7 @@
 #include "wjson/wjson.h"              /* json stuff      */
 #include "wyliodrin_connect.h"        /* file paths      */
 #include "wyliodrin_connect_config.h" /* version         */
+#include "wxmpp/wxmpp.h"           /* xmpp connection */
 
 /*************************************************************************************************/
 
@@ -187,8 +188,7 @@ int main(int argc, char *argv[]) {
     WYLIODRIN_CONNECT_VERSION_MAJOR, WYLIODRIN_CONNECT_VERSION_MINOR,
     get_version_major(), get_version_minor());
 
-  // xmpp_connect(jid, password);
-  printf("xmpp_connect(%s, %s)\n", jid, password);
+  xmpp_connect(jid, password);
 
   _finish: ;
     /* Let it sleep for a while for error messages to be sent */
