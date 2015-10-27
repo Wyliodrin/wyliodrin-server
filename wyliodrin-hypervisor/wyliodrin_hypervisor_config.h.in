@@ -1,7 +1,7 @@
-#ifndef _wyliodrin_hypervisor_H_IN
-#define _wyliodrin_hypervisor_H_IN
+#ifndef _WYLIODRIN_HYPERVISOR_H_IN
+#define _WYLIODRIN_HYPERVISOR_H_IN
 
-#define wyliodrin_hypervisor_VERSION_MAJOR @wyliodrin_hypervisor_VERSION_MAJOR@
-#define wyliodrin_hypervisor_VERSION_MINOR @wyliodrin_hypervisor_VERSION_MINOR@
+#define WYLIODRIN_HYPERVISOR_VERSION_MAJOR @WYLIODRIN_HYPERVISOR_VERSION_MAJOR@
+#define WYLIODRIN_HYPERVISOR_VERSION_MINOR @WYLIODRIN_HYPERVISOR_VERSION_MINOR@
 
-#endif /* wyliodrin_hypervisor_H_IN */
+#endif /* WYLIODRIN_HYPERVISOR_H_IN */
