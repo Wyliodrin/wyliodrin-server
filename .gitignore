@@ -1,0 +1,5 @@
+*.o
+mnt/*
+build/*
+docs/build/*
+.Trash*
