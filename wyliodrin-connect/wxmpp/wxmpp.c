@@ -16,6 +16,7 @@
 #include <Wyliodrin.h>    /* libwyliodrin version */
 
 #include "../winternals/winternals.h" /* logs and errs   */
+#include "../cmp/cmp.h"               /* msgpack handling   */
 
 #include "wxmpp.h" /* API */
 
@@ -49,8 +50,6 @@ bool is_owner_online = false;
 
 extern char *owner;
 extern char *board;
-
-extern bool is_fuse_available;
 
 /*************************************************************************************************/
 
@@ -329,42 +328,122 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
   werr2(type != NULL && strncasecmp(type, "error", 5) == 0, return 1,
     "Got message with error type from %s", from_attr);
 
-  // /* Get every module function from stanza and execute it */
-  // module_hander *handler;
-  // xmpp_stanza_t *child_stz = xmpp_stanza_get_children(stanza);
-  // while (child_stz != NULL) {
-  //   char *ns = xmpp_stanza_get_ns(child_stz);
-  //   if (ns != NULL && strcmp(ns, WNS) == 0) {
-  //     char *name = xmpp_stanza_get_name(child_stz);
-  //     handler = (module_hander *)hashmap_get(modules, name);
-  //     if (handler != NULL) {
-  //       /* Build routine arguments */
-  //       exec_handler_args_t *args = (exec_handler_args_t *)malloc(sizeof(exec_handler_args_t));
-  //       wsyserr2(args == NULL, /* Do nothing */, "Could not allocate memory for thread argument");
-  //       args->handler = handler;
-  //       args->stz = xmpp_stanza_copy(child_stz);
-  //       args->from_attr = strdup(from_attr);
-  //       wsyserr2(args->from_attr == NULL,  Do nothing ,
-  //                "Could not allocate memory for from attribute");
-  //       args->to_attr = strdup(to_attr);
-  //       wsyserr2(args->from_attr == NULL, /* Do nothing */,
-  //                "Could not allocate memory for to attribute");
+  /* Stanza to msgpack */
+  char **attrs = malloc(32 * sizeof(char *));
+  char msgpack_buf[1024] = {0};
 
-  //       pthread_t exec_handler_thread;
-  //       int pthread_create_rc = pthread_create(&exec_handler_thread, NULL,
-  //                                              exec_handler_routine, args);
-  //       if (pthread_create_rc != 0) {
-  //         werr("Could not create thread to execute the handler");
-  //       } else {
-  //         pthread_detach(exec_handler_thread);
-  //       }
-  //     } else {
-  //       werr("Got message from %s that is trying to trigger unavailable module %s",
-  //            from_attr, name);
-  //     }
-  //   }
-  //   child_stz = xmpp_stanza_get_next(child_stz);
-  // }
+  cmp_ctx_t cmp;
+  cmp_init(&cmp, msgpack_buf, 1024);
+
+  xmpp_stanza_t *child_stz = xmpp_stanza_get_children(stanza);
+  while (child_stz != NULL) {
+    char *name = xmpp_stanza_get_name(child_stz);
+    char *text = xmpp_stanza_get_text(child_stz);
+    int num_attrs = xmpp_stanza_get_attributes(child_stz, attrs, 32);
+
+    werr2(!cmp_write_map(&cmp, 3),
+          return 1,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+    werr2(!cmp_write_str(&cmp, "n", 1),
+          return 1,
+          "cmp_write_str error: %s", cmp_strerror(&cmp));
+
+    werr2(!cmp_write_str(&cmp, name, strlen(name)),
+          return 1,
+          "cmp_write_str error: %s", cmp_strerror(&cmp));
+
+    werr2(!cmp_write_str(&cmp, "t", 1),
+          return 1,
+          "cmp_write_str error: %s", cmp_strerror(&cmp));
+
+    if (text != NULL) {
+      werr2(!cmp_write_str(&cmp, text, strlen(text)),
+            return 1,
+            "cmp_write_str error: %s", cmp_strerror(&cmp));
+    } else {
+      werr2(!cmp_write_str(&cmp, NULL, 0),
+            return 1,
+            "cmp_write_str error: %s", cmp_strerror(&cmp));
+    }
+
+    werr2(!cmp_write_str(&cmp, "a", 1),
+          return 1,
+          "cmp_write_str error: %s", cmp_strerror(&cmp));
+
+    werr2(!cmp_write_array(&cmp, num_attrs),
+          return 1,
+          "cmp_write_array error: %s", cmp_strerror(&cmp));
+
+    int i;
+    for (i = 0; i < num_attrs; i++) {
+      werr2(!cmp_write_str(&cmp, attrs[i], strlen(attrs[i])),
+            return 1,
+            "cmp_write_str error: %s", cmp_strerror(&cmp));
+    }
+
+    /* Test read */
+    uint32_t map_size;
+    werr2(!cmp_read_map(&cmp, &map_size),
+          return 1,
+          "cmp_read_map error: %s", cmp_strerror(&cmp));
+    werr2(map_size != 3, return 1, "map_size = %d", map_size);
+
+    char str[32];
+    uint32_t str_size;
+
+    /* Read name */
+    str_size = 32;
+    werr2(!cmp_read_str(&cmp, str, &str_size),
+          return 1,
+          "cmp_read_str error: %s", cmp_strerror(&cmp));
+    printf("name key = %s\n", str);
+
+    str_size = 32;
+    werr2(!cmp_read_str(&cmp, str, &str_size),
+          return 1,
+          "cmp_read_str error: %s", cmp_strerror(&cmp));
+    printf("name value = %s\n", str);
+
+    str_size = 32;
+    werr2(!cmp_read_str(&cmp, str, &str_size),
+          return 1,
+          "cmp_read_str error: %s", cmp_strerror(&cmp));
+    printf("text key = %s\n", str);
+
+    str_size = 32;
+    werr2(!cmp_read_str(&cmp, str, &str_size),
+          return 1,
+          "cmp_read_str error: %s", cmp_strerror(&cmp));
+    printf("text value = %s\n", str);
+
+    str_size = 32;
+    werr2(!cmp_read_str(&cmp, str, &str_size),
+          return 1,
+          "cmp_read_str error: %s", cmp_strerror(&cmp));
+    printf("attr key = %s\n", str);
+
+    uint32_t array_size;
+    werr2(!cmp_read_array(&cmp, &array_size),
+          return 1,
+          "cmp_read_array error: %s", cmp_strerror(&cmp));
+
+    for (i = 0; i < array_size; i += 2) {
+      str_size = 32;
+      werr2(!cmp_read_str(&cmp, str, &str_size),
+            return 1,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+      printf("attr[%d] key = %s\n", i, str);
+
+      str_size = 32;
+      werr2(!cmp_read_str(&cmp, str, &str_size),
+            return 1,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+      printf("attr[%d] val = %s\n", i+1, str);
+    }
+
+    child_stz = xmpp_stanza_get_next(child_stz);
+  }
 
   return 1;
 }
