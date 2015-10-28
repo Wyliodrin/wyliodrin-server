@@ -42,6 +42,7 @@ set (wyliodrin_connect_SRCS
   ${PROJECT_SOURCE_DIR}/logs/logs.c
   ${PROJECT_SOURCE_DIR}/wxmpp/wxmpp.c
   ${PROJECT_SOURCE_DIR}/cmp/cmp.c
+  ${PROJECT_SOURCE_DIR}/wredis/wredis.c
 )
 
 add_executable (wyliodrin_connect

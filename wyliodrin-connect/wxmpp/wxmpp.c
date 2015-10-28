@@ -15,8 +15,9 @@
 #include "wyliodrin_connect_config.h" /* wtalk version        */
 #include <Wyliodrin.h>    /* libwyliodrin version */
 
-#include "../winternals/winternals.h" /* logs and errs   */
-#include "../cmp/cmp.h"               /* msgpack handling   */
+#include "../winternals/winternals.h" /* logs and errs    */
+#include "../cmp/cmp.h"               /* msgpack handling */
+#include "../wredis/wredis.h"
 
 #include "wxmpp.h" /* API */
 
@@ -382,65 +383,67 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
             "cmp_write_str error: %s", cmp_strerror(&cmp));
     }
 
-    /* Test read */
-    uint32_t map_size;
-    werr2(!cmp_read_map(&cmp, &map_size),
-          return 1,
-          "cmp_read_map error: %s", cmp_strerror(&cmp));
-    werr2(map_size != 3, return 1, "map_size = %d", map_size);
+    publish(msgpack_buf);
 
-    char str[32];
-    uint32_t str_size;
+  //   /* Test read */
+  //   uint32_t map_size;
+  //   werr2(!cmp_read_map(&cmp, &map_size),
+  //         return 1,
+  //         "cmp_read_map error: %s", cmp_strerror(&cmp));
+  //   werr2(map_size != 3, return 1, "map_size = %d", map_size);
 
-    /* Read name */
-    str_size = 32;
-    werr2(!cmp_read_str(&cmp, str, &str_size),
-          return 1,
-          "cmp_read_str error: %s", cmp_strerror(&cmp));
-    printf("name key = %s\n", str);
+  //   char str[32];
+  //   uint32_t str_size;
 
-    str_size = 32;
-    werr2(!cmp_read_str(&cmp, str, &str_size),
-          return 1,
-          "cmp_read_str error: %s", cmp_strerror(&cmp));
-    printf("name value = %s\n", str);
+  //   /* Read name */
+  //   str_size = 32;
+  //   werr2(!cmp_read_str(&cmp, str, &str_size),
+  //         return 1,
+  //         "cmp_read_str error: %s", cmp_strerror(&cmp));
+  //   printf("name key = %s\n", str);
 
-    str_size = 32;
-    werr2(!cmp_read_str(&cmp, str, &str_size),
-          return 1,
-          "cmp_read_str error: %s", cmp_strerror(&cmp));
-    printf("text key = %s\n", str);
+  //   str_size = 32;
+  //   werr2(!cmp_read_str(&cmp, str, &str_size),
+  //         return 1,
+  //         "cmp_read_str error: %s", cmp_strerror(&cmp));
+  //   printf("name value = %s\n", str);
 
-    str_size = 32;
-    werr2(!cmp_read_str(&cmp, str, &str_size),
-          return 1,
-          "cmp_read_str error: %s", cmp_strerror(&cmp));
-    printf("text value = %s\n", str);
+  //   str_size = 32;
+  //   werr2(!cmp_read_str(&cmp, str, &str_size),
+  //         return 1,
+  //         "cmp_read_str error: %s", cmp_strerror(&cmp));
+  //   printf("text key = %s\n", str);
 
-    str_size = 32;
-    werr2(!cmp_read_str(&cmp, str, &str_size),
-          return 1,
-          "cmp_read_str error: %s", cmp_strerror(&cmp));
-    printf("attr key = %s\n", str);
+  //   str_size = 32;
+  //   werr2(!cmp_read_str(&cmp, str, &str_size),
+  //         return 1,
+  //         "cmp_read_str error: %s", cmp_strerror(&cmp));
+  //   printf("text value = %s\n", str);
 
-    uint32_t array_size;
-    werr2(!cmp_read_array(&cmp, &array_size),
-          return 1,
-          "cmp_read_array error: %s", cmp_strerror(&cmp));
+  //   str_size = 32;
+  //   werr2(!cmp_read_str(&cmp, str, &str_size),
+  //         return 1,
+  //         "cmp_read_str error: %s", cmp_strerror(&cmp));
+  //   printf("attr key = %s\n", str);
 
-    for (i = 0; i < array_size; i += 2) {
-      str_size = 32;
-      werr2(!cmp_read_str(&cmp, str, &str_size),
-            return 1,
-            "cmp_read_str error: %s", cmp_strerror(&cmp));
-      printf("attr[%d] key = %s\n", i, str);
+  //   uint32_t array_size;
+  //   werr2(!cmp_read_array(&cmp, &array_size),
+  //         return 1,
+  //         "cmp_read_array error: %s", cmp_strerror(&cmp));
 
-      str_size = 32;
-      werr2(!cmp_read_str(&cmp, str, &str_size),
-            return 1,
-            "cmp_read_str error: %s", cmp_strerror(&cmp));
-      printf("attr[%d] val = %s\n", i+1, str);
-    }
+  //   for (i = 0; i < array_size; i += 2) {
+  //     str_size = 32;
+  //     werr2(!cmp_read_str(&cmp, str, &str_size),
+  //           return 1,
+  //           "cmp_read_str error: %s", cmp_strerror(&cmp));
+  //     printf("attr[%d] key = %s\n", i, str);
+
+  //     str_size = 32;
+  //     werr2(!cmp_read_str(&cmp, str, &str_size),
+  //           return 1,
+  //           "cmp_read_str error: %s", cmp_strerror(&cmp));
+  //     printf("attr[%d] val = %s\n", i+1, str);
+  //   }
 
     child_stz = xmpp_stanza_get_next(child_stz);
   }

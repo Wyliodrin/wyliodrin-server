@@ -20,11 +20,12 @@
 #include <unistd.h>    /* stat         */
 #include <Wyliodrin.h> /* lw version   */
 
-#include "winternals/winternals.h"    /* logs and errs   */
-#include "wjson/wjson.h"              /* json stuff      */
-#include "wyliodrin_connect.h"        /* file paths      */
-#include "wyliodrin_connect_config.h" /* version         */
-#include "wxmpp/wxmpp.h"           /* xmpp connection */
+#include "winternals/winternals.h"    /* logs and errs    */
+#include "wjson/wjson.h"              /* json stuff       */
+#include "wredis/wredis.h"            /* redis connection */
+#include "wyliodrin_connect.h"        /* file paths       */
+#include "wyliodrin_connect_config.h" /* version          */
+#include "wxmpp/wxmpp.h"              /* xmpp connection  */
 
 /*************************************************************************************************/
 
@@ -187,6 +188,8 @@ int main(int argc, char *argv[]) {
   winfo("Starting wyliodrin-connect v%d.%d with libwyliodrin v%d.%d",
     WYLIODRIN_CONNECT_VERSION_MAJOR, WYLIODRIN_CONNECT_VERSION_MINOR,
     get_version_major(), get_version_minor());
+
+  init_redis();
 
   xmpp_connect(jid, password);
 
