@@ -46,7 +46,7 @@ add_executable (wyliodrin_hypervisor
 
 install (TARGETS wyliodrin_hypervisor DESTINATION bin)
 
-add_definitions ("-Wall -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
+add_definitions ("-Wall -DLOG -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
 
 target_link_libraries (wyliodrin_hypervisor
   ${CMAKE_THREAD_LIBS_INIT}

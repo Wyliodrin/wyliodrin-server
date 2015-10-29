@@ -61,6 +61,7 @@ void init_redis() {
   pthread_detach(t);
 }
 
+
 void publish(const char *str) {
   redisReply *reply = redisCommand(c, "PUBLISH %s %s", REDIS_PUB_CHANNEL, str);
   werr2(reply == NULL, /* Do nothing */, "Redis publish error: %s", c->errstr);
