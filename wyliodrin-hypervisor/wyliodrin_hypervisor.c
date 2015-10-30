@@ -16,6 +16,7 @@
 #include <hiredis/async.h>
 #include <hiredis/adapters/libevent.h>
 
+#include "cmp/cmp.h"               /* msgpack handling */
 #include "winternals/winternals.h"
 
 /*************************************************************************************************/
@@ -76,10 +77,10 @@ static void *start_subscriber_routine(void *arg) {
 
 static void connectCallback(const redisAsyncContext *c, int status) {
   if (status != REDIS_OK) {
-    werr("connectCallback: %s", c->errstr);
+    werr("connectCallback error: %s", c->errstr);
     return;
   }
-  wlog("REDIS connected");
+  winfo("Successfully connected to redis");
 }
 
 
@@ -92,13 +93,77 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
   }
 
   if (r->type == REDIS_REPLY_ARRAY) {
+    /* Manage subscription */
+    if (r->elements == 3 && strncmp(r->element[0]->str, "subscribe", 9) == 0) {
+      winfo("Successfully subscribed to %s", r->element[1]->str);
+    }
 
-    int i;
-    for (i = 0; i < r->elements; i++) {
-      if (r->element[i]->str != NULL) {
-        printf("%d) %s\n", i, r->element[i]->str);
-      } else {
-        printf("%d) %s\n", i, "null");
+    /* Manage message */
+    if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
+      winfo("message: %s", r->element[2]->str);
+
+      /* Test read */
+      cmp_ctx_t cmp;
+      cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
+
+      int i;
+      uint32_t map_size;
+      werr2(!cmp_read_map(&cmp, &map_size),
+            return,
+            "cmp_read_map error: %s", cmp_strerror(&cmp));
+      werr2(map_size != 3, return, "map_size = %d", map_size);
+
+      char str[32];
+      uint32_t str_size;
+
+      /* Read name */
+      str_size = 32;
+      werr2(!cmp_read_str(&cmp, str, &str_size),
+            return,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+      printf("name key = %s\n", str);
+
+      str_size = 32;
+      werr2(!cmp_read_str(&cmp, str, &str_size),
+            return,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+      printf("name value = %s\n", str);
+
+      str_size = 32;
+      werr2(!cmp_read_str(&cmp, str, &str_size),
+            return,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+      printf("text key = %s\n", str);
+
+      str_size = 32;
+      werr2(!cmp_read_str(&cmp, str, &str_size),
+            return,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+      printf("text value = %s\n", str);
+
+      str_size = 32;
+      werr2(!cmp_read_str(&cmp, str, &str_size),
+            return,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+      printf("attr key = %s\n", str);
+
+      uint32_t array_size;
+      werr2(!cmp_read_array(&cmp, &array_size),
+            return,
+            "cmp_read_array error: %s", cmp_strerror(&cmp));
+
+      for (i = 0; i < array_size; i += 2) {
+        str_size = 32;
+        werr2(!cmp_read_str(&cmp, str, &str_size),
+              return,
+              "cmp_read_str error: %s", cmp_strerror(&cmp));
+        printf("attr[%d] key = %s\n", i, str);
+
+        str_size = 32;
+        werr2(!cmp_read_str(&cmp, str, &str_size),
+              return,
+              "cmp_read_str error: %s", cmp_strerror(&cmp));
+        printf("attr[%d] val = %s\n", i+1, str);
       }
     }
   } else {
