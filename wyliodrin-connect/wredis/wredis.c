@@ -15,6 +15,7 @@
 #include <hiredis/async.h>
 #include <hiredis/adapters/libevent.h>
 
+#include "../cmp/cmp.h"               /* msgpack handling */
 #include "../winternals/winternals.h" /* logs and errs   */
 
 #include "wredis.h" /* API */
@@ -29,6 +30,26 @@
 #define REDIS_PORT 6379
 
 #define REDIS_PUB_CHANNEL "wconnhyp"
+
+/*************************************************************************************************/
+
+
+
+/*** EXTERN VARIABLES ****************************************************************************/
+
+extern const char *board;
+extern const char *home;
+extern const char *mount_file;
+extern const char *build_file;
+extern const char *shell;
+extern const char *run;
+extern const char *stop;
+
+extern const char *jid;
+extern const char *owner;
+extern bool privacy;
+
+extern bool is_fuse_available;
 
 /*************************************************************************************************/
 
@@ -84,6 +105,10 @@ static void *init_redis_routine(void *args) {
       sleep(1);
     } else {
       winfo("Redis initialization success");
+
+      /* Send init info */
+
+
       return NULL;
     }
   }

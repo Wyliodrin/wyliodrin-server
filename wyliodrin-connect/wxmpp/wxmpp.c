@@ -25,6 +25,15 @@
 
 
 
+/*** UNDEFINED ***********************************************************************************/
+
+int xmpp_stanza_get_attribute_count(xmpp_stanza_t *const stanza);
+int xmpp_stanza_get_attributes(xmpp_stanza_t *const stanza, const char **attr, int attrlen);
+
+/*************************************************************************************************/
+
+
+
 /*** DEFINES *************************************************************************************/
 
 #define XMPP_PORT 5222 /* XMPP server port */
@@ -330,17 +339,30 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
     "Got message with error type from %s", from_attr);
 
   /* Stanza to msgpack */
-  char **attrs = malloc(32 * sizeof(char *));
-  char msgpack_buf[1024] = {0};
+
 
   cmp_ctx_t cmp;
-  cmp_init(&cmp, msgpack_buf, 1024);
 
   xmpp_stanza_t *child_stz = xmpp_stanza_get_children(stanza);
+  char *stanza_to_text;
+  size_t stanza_to_text_len;
   while (child_stz != NULL) {
+    /* Convert stanza to text in order to get its size */
+    int xmpp_stanza_to_text_rc = xmpp_stanza_to_text(child_stz, &stanza_to_text,
+                                                     &stanza_to_text_len);
+    werr2(xmpp_stanza_to_text_rc < 0, continue, "Could not convert stanza to text");
+    char *msgpack_buf = calloc(stanza_to_text_len, sizeof(char));
+    werr2(msgpack_buf == NULL, continue, "Could not allocate memory for msgpack_buf");
+    cmp_init(&cmp, msgpack_buf, stanza_to_text_len);
+
+    /* Get number of attributes */
+    int num_attrs = xmpp_stanza_get_attribute_count(child_stz);
+    const char **attrs = malloc(num_attrs * sizeof(char *));
+    werr2(attrs == NULL, continue, "Could not allocate memory for attrs");
+
     char *name = xmpp_stanza_get_name(child_stz);
     char *text = xmpp_stanza_get_text(child_stz);
-    int num_attrs = xmpp_stanza_get_attributes(child_stz, attrs, 32);
+    xmpp_stanza_get_attributes(child_stz, attrs, num_attrs);
 
     werr2(!cmp_write_map(&cmp, 3),
           return 1,
