@@ -39,6 +39,7 @@ include_directories (
 set (wyliodrin_hypervisor_SRCS
   ${PROJECT_SOURCE_DIR}/wyliodrin_hypervisor.c
   ${PROJECT_SOURCE_DIR}/cmp/cmp.c
+  ${PROJECT_SOURCE_DIR}/shells/shells.c
 )
 
 add_executable (wyliodrin_hypervisor

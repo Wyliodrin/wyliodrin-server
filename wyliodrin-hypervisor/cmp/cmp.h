@@ -283,6 +283,8 @@ bool cmp_read_str_size(cmp_ctx_t *ctx, uint32_t *size);
  * ought to be encoded using UTF-8,
  */
 // bool cmp_read_str(cmp_ctx_t *ctx, char *data, uint32_t *size);
+
+/* Update by Razvan Madalin MATEI */
 bool cmp_read_str(cmp_ctx_t *ctx, char **data);
 
 /* Reads the size of packed binary data from the backend */

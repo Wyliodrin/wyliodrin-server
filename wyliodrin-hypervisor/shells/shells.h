@@ -56,8 +56,7 @@ void init_shells();
 /**
  * Parse shells commands
 */
-void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
-            xmpp_conn_t *const conn, void *const userdata);
+void shells(const char *data);
 
 /**
  * Start projects that died on board shutdown.

@@ -9,6 +9,7 @@
 
 /*** INCLUDES ************************************************************************************/
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
 
@@ -122,7 +123,8 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
       printf("name = %s\n", str);
 
       if (strncmp(str, "shells", 6) == 0) {
-        printf("Calling shells\n");
+        shells(str);
+        free(str);
       }
 
       // werr2(!cmp_read_str(&cmp, str, &str_size),
