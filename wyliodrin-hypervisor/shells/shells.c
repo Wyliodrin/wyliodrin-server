@@ -346,7 +346,6 @@ void start_dead_projects() {
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
 
 static void shells_open(const char *data) {
-  printf("shells_open\n");
 //   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
 //   werr2(request_attr == NULL, goto _error,
 //         "Received shells open stanza from %s without request attribute", from);
@@ -373,7 +372,7 @@ static void shells_open(const char *data) {
 
 //   _error: ;
 //     send_shells_open_response(request_attr, false, 0, false);
-// }
+}
 
 
 // static void send_shells_open_response(char *request_attr, bool success, int shell_id,

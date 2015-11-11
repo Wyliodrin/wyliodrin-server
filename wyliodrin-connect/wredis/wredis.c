@@ -30,26 +30,7 @@
 #define REDIS_PORT 6379
 
 #define REDIS_PUB_CHANNEL "wconnhyp"
-
-/*************************************************************************************************/
-
-
-
-/*** EXTERN VARIABLES ****************************************************************************/
-
-extern const char *board;
-extern const char *home;
-extern const char *mount_file;
-extern const char *build_file;
-extern const char *shell;
-extern const char *run;
-extern const char *stop;
-
-extern const char *jid;
-extern const char *owner;
-extern bool privacy;
-
-extern bool is_fuse_available;
+#define REDIS_HYP_CHANNEL "whypconn"
 
 /*************************************************************************************************/
 
@@ -66,6 +47,10 @@ static redisContext *c = NULL;
 /*** STATIC FUNCTIONS DECLARATIONS ***************************************************************/
 
 static void *init_redis_routine(void *args);
+static void start_subscriber();
+static void *start_subscriber_routine(void *arg);
+static void connectCallback(const redisAsyncContext *c, int status);
+static void onMessage(redisAsyncContext *c, void *reply, void *privdata);
 
 /*************************************************************************************************/
 
@@ -74,12 +59,15 @@ static void *init_redis_routine(void *args);
 /*** API IMPLEMENATATION *************************************************************************/
 
 void init_redis() {
+  /* Start redis */
   pthread_t t;
 
   int pthread_create_rc = pthread_create(&t, NULL, &(init_redis_routine), NULL);
   werr2(pthread_create_rc < 0, return, "Could not create thread for init_redis_routine");
 
   pthread_detach(t);
+
+  start_subscriber();
 }
 
 
@@ -105,12 +93,67 @@ static void *init_redis_routine(void *args) {
       sleep(1);
     } else {
       winfo("Redis initialization success");
-
-      /* Send init info */
-
-
       return NULL;
     }
+  }
+}
+
+static void start_subscriber() {
+  pthread_t t;
+
+  int pthread_create_rc = pthread_create(&t, NULL, start_subscriber_routine, NULL);
+  werr2(pthread_create_rc < 0, return, "Could not create thread for start_subscriber_routine");
+
+  pthread_detach(t);
+}
+
+
+static void *start_subscriber_routine(void *arg) {
+  /* signal(SIGPIPE, SIG_IGN); */
+  struct event_base *base = event_base_new();
+
+  redisAsyncContext *c = redisAsyncConnect(REDIS_HOST, REDIS_PORT);
+  werr2(c == NULL || c->err != 0, return NULL, "redisAsyncConnect error: %s", c->errstr);
+
+  redisLibeventAttach(c, base);
+  redisAsyncSetConnectCallback(c, connectCallback);
+  redisAsyncCommand(c, onMessage, NULL, "SUBSCRIBE %s", REDIS_PUB_CHANNEL);
+  event_base_dispatch(base);
+
+  werr("Return from start_subscriber_routine");
+
+  return NULL;
+}
+
+static void connectCallback(const redisAsyncContext *c, int status) {
+  if (status != REDIS_OK) {
+    werr("connectCallback error: %s", c->errstr);
+    return;
+  }
+  winfo("Successfully connected to redis");
+}
+
+
+static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
+  redisReply *r = reply;
+
+  if (reply == NULL) {
+    wlog("onMessage NULL reply");
+    return;
+  }
+
+  if (r->type == REDIS_REPLY_ARRAY) {
+    /* Manage subscription */
+    if (r->elements == 3 && strncmp(r->element[0]->str, "subscribe", 9) == 0) {
+      winfo("Successfully subscribed to %s", r->element[1]->str);
+    }
+
+    /* Manage message */
+    if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
+      winfo("message: %s", r->element[2]->str);
+    }
+  } else {
+    werr("Got message on subscription different from REDIS_REPLY_ARRAY");
   }
 }
 
