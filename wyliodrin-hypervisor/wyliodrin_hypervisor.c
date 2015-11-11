@@ -120,10 +120,8 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
             return,
             "cmp_read_str error: %s", cmp_strerror(&cmp));
 
-      printf("name = %s\n", str);
-
       if (strncmp(str, "shells", 6) == 0) {
-        shells(str);
+        shells(r->element[2]->str);
         free(str);
       }
 

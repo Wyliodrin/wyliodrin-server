@@ -27,6 +27,7 @@
 #include <sys/types.h>
 
 #include "../winternals/winternals.h" /* logs and errs */
+#include "../cmp/cmp.h"               /* msgpack handling */
 // #include "../wxmpp/wxmpp.h"           /* WNS */
 // #include "../base64/base64.h"         /* encode decode */
 // #include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
@@ -97,10 +98,10 @@ shell_t *shells_vector[MAX_SHELLS];
 
 /*** STATIC FUNCTIONS DECLARATIONS ***************************************************************/
 
-// /**
-//  * Open shell
-//  */
-// static void shells_open(const char *from, xmpp_stanza_t *stanza);
+/**
+ * Open shell
+ */
+static void shells_open(const char *data);
 
 // /**
 //  * Build and sent shells open response
@@ -115,35 +116,35 @@ shell_t *shells_vector[MAX_SHELLS];
 //                                   char *width_attr, char *height_attr,
 //                                   char *projectid_attr, char *userid_attr);
 
-// /**
-//  * Close shell
-//  */
-// static void shells_close(const char *from, xmpp_stanza_t *stanza);
+/**
+ * Close shell
+ */
+static void shells_close(const char *data);
 
 // /**
 //  * Send shells close response
 //  */
 // static void send_shells_close_response(char *request_attr, char *shellid_attr, char *code);
 
-// /**
-//  * Get keys.
-//  */
-// static void shells_keys(const char *from, xmpp_stanza_t *stanza);
+/**
+ * Get keys.
+ */
+static void shells_keys(const char *data);
 
-// /**
-//  * Status of project (running or not).
-//  */
-// static void shells_status(const char * from, xmpp_stanza_t *stanza);
+/**
+ * Status of project (running or not).
+ */
+static void shells_status(const char *data);
 
-// /**
-//  * Disconnect shell.
-//  */
-// static void shells_disconnect(const char *from, xmpp_stanza_t *stanza);
+/**
+ * Disconnect shell.
+ */
+static void shells_disconnect(const char *data);
 
-// /**
-//  * Poweroff board.
-//  */
-// static void shells_poweroff();
+/**
+ * Poweroff board.
+ */
+static void shells_poweroff();
 
 // /**
 //  * Send shells keys response.
@@ -250,7 +251,75 @@ void shells(const char *data) {
   //        action_attr, from);
   // }
 
-  printf("Shells\n");
+  cmp_ctx_t cmp;
+  cmp_init(&cmp, (void *)data, strlen(data));
+
+  uint32_t array_size;
+  werr2(!cmp_read_array(&cmp, &array_size),
+        return,
+        "cmp_read_array error: %s", cmp_strerror(&cmp));
+
+  werr2(array_size < 2, return, "Received array with less than 2 values");
+
+  char *str = NULL;
+
+  /* Read stanza name */
+  werr2(!cmp_read_str(&cmp, &str),
+        return,
+        "cmp_read_str error: %s", cmp_strerror(&cmp));
+  free(str);
+
+  /* Read stanza text */
+  werr2(!cmp_read_str(&cmp, &str),
+        return,
+        "cmp_read_str error: %s", cmp_strerror(&cmp));
+  free(str);
+
+  /* Read attributes */
+  int i;
+  bool action_found = false;
+  for (i = 0; i < (array_size - 2) / 2; i++) {
+    /* Read key */
+    werr2(!cmp_read_str(&cmp, &str),
+          return,
+          "cmp_read_str error: %s", cmp_strerror(&cmp));
+    if (strncmp(str, "action", 6) == 0) {
+      /* Read action value */
+      free(str);
+      werr2(!cmp_read_str(&cmp, &str),
+            return,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+
+      if (strncasecmp(str, "open", 4) == 0) {
+        shells_open(data);
+      } else if (strncasecmp(str, "close", 5) == 0) {
+        shells_close(data);
+      } else if (strncasecmp(str, "keys", 4) == 0) {
+        shells_keys(data);
+      } else if (strncasecmp(str, "status", 6) == 0) {
+        shells_status(data);
+      } else if (strncasecmp(str, "poweroff", 8) == 0) {
+        shells_poweroff();
+      } else if (strncasecmp(str, "disconnect", 10) == 0) {
+        shells_disconnect(data);
+      } else {
+        werr("Received shells stanza with unknown action attribute %s", str);
+      }
+
+      free(str);
+      action_found = true;
+      break;
+    } else {
+      /* Read value */
+      free(str);
+      werr2(!cmp_read_str(&cmp, &str),
+            return,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+    }
+  }
+  if (!action_found) {
+    werr("There is no action attribute in shells stanza");
+  }
 }
 
 
@@ -276,7 +345,8 @@ void start_dead_projects() {
 
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
 
-// static void shells_open(const char *from, xmpp_stanza_t *stanza) {
+static void shells_open(const char *data) {
+  printf("shells_open\n");
 //   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
 //   werr2(request_attr == NULL, goto _error,
 //         "Received shells open stanza from %s without request attribute", from);
@@ -337,7 +407,7 @@ void start_dead_projects() {
 //   xmpp_send(global_conn, message_stz);
 //   xmpp_stanza_release(shells_stz);
 //   xmpp_stanza_release(message_stz);
-// }
+}
 
 
 // static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
@@ -490,7 +560,7 @@ void start_dead_projects() {
 // }
 
 
-// static void shells_close(const char *from, xmpp_stanza_t *stanza) {
+static void shells_close(const char *data) {
 //   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
 //   werr2(request_attr == NULL, return,
 //         "Received shells close stanza without request attribute from %s", from);
@@ -522,7 +592,7 @@ void start_dead_projects() {
 
 //   _error: ;
 //     send_shells_close_response(request_attr, shellid_attr, NULL);
-// }
+}
 
 
 // static void send_shells_close_response(char *request_attr, char *shellid_attr, char *code) {
@@ -551,7 +621,7 @@ void start_dead_projects() {
 // }
 
 
-// static void shells_keys(const char *from, xmpp_stanza_t *stanza) {
+static void shells_keys(const char *data) {
 //   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
 //   werr2(request_attr == NULL, return,
 //         "Received shells keys with no request attribute from %s", from);
@@ -588,10 +658,10 @@ void start_dead_projects() {
 
 //   /* Send decoded data to screen */
 //   write(shells_vector[shellid]->fdm, decoded, decode_rc);
-// }
+}
 
 
-// static void shells_status(const char * from, xmpp_stanza_t *stanza) {
+static void shells_status(const char *data) {
 //   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
 //   werr2(request_attr == NULL, return,
 //         "Received shells status with no request attribute from %s", from);
@@ -624,10 +694,10 @@ void start_dead_projects() {
 //   xmpp_send(global_conn, message_stz);
 //   xmpp_stanza_release(shells_stz);
 //   xmpp_stanza_release(message_stz);
-// }
+}
 
 
-// static void shells_disconnect(const char *from, xmpp_stanza_t *stanza) {
+static void shells_disconnect(const char *data) {
 //   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
 //   werr2(request_attr == NULL, return,
 //         "Received shells disconnect stanza without request attribute from %s", from);
@@ -647,10 +717,10 @@ void start_dead_projects() {
 //   pthread_mutex_lock(&shells_lock);
 //   shells_vector[shellid]->is_connected = false;
 //   pthread_mutex_unlock(&shells_lock);
-// }
+}
 
 
-// static void shells_poweroff() {
+static void shells_poweroff() {
 //   if (strncmp(board, "server", 6) != 0) {
 //     char cmd[64];
 //     snprintf(cmd, 64, "%spoweroff", strcmp(board, "raspberrypi") == 0 ? "sudo " : "");
@@ -658,7 +728,7 @@ void start_dead_projects() {
 //   }
 
 //   exit(EXIT_SUCCESS);
-// }
+}
 
 
 // static void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
