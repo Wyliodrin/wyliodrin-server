@@ -17,7 +17,8 @@
 #include <hiredis/adapters/libevent.h>
 
 #include "cmp/cmp.h"               /* msgpack handling */
-#include "winternals/winternals.h"
+#include "winternals/winternals.h" /* logs and errors  */
+#include "shells/shells.h"
 
 /*************************************************************************************************/
 
@@ -107,59 +108,36 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
       cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
 
       int i;
-      uint32_t map_size;
-      werr2(!cmp_read_map(&cmp, &map_size),
-            return,
-            "cmp_read_map error: %s", cmp_strerror(&cmp));
-      werr2(map_size != 3, return, "map_size = %d", map_size);
-
-      char str[32];
-      uint32_t str_size;
-
-      /* Read name */
-      str_size = 32;
-      werr2(!cmp_read_str(&cmp, str, &str_size),
-            return,
-            "cmp_read_str error: %s", cmp_strerror(&cmp));
-      printf("name key = %s\n", str);
-
-      str_size = 32;
-      werr2(!cmp_read_str(&cmp, str, &str_size),
-            return,
-            "cmp_read_str error: %s", cmp_strerror(&cmp));
-      printf("name value = %s\n", str);
-
-      str_size = 32;
-      werr2(!cmp_read_str(&cmp, str, &str_size),
-            return,
-            "cmp_read_str error: %s", cmp_strerror(&cmp));
-      printf("text key = %s\n", str);
-
-      str_size = 32;
-      werr2(!cmp_read_str(&cmp, str, &str_size),
-            return,
-            "cmp_read_str error: %s", cmp_strerror(&cmp));
-      printf("text value = %s\n", str);
-
-      str_size = 32;
-      werr2(!cmp_read_str(&cmp, str, &str_size),
-            return,
-            "cmp_read_str error: %s", cmp_strerror(&cmp));
-      printf("attr key = %s\n", str);
 
       uint32_t array_size;
       werr2(!cmp_read_array(&cmp, &array_size),
             return,
             "cmp_read_array error: %s", cmp_strerror(&cmp));
 
-      for (i = 0; i < array_size; i += 2) {
-        str_size = 32;
+      werr2(array_size < 2, return, "Received array with less than 2 values");
+
+      char str[64];
+      uint32_t str_size;
+
+      str_size = 64;
+      werr2(!cmp_read_str(&cmp, str, &str_size),
+            return,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+      printf("name = %s\n", str);
+
+      werr2(!cmp_read_str(&cmp, str, &str_size),
+            return,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+      printf("text = %s\n", str);
+
+      for (i = 0; i < array_size - 2; i += 2) {
+        str_size = 64;
         werr2(!cmp_read_str(&cmp, str, &str_size),
               return,
               "cmp_read_str error: %s", cmp_strerror(&cmp));
         printf("attr[%d] key = %s\n", i, str);
 
-        str_size = 32;
+        str_size = 64;
         werr2(!cmp_read_str(&cmp, str, &str_size),
               return,
               "cmp_read_str error: %s", cmp_strerror(&cmp));

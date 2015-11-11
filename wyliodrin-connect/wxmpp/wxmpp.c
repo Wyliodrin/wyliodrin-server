@@ -348,7 +348,6 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
     /* Convert stanza to text in order to get its size */
     int xmpp_stanza_to_text_rc = xmpp_stanza_to_text(child_stz, &stanza_to_text,
                                                      &stanza_to_text_len);
-    printf("stanza_to_text = %s\n", stanza_to_text);
     werr2(xmpp_stanza_to_text_rc < 0, continue, "Could not convert stanza to text");
     char *msgpack_buf = calloc(stanza_to_text_len, sizeof(char));
     werr2(msgpack_buf == NULL, continue, "Could not allocate memory for msgpack_buf");
@@ -363,19 +362,11 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
     char *text = xmpp_stanza_get_text(child_stz);
     xmpp_stanza_get_attributes(child_stz, (const char **)attrs, 2 * num_attrs);
 
-    werr2(!cmp_write_map(&cmp, 3),
+    werr2(!cmp_write_array(&cmp, 2 + 2 * num_attrs),
           return 1,
-          "cmp_write_map error: %s", cmp_strerror(&cmp));
-
-    werr2(!cmp_write_str(&cmp, "n", 1),
-          return 1,
-          "cmp_write_str error: %s", cmp_strerror(&cmp));
+          "cmp_write_array error: %s", cmp_strerror(&cmp));
 
     werr2(!cmp_write_str(&cmp, name, strlen(name)),
-          return 1,
-          "cmp_write_str error: %s", cmp_strerror(&cmp));
-
-    werr2(!cmp_write_str(&cmp, "t", 1),
           return 1,
           "cmp_write_str error: %s", cmp_strerror(&cmp));
 
@@ -388,14 +379,6 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
             return 1,
             "cmp_write_str error: %s", cmp_strerror(&cmp));
     }
-
-    werr2(!cmp_write_str(&cmp, "a", 1),
-          return 1,
-          "cmp_write_str error: %s", cmp_strerror(&cmp));
-
-    werr2(!cmp_write_array(&cmp, 2 * num_attrs),
-          return 1,
-          "cmp_write_array error: %s", cmp_strerror(&cmp));
 
     int i;
     for (i = 0; i < 2 * num_attrs; i++) {
