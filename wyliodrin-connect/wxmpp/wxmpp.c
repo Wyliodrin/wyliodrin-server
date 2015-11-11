@@ -339,8 +339,6 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
     "Got message with error type from %s", from_attr);
 
   /* Stanza to msgpack */
-
-
   cmp_ctx_t cmp;
 
   xmpp_stanza_t *child_stz = xmpp_stanza_get_children(stanza);
@@ -350,6 +348,7 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
     /* Convert stanza to text in order to get its size */
     int xmpp_stanza_to_text_rc = xmpp_stanza_to_text(child_stz, &stanza_to_text,
                                                      &stanza_to_text_len);
+    printf("stanza_to_text = %s\n", stanza_to_text);
     werr2(xmpp_stanza_to_text_rc < 0, continue, "Could not convert stanza to text");
     char *msgpack_buf = calloc(stanza_to_text_len, sizeof(char));
     werr2(msgpack_buf == NULL, continue, "Could not allocate memory for msgpack_buf");
@@ -357,12 +356,12 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
 
     /* Get number of attributes */
     int num_attrs = xmpp_stanza_get_attribute_count(child_stz);
-    const char **attrs = malloc(num_attrs * sizeof(char *));
+    char **attrs = malloc(2 * num_attrs * sizeof(char *));
     werr2(attrs == NULL, continue, "Could not allocate memory for attrs");
 
     char *name = xmpp_stanza_get_name(child_stz);
     char *text = xmpp_stanza_get_text(child_stz);
-    xmpp_stanza_get_attributes(child_stz, attrs, num_attrs);
+    xmpp_stanza_get_attributes(child_stz, (const char **)attrs, 2 * num_attrs);
 
     werr2(!cmp_write_map(&cmp, 3),
           return 1,
@@ -394,12 +393,12 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
           return 1,
           "cmp_write_str error: %s", cmp_strerror(&cmp));
 
-    werr2(!cmp_write_array(&cmp, num_attrs),
+    werr2(!cmp_write_array(&cmp, 2 * num_attrs),
           return 1,
           "cmp_write_array error: %s", cmp_strerror(&cmp));
 
     int i;
-    for (i = 0; i < num_attrs; i++) {
+    for (i = 0; i < 2 * num_attrs; i++) {
       werr2(!cmp_write_str(&cmp, attrs[i], strlen(attrs[i])),
             return 1,
             "cmp_write_str error: %s", cmp_strerror(&cmp));
@@ -407,65 +406,9 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
 
     publish(msgpack_buf);
 
-  //   /* Test read */
-  //   uint32_t map_size;
-  //   werr2(!cmp_read_map(&cmp, &map_size),
-  //         return 1,
-  //         "cmp_read_map error: %s", cmp_strerror(&cmp));
-  //   werr2(map_size != 3, return 1, "map_size = %d", map_size);
-
-  //   char str[32];
-  //   uint32_t str_size;
-
-  //   /* Read name */
-  //   str_size = 32;
-  //   werr2(!cmp_read_str(&cmp, str, &str_size),
-  //         return 1,
-  //         "cmp_read_str error: %s", cmp_strerror(&cmp));
-  //   printf("name key = %s\n", str);
-
-  //   str_size = 32;
-  //   werr2(!cmp_read_str(&cmp, str, &str_size),
-  //         return 1,
-  //         "cmp_read_str error: %s", cmp_strerror(&cmp));
-  //   printf("name value = %s\n", str);
-
-  //   str_size = 32;
-  //   werr2(!cmp_read_str(&cmp, str, &str_size),
-  //         return 1,
-  //         "cmp_read_str error: %s", cmp_strerror(&cmp));
-  //   printf("text key = %s\n", str);
-
-  //   str_size = 32;
-  //   werr2(!cmp_read_str(&cmp, str, &str_size),
-  //         return 1,
-  //         "cmp_read_str error: %s", cmp_strerror(&cmp));
-  //   printf("text value = %s\n", str);
-
-  //   str_size = 32;
-  //   werr2(!cmp_read_str(&cmp, str, &str_size),
-  //         return 1,
-  //         "cmp_read_str error: %s", cmp_strerror(&cmp));
-  //   printf("attr key = %s\n", str);
-
-  //   uint32_t array_size;
-  //   werr2(!cmp_read_array(&cmp, &array_size),
-  //         return 1,
-  //         "cmp_read_array error: %s", cmp_strerror(&cmp));
-
-  //   for (i = 0; i < array_size; i += 2) {
-  //     str_size = 32;
-  //     werr2(!cmp_read_str(&cmp, str, &str_size),
-  //           return 1,
-  //           "cmp_read_str error: %s", cmp_strerror(&cmp));
-  //     printf("attr[%d] key = %s\n", i, str);
-
-  //     str_size = 32;
-  //     werr2(!cmp_read_str(&cmp, str, &str_size),
-  //           return 1,
-  //           "cmp_read_str error: %s", cmp_strerror(&cmp));
-  //     printf("attr[%d] val = %s\n", i+1, str);
-  //   }
+    /* Clean */
+    free(msgpack_buf);
+    free(attrs);
 
     child_stz = xmpp_stanza_get_next(child_stz);
   }

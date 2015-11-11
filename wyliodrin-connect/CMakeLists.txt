@@ -51,7 +51,7 @@ add_executable (wyliodrin_connect
 
 install (TARGETS wyliodrin_connect DESTINATION bin)
 
-add_definitions ("-Wall -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
+add_definitions ("-Wall -g -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
 
 target_link_libraries (wyliodrin_connect
   ${CMAKE_THREAD_LIBS_INIT}
