@@ -1,8 +1,8 @@
 /**************************************************************************************************
- * Paths used by wtalk
+ * Paths of configuration files
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: October 2015
+ * Date last modified: November 2015
  *************************************************************************************************/
 
 #ifndef _WYLIODRIN_CONNECT_H
@@ -31,8 +31,8 @@
 #define RPI_WIFI_PATH "/etc/wyliodrin/wireless.conf" /* Wifi connection credentials used by
                                                         Raspberry Pi */
 
-#define SETTINGS_PATH_MAX_LENGTH 128      /* Max length of settings file path */
-#define JSON_CONTENT_MAX_LENGTH  128      /* Used in snprintf */
+#define SETTINGS_PATH_MAX_LENGTH 128 /* Max length of settings file path */
+#define JSON_CONTENT_MAX_LENGTH  128 /* Max lenght of the values in wyliodrin.json */
 
 /*************************************************************************************************/
 

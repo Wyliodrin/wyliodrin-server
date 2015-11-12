@@ -1,2 +1,2 @@
-  * 12/11/2015
-    * something
+* 12/11/2015
+  * something

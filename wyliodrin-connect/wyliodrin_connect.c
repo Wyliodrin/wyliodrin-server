@@ -1,8 +1,8 @@
 /**************************************************************************************************
- * Wyliodrin connect
+ * TODO description
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: October 2015
+ * Date last modified: November 2015
  *************************************************************************************************/
 
 
