@@ -1,22 +1,26 @@
 /**************************************************************************************************
- * Redis handling
+ * Redis connection
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: October 2015
+ * Date last modified: November 2015
  *************************************************************************************************/
 
 
 
 /*** INCLUDES ************************************************************************************/
 
-#include <pthread.h>
-#include <unistd.h>
-#include <hiredis/hiredis.h>
-#include <hiredis/async.h>
-#include <hiredis/adapters/libevent.h>
+#include <pthread.h> /* thread handlind */
+#include <unistd.h>  /* sleep           */
+#include <stdlib.h>  /* free            */
 
-#include "../cmp/cmp.h"               /* msgpack handling */
-#include "../winternals/winternals.h" /* logs and errs   */
+#include <hiredis/hiredis.h>           /* redis */
+#include <hiredis/async.h>             /* redis */
+#include <hiredis/adapters/libevent.h> /* redis */
+
+#include "../cmp/cmp.h"               /* msgpack       */
+#include "../winternals/winternals.h" /* logs and errs */
+
+#include "../shells/shells.h" /* shells */
 
 #include "wredis.h" /* API */
 
@@ -29,8 +33,10 @@
 #define REDIS_HOST "127.0.0.1"
 #define REDIS_PORT 6379
 
-#define REDIS_PUB_CHANNEL "wconnhyp"
-#define REDIS_SUB_CHANNEL "whypconn"
+#define REDIS_PUB_CHANNEL "whypconn"
+#define REDIS_SUB_CHANNEL "wconnhyp"
+
+#define SLEEP_TIME_BETWEEN_CONNECTION_RETRY 1
 
 /*************************************************************************************************/
 
@@ -59,10 +65,9 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata);
 /*** API IMPLEMENATATION *************************************************************************/
 
 void init_redis() {
-  /* Start redis */
   pthread_t t;
 
-  int pthread_create_rc = pthread_create(&t, NULL, &(init_redis_routine), NULL);
+  int pthread_create_rc = pthread_create(&t, NULL, init_redis_routine, NULL);
   werr2(pthread_create_rc < 0, return, "Could not create thread for init_redis_routine");
 
   pthread_detach(t);
@@ -89,14 +94,15 @@ static void *init_redis_routine(void *args) {
   while (1) {
     c = redisConnectWithTimeout(REDIS_HOST, REDIS_PORT, timeout);
     if (c == NULL || c->err != 0) {
-      werr("Redis connect error: %s", c->err != 0 ? c->errstr : "context is NULL");
-      sleep(1);
+      werr("redisConnectWithTimeout error: %s", c->err != 0 ? c->errstr : "context is NULL");
+      sleep(SLEEP_TIME_BETWEEN_CONNECTION_RETRY);
     } else {
       winfo("Redis initialization success");
       return NULL;
     }
   }
 }
+
 
 static void start_subscriber() {
   pthread_t t;
@@ -125,6 +131,7 @@ static void *start_subscriber_routine(void *arg) {
   return NULL;
 }
 
+
 static void connectCallback(const redisAsyncContext *c, int status) {
   if (status != REDIS_OK) {
     werr("connectCallback error: %s", c->errstr);
@@ -151,6 +158,27 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     /* Manage message */
     if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
       winfo("message: %s", r->element[2]->str);
+
+      /* Test read */
+      cmp_ctx_t cmp;
+      cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
+
+      uint32_t array_size;
+      werr2(!cmp_read_array(&cmp, &array_size),
+            return,
+            "cmp_read_array error: %s", cmp_strerror(&cmp));
+
+      werr2(array_size < 2, return, "Received array with less than 2 values");
+
+      char *str = NULL;
+      werr2(!cmp_read_str(&cmp, &str),
+            return,
+            "cmp_read_str error: %s", cmp_strerror(&cmp));
+
+      if (strncmp(str, "shells", 6) == 0) {
+        shells(r->element[2]->str);
+        free(str);
+      }
     }
   } else {
     werr("Got message on subscription different from REDIS_REPLY_ARRAY");

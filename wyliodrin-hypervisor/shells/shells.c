@@ -372,6 +372,8 @@ static void shells_open(const char *data) {
 
 //   _error: ;
 //     send_shells_open_response(request_attr, false, 0, false);
+
+
 }
 
 
@@ -406,7 +408,7 @@ static void shells_open(const char *data) {
 //   xmpp_send(global_conn, message_stz);
 //   xmpp_stanza_release(shells_stz);
 //   xmpp_stanza_release(message_stz);
-}
+// }
 
 
 // static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
