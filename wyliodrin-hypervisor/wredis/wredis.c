@@ -159,7 +159,6 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
       winfo("message: %s", r->element[2]->str);
 
-      /* Test read */
       cmp_ctx_t cmp;
       cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
 

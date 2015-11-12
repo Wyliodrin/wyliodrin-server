@@ -352,7 +352,6 @@ void start_dead_projects() {
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
 
 static void shells_open(const char *data) {
-  winfo("Shells open");
 //   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
 //   werr2(request_attr == NULL, goto _error,
 //         "Received shells open stanza from %s without request attribute", from);
@@ -380,7 +379,79 @@ static void shells_open(const char *data) {
 //   _error: ;
 //     send_shells_open_response(request_attr, false, 0, false);
 
+  cmp_ctx_t cmp;
+  cmp_init(&cmp, (void *)data, strlen(data));
 
+  uint32_t array_size;
+  werr2(!cmp_read_array(&cmp, &array_size),
+        return,
+        "cmp_read_array error: %s", cmp_strerror(&cmp));
+
+  werr2(array_size < 3, return, "Received array with less than 3 values");
+
+  char *str = NULL;
+
+  /* Read name */
+  werr2(!cmp_read_str(&cmp, &str),
+        return,
+        "cmp_read_str error: %s", cmp_strerror(&cmp));
+  free(str);
+
+  /* Read text */
+  werr2(!cmp_read_str(&cmp, &str),
+        return,
+        "cmp_read_str error: %s", cmp_strerror(&cmp));
+  free(str);
+
+  /* Read from */
+  werr2(!cmp_read_str(&cmp, &str),
+        return,
+        "cmp_read_str error: %s", cmp_strerror(&cmp));
+  free(str);
+
+  int request_index   = -1;
+  int width_index     = -1;
+  int height_index    = -1;
+  int projectid_index = -1;
+  int userid_index    = -1;
+
+  int i;
+
+  char *attributes[(array_size - 3) / 2];
+  for (i = 0; i < (array_size - 3) / 2; i++) {
+    attributes[i] = NULL;
+  }
+
+  for (i = 0; i < (array_size - 3) / 2; i++) {
+    /* Read key */
+    werr2(!cmp_read_str(&cmp, &str),
+          return,
+          "cmp_read_str error: %s", cmp_strerror(&cmp));
+
+    if (strncmp(str, "request", 7) == 0) {
+      request_index = i;
+    } else if (strncmp(str, "width", 5) == 0) {
+      width_index = i;
+    } else if (strncmp(str, "height", 6) == 0) {
+      height_index = i;
+    } else if (strncmp(str, "projectid", 9) == 0) {
+      projectid_index = i;
+    } else if (strncmp(str, "userid", 6) == 0) {
+      userid_index = i;
+    }
+    free(str);
+
+    /* Read value */
+    werr2(!cmp_read_str(&cmp, &str),
+          return,
+          "cmp_read_str error: %s", cmp_strerror(&cmp));
+    attributes[i] = strdup(str);
+    free(str);
+  }
+
+  winfo("request = %s", attributes[request_index]);
+  winfo("width = %s", attributes[width_index]);
+  winfo("height = %s", attributes[height_index]);
 }
 
 
