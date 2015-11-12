@@ -349,6 +349,10 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
     int xmpp_stanza_to_text_rc = xmpp_stanza_to_text(child_stz, &stanza_to_text,
                                                      &stanza_to_text_len);
     werr2(xmpp_stanza_to_text_rc < 0, continue, "Could not convert stanza to text");
+
+    /* Make room for from attribute */
+    stanza_to_text_len += strlen(from_attr);
+
     char *msgpack_buf = calloc(stanza_to_text_len, sizeof(char));
     werr2(msgpack_buf == NULL, continue, "Could not allocate memory for msgpack_buf");
     cmp_init(&cmp, msgpack_buf, stanza_to_text_len);
@@ -362,7 +366,7 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
     char *text = xmpp_stanza_get_text(child_stz);
     xmpp_stanza_get_attributes(child_stz, (const char **)attrs, 2 * num_attrs);
 
-    werr2(!cmp_write_array(&cmp, 2 + 2 * num_attrs),
+    werr2(!cmp_write_array(&cmp, 3 + 2 * num_attrs),
           return 1,
           "cmp_write_array error: %s", cmp_strerror(&cmp));
 
@@ -379,6 +383,10 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
             return 1,
             "cmp_write_str error: %s", cmp_strerror(&cmp));
     }
+
+    werr2(!cmp_write_str(&cmp, from_attr, strlen(from_attr)),
+          return 1,
+          "cmp_write_str error: %s", cmp_strerror(&cmp));
 
     int i;
     for (i = 0; i < 2 * num_attrs; i++) {

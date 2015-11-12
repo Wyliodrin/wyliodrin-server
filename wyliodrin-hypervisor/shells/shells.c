@@ -275,6 +275,12 @@ void shells(const char *data) {
         "cmp_read_str error: %s", cmp_strerror(&cmp));
   free(str);
 
+  /* Read the from attribute */
+  werr2(!cmp_read_str(&cmp, &str),
+        return,
+        "cmp_read_str error: %s", cmp_strerror(&cmp));
+  free(str);
+
   /* Read attributes */
   int i;
   bool action_found = false;
@@ -346,6 +352,7 @@ void start_dead_projects() {
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
 
 static void shells_open(const char *data) {
+  winfo("Shells open");
 //   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
 //   werr2(request_attr == NULL, goto _error,
 //         "Received shells open stanza from %s without request attribute", from);

@@ -168,7 +168,7 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
             return,
             "cmp_read_array error: %s", cmp_strerror(&cmp));
 
-      werr2(array_size < 2, return, "Received array with less than 2 values");
+      werr2(array_size < 3, return, "Received array with less than 3 values");
 
       char *str = NULL;
       werr2(!cmp_read_str(&cmp, &str),
