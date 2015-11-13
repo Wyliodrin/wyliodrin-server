@@ -102,13 +102,13 @@ shell_t *shells_vector[MAX_SHELLS];
 /**
  * Open shell
  */
-static void shells_open(const char *data);
+static void shells_open(hashmap_p hm);
 
-// /**
-//  * Build and sent shells open response
-//  */
-// static void send_shells_open_response(char *request_attr, bool success, int shell_id,
-//                                       bool running);
+/**
+ * Build and sent shells open response
+ */
+static void send_shells_open_response(char *request_attr, bool success, int shell_id,
+                                      bool running);
 
 /**
  * Open shell or project
@@ -233,7 +233,7 @@ void shells(hashmap_p hm) {
   char *action = (char *)hashmap_get(hm, "action");
 
   if (strncasecmp(action, "open", 4) == 0) {
-    // shells_open(from, stanza);
+    shells_open(hm);
   } else if (strncasecmp(action, "close", 5) == 0) {
     // shells_close(from, stanza);
   } else if (strncasecmp(action, "keys", 4) == 0) {
@@ -275,142 +275,67 @@ void start_dead_projects() {
 
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
 
-static void shells_open(const char *data) {
-//   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
-//   werr2(request_attr == NULL, goto _error,
-//         "Received shells open stanza from %s without request attribute", from);
+static void shells_open(hashmap_p hm) {
+  goto _error;
 
-//   char *width_attr = xmpp_stanza_get_attribute(stanza, "width");
-//   werr2(width_attr == NULL, goto _error,
-//         "Received shells open stanza from %s without width attribute", from);
+  char *request_attr = (char *)hashmap_get(hm, "request");
+  werr2(request_attr == NULL, goto _error,
+        "Received shells open without request");
 
-//   char *height_attr = xmpp_stanza_get_attribute(stanza, "height");
-//   werr2(height_attr == NULL, goto _error,
-//         "Received shells open stanza from %s without height attribute", from);
+  char *width_attr = (char *)hashmap_get(hm, "width");
+  werr2(width_attr == NULL, goto _error,
+        "Received shells open stanza without width");
 
-//   char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid");
-//   char *userid_attr    = xmpp_stanza_get_attribute(stanza, "userid");
+  char *height_attr = (char *)hashmap_get(hm, "height");
+  werr2(height_attr == NULL, goto _error,
+        "Received shells open stanza without height");
 
-//   if (projectid_attr == NULL) {
-//     open_shell_or_project(SHELL, request_attr, width_attr, height_attr, NULL, NULL);
-//   } else {
-//     open_shell_or_project(PROJECT, request_attr, width_attr, height_attr, projectid_attr,
-//                           userid_attr);
-//   }
+  char *projectid_attr = (char *)hashmap_get(hm, "projectid");
+  char *userid_attr    = (char *)hashmap_get(hm, "userid");
 
-//   return;
-
-//   _error: ;
-//     send_shells_open_response(request_attr, false, 0, false);
-
-  cmp_ctx_t cmp;
-  cmp_init(&cmp, (void *)data, strlen(data));
-
-  uint32_t array_size;
-  werr2(!cmp_read_array(&cmp, &array_size),
-        return,
-        "cmp_read_array error: %s", cmp_strerror(&cmp));
-
-  werr2(array_size < 3, return, "Received array with less than 3 values");
-
-  char *str = NULL;
-
-  /* Read name */
-  werr2(!cmp_read_str(&cmp, &str),
-        return,
-        "cmp_read_str error: %s", cmp_strerror(&cmp));
-  free(str);
-
-  /* Read text */
-  werr2(!cmp_read_str(&cmp, &str),
-        return,
-        "cmp_read_str error: %s", cmp_strerror(&cmp));
-  free(str);
-
-  /* Read from */
-  werr2(!cmp_read_str(&cmp, &str),
-        return,
-        "cmp_read_str error: %s", cmp_strerror(&cmp));
-  free(str);
-
-  int request_index   = -1;
-  int width_index     = -1;
-  int height_index    = -1;
-  int projectid_index = -1;
-  int userid_index    = -1;
-
-  int i;
-
-  char *attributes[(array_size - 3) / 2];
-  for (i = 0; i < (array_size - 3) / 2; i++) {
-    attributes[i] = NULL;
+  if (projectid_attr == NULL) {
+    winfo("open_shell_or_project(SHELL, request_attr, width_attr, height_attr, NULL, NULL);");
+  } else {
+    winfo("open_shell_or_project(PROJECT, request_attr, width_attr, height_attr, "
+          "projectid_attr, userid_attr);");
   }
 
-  for (i = 0; i < (array_size - 3) / 2; i++) {
-    /* Read key */
-    werr2(!cmp_read_str(&cmp, &str),
-          return,
-          "cmp_read_str error: %s", cmp_strerror(&cmp));
+  return;
 
-    if (strncmp(str, "request", 7) == 0) {
-      request_index = i;
-    } else if (strncmp(str, "width", 5) == 0) {
-      width_index = i;
-    } else if (strncmp(str, "height", 6) == 0) {
-      height_index = i;
-    } else if (strncmp(str, "projectid", 9) == 0) {
-      projectid_index = i;
-    } else if (strncmp(str, "userid", 6) == 0) {
-      userid_index = i;
-    }
-    free(str);
-
-    /* Read value */
-    werr2(!cmp_read_str(&cmp, &str),
-          return,
-          "cmp_read_str error: %s", cmp_strerror(&cmp));
-    attributes[i] = strdup(str);
-    free(str);
-  }
-
-  winfo("request = %s", attributes[request_index]);
-  winfo("width = %s", attributes[width_index]);
-  winfo("height = %s", attributes[height_index]);
+  _error: ;
+    send_shells_open_response(request_attr, false, 0, false);
 }
 
 
-// static void send_shells_open_response(char *request_attr, bool success, int shell_id,
-//                                       bool running) {
-//   if (!is_xmpp_connection_set) {
-//     /* Don't send keys if not connected */
-//     return;
-//   }
+static void send_shells_open_response(char *request_attr, bool success, int shell_id,
+                                      bool running) {
+  werr2(request_attr == NULL, return,
+        "Trying to send shells open response without request attribute");
 
-//   werr2(request_attr == NULL, return,
-//         "Trying to send shells open response without request attribute");
+  // xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
+  // xmpp_stanza_set_name(message_stz, "message");
+  // xmpp_stanza_set_attribute(message_stz, "to", owner);
+  // xmpp_stanza_t *shells_stz = xmpp_stanza_new(global_ctx);
+  // xmpp_stanza_set_name(shells_stz, "shells");
+  // xmpp_stanza_set_ns(shells_stz, WNS);
+  // xmpp_stanza_set_attribute(shells_stz, "action", "open");
+  // xmpp_stanza_set_attribute(shells_stz, "request", request_attr);
+  // if (success) {
+  //   xmpp_stanza_set_attribute(shells_stz, "response", "done");
+  //   char shell_id_str[8];
+  //   snprintf(shell_id_str, 8, "%d", shell_id);
+  //   xmpp_stanza_set_attribute(shells_stz, "shellid", shell_id_str);
+  //   xmpp_stanza_set_attribute(shells_stz, "running", running ? "true" : "false");
+  // } else {
+  //   xmpp_stanza_set_attribute(shells_stz, "response", "error");
+  // }
+  // xmpp_stanza_add_child(message_stz, shells_stz);
+  // xmpp_send(global_conn, message_stz);
+  // xmpp_stanza_release(shells_stz);
+  // xmpp_stanza_release(message_stz);
 
-//   xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
-//   xmpp_stanza_set_name(message_stz, "message");
-//   xmpp_stanza_set_attribute(message_stz, "to", owner);
-//   xmpp_stanza_t *shells_stz = xmpp_stanza_new(global_ctx);
-//   xmpp_stanza_set_name(shells_stz, "shells");
-//   xmpp_stanza_set_ns(shells_stz, WNS);
-//   xmpp_stanza_set_attribute(shells_stz, "action", "open");
-//   xmpp_stanza_set_attribute(shells_stz, "request", request_attr);
-//   if (success) {
-//     xmpp_stanza_set_attribute(shells_stz, "response", "done");
-//     char shell_id_str[8];
-//     snprintf(shell_id_str, 8, "%d", shell_id);
-//     xmpp_stanza_set_attribute(shells_stz, "shellid", shell_id_str);
-//     xmpp_stanza_set_attribute(shells_stz, "running", running ? "true" : "false");
-//   } else {
-//     xmpp_stanza_set_attribute(shells_stz, "response", "error");
-//   }
-//   xmpp_stanza_add_child(message_stz, shells_stz);
-//   xmpp_send(global_conn, message_stz);
-//   xmpp_stanza_release(shells_stz);
-//   xmpp_stanza_release(message_stz);
-// }
+
+}
 
 
 // static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
