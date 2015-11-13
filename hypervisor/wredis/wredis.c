@@ -20,6 +20,8 @@
 #include "../cmp/cmp.h"               /* msgpack       */
 #include "../winternals/winternals.h" /* logs and errs */
 
+#include "../../libds/ds.h" /* hashmap */
+
 #include "../shells/shells.h" /* shells */
 
 #include "wredis.h" /* API */
@@ -158,25 +160,32 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
       winfo("message: %s", r->element[2]->str);
 
-      // cmp_ctx_t cmp;
-      // cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
+      hashmap_p hm = create_hashmap();
 
-      // uint32_t array_size;
-      // werr2(!cmp_read_array(&cmp, &array_size),
-      //       return,
-      //       "cmp_read_array error: %s", cmp_strerror(&cmp));
+      cmp_ctx_t cmp;
+      cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
 
-      // werr2(array_size < 3, return, "Received array with less than 3 values");
+      uint32_t map_size;
+      werr2(!cmp_read_map(&cmp, &map_size),
+            return,
+            "cmp_read_map error: %s", cmp_strerror(&cmp));
 
-      // char *str = NULL;
-      // werr2(!cmp_read_str(&cmp, &str),
-      //       return,
-      //       "cmp_read_str error: %s", cmp_strerror(&cmp));
+      int i;
+      char *key = NULL;
+      char *value = NULL;
+      for (i = 0; i < map_size / 2; i++) {
+        werr2(!cmp_read_str(&cmp, &key),
+              return,
+              "cmp_read_str error: %s", cmp_strerror(&cmp));
 
-      // if (strncmp(str, "shells", 6) == 0) {
-      //   shells(r->element[2]->str);
-      //   free(str);
-      // }
+        werr2(!cmp_read_str(&cmp, &value),
+              return,
+              "cmp_read_str error: %s", cmp_strerror(&cmp));
+
+        winfo("(%s, %s)", key, value);
+        free(key);
+        free(value);
+      }
     }
   } else {
     werr("Got message on subscription different from REDIS_REPLY_ARRAY");

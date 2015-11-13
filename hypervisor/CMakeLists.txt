@@ -25,6 +25,7 @@ pkg_check_modules (CURL REQUIRED libcurl)
 pkg_check_modules (EVENT REQUIRED libevent)
 
 include_directories (
+  ${PROJECT_SOURCE_DIR}/libds
   ${PROJECT_BINARY_DIR}
   ${FUSE_INCLUDE_DIRS}
   ${HIREDIS_INCLUDE_DIRS}
@@ -41,6 +42,21 @@ set (wyliodrin_hypervisor_SRCS
   ${PROJECT_SOURCE_DIR}/wredis/wredis.c
   ${PROJECT_SOURCE_DIR}/cmp/cmp.c
   ${PROJECT_SOURCE_DIR}/shells/shells.c
+)
+
+add_library (dbs STATIC
+  ${PROJECT_SOURCE_DIR}/../libds/treetest.c
+  ${PROJECT_SOURCE_DIR}/../libds/listtest.c
+  ${PROJECT_SOURCE_DIR}/../libds/maptest.c
+  ${PROJECT_SOURCE_DIR}/../libds/heap.c
+  ${PROJECT_SOURCE_DIR}/../libds/hashmap.c
+  ${PROJECT_SOURCE_DIR}/../libds/vector.c
+  ${PROJECT_SOURCE_DIR}/../libds/strutiltest.c
+  ${PROJECT_SOURCE_DIR}/../libds/heaptest.c
+  ${PROJECT_SOURCE_DIR}/../libds/strutils.c
+  ${PROJECT_SOURCE_DIR}/../libds/vectest.c
+  ${PROJECT_SOURCE_DIR}/../libds/tree.c
+  ${PROJECT_SOURCE_DIR}/../libds/list.c
 )
 
 add_executable (wyliodrin_hypervisor
@@ -63,4 +79,5 @@ target_link_libraries (wyliodrin_hypervisor
   ${STROPHE_LIBRARIES}
   ${EXPAT_LIBRARIES}
   ${OPENSSL_LIBRARIES}
+  ${CMAKE_BINARY_DIR}/libdbs.a
 )
