@@ -28,6 +28,7 @@
 
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../cmp/cmp.h"               /* msgpack handling */
+#include "../../libds/ds.h"           /* hashmap */
 // #include "../wxmpp/wxmpp.h"           /* WNS */
 // #include "../base64/base64.h"         /* encode decode */
 // #include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
@@ -227,105 +228,28 @@ void init_shells() {
 }
 
 
-void shells(const char *data) {
-  // werr2(strncasecmp(owner, from, strlen(owner)) != 0, return,
-  //       "Ignore shells stanza received from %s", from);
+void shells(hashmap_p hm) {
 
-  // char *action_attr = xmpp_stanza_get_attribute(stanza, "action");
-  // werr2(action_attr == NULL, return, "Received shells stanza without action attribute");
+  char *action = (char *)hashmap_get(hm, "action");
 
-  // if (strncasecmp(action_attr, "open", 4) == 0) {
-  //   shells_open(from, stanza);
-  // } else if (strncasecmp(action_attr, "close", 5) == 0) {
-  //   shells_close(from, stanza);
-  // } else if (strncasecmp(action_attr, "keys", 4) == 0) {
-  //   shells_keys(from, stanza);
-  // } else if (strncasecmp(action_attr, "status", 6) == 0) {
-  //   shells_status(from, stanza);
-  // } else if (strncasecmp(action_attr, "poweroff", 8) == 0) {
-  //   shells_poweroff();
-  // } else if (strncasecmp(action_attr, "disconnect", 10) == 0) {
-  //   shells_disconnect(from, stanza);
-  // } else {
-  //   werr("Received shells stanza with unknown action attribute %s from %s",
-  //        action_attr, from);
-  // }
-
-  cmp_ctx_t cmp;
-  cmp_init(&cmp, (void *)data, strlen(data));
-
-  uint32_t array_size;
-  werr2(!cmp_read_array(&cmp, &array_size),
-        return,
-        "cmp_read_array error: %s", cmp_strerror(&cmp));
-
-  werr2(array_size < 2, return, "Received array with less than 2 values");
-
-  char *str = NULL;
-
-  /* Read stanza name */
-  werr2(!cmp_read_str(&cmp, &str),
-        return,
-        "cmp_read_str error: %s", cmp_strerror(&cmp));
-  free(str);
-
-  /* Read stanza text */
-  werr2(!cmp_read_str(&cmp, &str),
-        return,
-        "cmp_read_str error: %s", cmp_strerror(&cmp));
-  free(str);
-
-  /* Read the from attribute */
-  werr2(!cmp_read_str(&cmp, &str),
-        return,
-        "cmp_read_str error: %s", cmp_strerror(&cmp));
-  free(str);
-
-  /* Read attributes */
-  int i;
-  bool action_found = false;
-  for (i = 0; i < (array_size - 2) / 2; i++) {
-    /* Read key */
-    werr2(!cmp_read_str(&cmp, &str),
-          return,
-          "cmp_read_str error: %s", cmp_strerror(&cmp));
-    if (strncmp(str, "action", 6) == 0) {
-      /* Read action value */
-      free(str);
-      werr2(!cmp_read_str(&cmp, &str),
-            return,
-            "cmp_read_str error: %s", cmp_strerror(&cmp));
-
-      if (strncasecmp(str, "open", 4) == 0) {
-        shells_open(data);
-      } else if (strncasecmp(str, "close", 5) == 0) {
-        shells_close(data);
-      } else if (strncasecmp(str, "keys", 4) == 0) {
-        shells_keys(data);
-      } else if (strncasecmp(str, "status", 6) == 0) {
-        shells_status(data);
-      } else if (strncasecmp(str, "poweroff", 8) == 0) {
-        shells_poweroff();
-      } else if (strncasecmp(str, "disconnect", 10) == 0) {
-        shells_disconnect(data);
-      } else {
-        werr("Received shells stanza with unknown action attribute %s", str);
-      }
-
-      free(str);
-      action_found = true;
-      break;
-    } else {
-      /* Read value */
-      free(str);
-      werr2(!cmp_read_str(&cmp, &str),
-            return,
-            "cmp_read_str error: %s", cmp_strerror(&cmp));
-    }
+  if (strncasecmp(action, "open", 4) == 0) {
+    // shells_open(from, stanza);
+  } else if (strncasecmp(action, "close", 5) == 0) {
+    // shells_close(from, stanza);
+  } else if (strncasecmp(action, "keys", 4) == 0) {
+    // shells_keys(from, stanza);
+  } else if (strncasecmp(action, "status", 6) == 0) {
+    // shells_status(from, stanza);
+  } else if (strncasecmp(action, "poweroff", 8) == 0) {
+    // shells_poweroff();
+  } else if (strncasecmp(action, "disconnect", 10) == 0) {
+    // shells_disconnect(from, stanza);
+  } else {
+    // werr("Received shells stanza with unknown action attribute %s from %s",
+         // action_attr, from);
   }
-  if (!action_found) {
-    werr("There is no action attribute in shells stanza");
-  }
+
+  destroy_hashmap(hm);
 }
 
 

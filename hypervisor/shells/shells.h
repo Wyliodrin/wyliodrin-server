@@ -56,7 +56,7 @@ void init_shells();
 /**
  * Parse shells commands
 */
-void shells(const char *data);
+void shells(hashmap_p hm);
 
 /**
  * Start projects that died on board shutdown.

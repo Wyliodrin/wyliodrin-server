@@ -158,7 +158,7 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
 
     /* Manage message */
     if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
-      winfo("message: %s", r->element[2]->str);
+      // winfo("message: %s", r->element[2]->str);
 
       hashmap_p hm = create_hashmap();
 
@@ -187,6 +187,7 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
         free(key);
         free(value);
       }
+      shells(hm);
     }
   } else {
     werr("Got message on subscription different from REDIS_REPLY_ARRAY");
