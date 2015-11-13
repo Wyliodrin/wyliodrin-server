@@ -109,12 +109,12 @@ static void shells_open(const char *data);
 // static void send_shells_open_response(char *request_attr, bool success, int shell_id,
 //                                       bool running);
 
-// /**
-//  * Open shell or project
-//  */
-// static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
-//                                   char *width_attr, char *height_attr,
-//                                   char *projectid_attr, char *userid_attr);
+/**
+ * Open shell or project
+ */
+static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
+                                  char *width_attr, char *height_attr,
+                                  char *projectid_attr, char *userid_attr);
 
 /**
  * Close shell
