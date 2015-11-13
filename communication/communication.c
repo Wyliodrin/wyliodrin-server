@@ -24,6 +24,10 @@
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../wxmpp/wxmpp.h"
 #include "../base64/base64.h"
+
+#include "../cmp/cmp.h"  /* msgpack handling */
+#include "../libds/ds.h" /* hashmap          */
+
 #include "communication.h"
 
 
@@ -32,6 +36,7 @@ redisContext *c = NULL;
 extern xmpp_ctx_t *global_ctx;
 extern xmpp_conn_t *global_conn;
 extern const char *jid;
+extern const char *owner;
 
 static bool is_connetion_in_progress = false;
 
@@ -494,6 +499,66 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
     /* Manage message */
     else if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
       winfo("message: %s", r->element[2]->str);
+
+      /* msgpack in hashmap */
+      hashmap_p hm = create_hashmap();
+
+      cmp_ctx_t cmp;
+      cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
+
+      uint32_t map_size;
+      werr2(!cmp_read_map(&cmp, &map_size),
+            return,
+            "cmp_read_map error: %s", cmp_strerror(&cmp));
+
+      int i;
+      char *key = NULL;
+      char *value = NULL;
+      for (i = 0; i < map_size / 2; i++) {
+        werr2(!cmp_read_str(&cmp, &key),
+              return,
+              "cmp_read_str error: %s", cmp_strerror(&cmp));
+
+        werr2(!cmp_read_str(&cmp, &value),
+              return,
+              "cmp_read_str error: %s", cmp_strerror(&cmp));
+
+        hashmap_put(hm, key, value, strlen(value) + 1);
+
+        free(key);
+        free(value);
+      }
+
+      /* Build stanza */
+      xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
+      xmpp_stanza_set_name(message_stz, "message");
+      xmpp_stanza_set_attribute(message_stz, "to", owner);
+      xmpp_stanza_t *shells_stz = xmpp_stanza_new(global_ctx);
+      xmpp_stanza_set_name(shells_stz, "shells");
+      xmpp_stanza_set_ns(shells_stz, WNS);
+
+      xmpp_stanza_set_attribute(shells_stz, "action", (char *)hashmap_get(hm, "action"));
+      xmpp_stanza_set_attribute(shells_stz, "request", (char *)hashmap_get(hm, "request"));
+      xmpp_stanza_set_attribute(shells_stz, "response", (char *)hashmap_get(hm, "response"));
+      if (strncmp((char *)hashmap_get(hm, "response"), "done", 4) == 0) {
+        xmpp_stanza_set_attribute(shells_stz, "shellid", (char *)hashmap_get(hm, "shellid"));
+        xmpp_stanza_set_attribute(shells_stz, "running", (char *)hashmap_get(hm, "running"));
+      }
+
+      xmpp_stanza_add_child(message_stz, shells_stz);
+      xmpp_send(global_conn, message_stz);
+
+      char *stanza_to_text;
+      size_t stanza_to_text_len;
+      int xmpp_stanza_to_text_rc = xmpp_stanza_to_text(message_stz, &stanza_to_text,
+                                                       &stanza_to_text_len);
+      werr2(xmpp_stanza_to_text_rc < 0, return, "Could not convert stanza to text");
+      winfo("%s", stanza_to_text);
+
+      xmpp_stanza_release(shells_stz);
+      xmpp_stanza_release(message_stz);
+
+      destroy_hashmap(hm);
     }
   } else {
     werr("Got message on wyliodrin subscription different from REDIS_REPLY_ARRAY");

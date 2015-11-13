@@ -282,6 +282,8 @@ static void shells_open(hashmap_p hm) {
   werr2(request_attr == NULL, goto _error,
         "Received shells open without request");
 
+  goto _error;
+
   char *width_attr = (char *)hashmap_get(hm, "width");
   werr2(width_attr == NULL, goto _error,
         "Received shells open stanza without width");
