@@ -25,6 +25,9 @@ THE SOFTWARE.
 #ifndef CMP_H__
 #define CMP_H__
 
+#include <stdint.h>
+#include <stdbool.h>
+
 struct cmp_ctx_s;
 
 typedef bool   (*cmp_reader)(struct cmp_ctx_s *ctx, void *data, size_t limit);
@@ -98,6 +101,9 @@ typedef struct cmp_ctx_s {
   void       *buf;
   cmp_reader  read;
   cmp_writer  write;
+  unsigned int reader_offset;
+  unsigned int writer_offset;
+  unsigned int size;
 } cmp_ctx_t;
 
 typedef struct cmp_object_s {
@@ -116,7 +122,7 @@ extern "C" {
  */
 
 /* Initializes a CMP context */
-void cmp_init(cmp_ctx_t *ctx, void *buf, cmp_reader read, cmp_writer write);
+void cmp_init(cmp_ctx_t *ctx, void *buf, unsigned int size);
 
 /* Returns CMP's version */
 uint32_t cmp_version(void);
@@ -276,7 +282,10 @@ bool cmp_read_str_size(cmp_ctx_t *ctx, uint32_t *size);
  * Reads a string from the backend; according to the spec, the string's data
  * ought to be encoded using UTF-8,
  */
-bool cmp_read_str(cmp_ctx_t *ctx, char *data, uint32_t *size);
+// bool cmp_read_str(cmp_ctx_t *ctx, char *data, uint32_t *size);
+
+/* Update by Razvan Madalin MATEI */
+bool cmp_read_str(cmp_ctx_t *ctx, char **data);
 
 /* Reads the size of packed binary data from the backend */
 bool cmp_read_bin_size(cmp_ctx_t *ctx, uint32_t *size);
@@ -471,4 +480,3 @@ bool cmp_object_to_bin(cmp_ctx_t *ctx, cmp_object_t *obj, void *data, uint32_t b
 #endif /* CMP_H__ */
 
 /* vi: set et ts=2 sw=2: */
-

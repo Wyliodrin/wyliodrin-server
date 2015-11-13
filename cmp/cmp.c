@@ -25,6 +25,10 @@ THE SOFTWARE.
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>  /* Update by Razvan Madalin MATEI.
+                      * Used for malloc. */
 
 #include "cmp.h"
 
@@ -77,6 +81,7 @@ enum {
 };
 
 enum {
+  MALLOC_ERROR,
   ERROR_NONE,
   STR_DATA_LENGTH_TOO_LONG_ERROR,
   BIN_DATA_LENGTH_TOO_LONG_ERROR,
@@ -97,6 +102,7 @@ enum {
 };
 
 const char *cmp_error_messages[ERROR_MAX + 1] = {
+  "Memory allocation error",
   "No Error",
   "Specified string data length is too long (> 0xFFFFFFFF)",
   "Specified binary data length is too long (> 0xFFFFFFFF)",
@@ -253,11 +259,40 @@ static bool write_fixed_value(cmp_ctx_t *ctx, uint8_t value) {
   return false;
 }
 
-void cmp_init(cmp_ctx_t *ctx, void *buf, cmp_reader read, cmp_writer write) {
+/*************************************************************************************************/
+static bool string_reader(cmp_ctx_t *ctx, void *data, size_t limit) {
+  if (ctx->reader_offset + limit > ctx->size) {
+    fprintf(stderr, "No more space available in string_reader\n");
+    return false;
+  }
+
+  memcpy(data, ctx->buf + ctx->reader_offset, limit);
+  ctx->reader_offset += limit;
+
+  return true;
+}
+
+static size_t string_writer(cmp_ctx_t *ctx, const void *data, size_t count) {
+  if (ctx->writer_offset + count > ctx->size) {
+    fprintf(stderr, "No more space available in string_writer\n");
+    return 0;
+  }
+
+  memcpy(ctx->buf + ctx->writer_offset, data, count);
+  ctx->writer_offset += count;
+
+  return count;
+}
+/*************************************************************************************************/
+
+void cmp_init(cmp_ctx_t *ctx, void *buf, unsigned int size) {
   ctx->error = ERROR_NONE;
   ctx->buf = buf;
-  ctx->read = read;
-  ctx->write = write;
+  ctx->read = string_reader;
+  ctx->write = string_writer;
+  ctx->reader_offset = 0;
+  ctx->writer_offset = 0;
+  ctx->size = size;
 }
 
 uint32_t cmp_version(void) {
@@ -1684,26 +1719,49 @@ bool cmp_read_str_size(cmp_ctx_t *ctx, uint32_t *size) {
   }
 }
 
-bool cmp_read_str(cmp_ctx_t *ctx, char *data, uint32_t *size) {
+// bool cmp_read_str(cmp_ctx_t *ctx, char *data, uint32_t *size) {
+//   uint32_t str_size = 0;
+
+//   if (!cmp_read_str_size(ctx, &str_size))
+//     return false;
+
+//   if ((str_size + 1) > *size) {
+//     *size = str_size;
+//     ctx->error = STR_DATA_LENGTH_TOO_LONG_ERROR;
+//     return false;
+//   }
+
+//   if (!ctx->read(ctx, data, str_size)) {
+//     ctx->error = DATA_READING_ERROR;
+//     return false;
+//   }
+
+//   data[str_size] = 0;
+
+//   *size = str_size;
+//   return true;
+// }
+
+/* Update by Razvan Madalin MATEI */
+bool cmp_read_str(cmp_ctx_t *ctx, char **data) {
   uint32_t str_size = 0;
 
   if (!cmp_read_str_size(ctx, &str_size))
     return false;
 
-  if ((str_size + 1) > *size) {
-    *size = str_size;
-    ctx->error = STR_DATA_LENGTH_TOO_LONG_ERROR;
+  *data = malloc((str_size + 1) * sizeof(char));
+  if (*data == NULL) {
+    ctx->error = MALLOC_ERROR;
     return false;
   }
 
-  if (!ctx->read(ctx, data, str_size)) {
+  if (!ctx->read(ctx, *data, str_size)) {
     ctx->error = DATA_READING_ERROR;
     return false;
   }
 
-  data[str_size] = 0;
+  (*data)[str_size] = 0;
 
-  *size = str_size;
   return true;
 }
 
@@ -2832,4 +2890,3 @@ bool cmp_object_to_bin(cmp_ctx_t *ctx, cmp_object_t *obj, void *data, uint32_t b
 }
 
 /* vi: set et ts=2 sw=2: */
-
