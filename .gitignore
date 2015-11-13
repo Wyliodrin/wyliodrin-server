@@ -1,5 +1,3 @@
-*.o
-mnt/*
+hypervisor/build/*
 build/*
 docs/build/*
-.Trash*
