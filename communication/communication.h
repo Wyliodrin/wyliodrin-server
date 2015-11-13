@@ -2,7 +2,7 @@
  * Communication module
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com
- * Date last modified: May 2015
+ * Date last modified: November 2015
  *************************************************************************************************/
 
 #ifndef _COMMUNICATION_H
@@ -26,6 +26,8 @@ void init_communication();
 
 void communication(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   xmpp_conn_t *const conn, void *const userdata);
+
+void publish(const char* channel, const char *data);
 
 #endif /* COMMUNICATION */
 

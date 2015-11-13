@@ -32,6 +32,8 @@
 #include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
 #include "../cmp/cmp.h"               /* msgpack       */
 
+#include "../communication/communication.h" /* redis */
+
 #include "shells.h"                   /* shells module api */
 #include "wtalk_config.h"             /* version */
 
@@ -253,7 +255,7 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   }
 
   /* Build msgpack map from stanza and send it to redis */
-
+  publish(HYPERVISOR_PUB_CHANNEL, "Hello");
 }
 
 

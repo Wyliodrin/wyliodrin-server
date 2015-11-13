@@ -482,6 +482,24 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
   }
 }
 
+void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
+  redisReply *r = reply;
+  if (reply == NULL) return;
+
+  if (r->type == REDIS_REPLY_ARRAY) {
+    if (r->elements == 3 && strncmp(r->element[0]->str, "subscribe", 9) == 0) {
+      winfo("Successfully subscribed to %s", r->element[1]->str);
+    }
+
+    /* Manage message */
+    else if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
+      winfo("message: %s", r->element[2]->str);
+    }
+  } else {
+    werr("Got message on wyliodrin subscription different from REDIS_REPLY_ARRAY");
+  }
+}
+
 void connectCallback(const redisAsyncContext *c, int status) {
   if (status != REDIS_OK) {
     werr("connectCallback: %s", c->errstr);
@@ -491,6 +509,14 @@ void connectCallback(const redisAsyncContext *c, int status) {
 }
 
 void wyliodrinConnectCallback(const redisAsyncContext *c, int status) {
+  if (status != REDIS_OK) {
+    werr("connectCallback: %s", c->errstr);
+    return;
+  }
+  wlog("REDIS connected");
+}
+
+void hypervisorConnectCallback(const redisAsyncContext *c, int status) {
   if (status != REDIS_OK) {
     werr("connectCallback: %s", c->errstr);
     return;
@@ -535,6 +561,25 @@ void *start_wyliodrin_subscriber_routine(void *arg) {
   return NULL;
 }
 
+void *start_hypervisor_subscriber_routine(void *arg) {
+  redisAsyncContext *c;
+
+  signal(SIGPIPE, SIG_IGN);
+  struct event_base *base = event_base_new();
+
+  c = redisAsyncConnect(REDIS_HOST, REDIS_PORT);
+  werr2(c->err != 0, return NULL, "redisAsyncConnect error: %s", c->errstr);
+
+  redisLibeventAttach(c, base);
+  redisAsyncSetConnectCallback(c, hypervisorConnectCallback);
+  redisAsyncCommand(c, onHypervisorMessage, NULL, "SUBSCRIBE %s", HYPERVISOR_SUB_CHANNEL);
+  event_base_dispatch(base);
+
+  werr("Return from start_wyliodrin_subscriber_routine");
+
+  return NULL;
+}
+
 void start_subscriber() {
   pthread_t t;
   int rc;
@@ -549,6 +594,15 @@ void start_wyliodrin_subscriber() {
   int rc;
 
   rc = pthread_create(&t, NULL, start_wyliodrin_subscriber_routine, NULL); /* Read rc */
+  wsyserr(rc < 0, "pthread_create");
+  pthread_detach(t);
+}
+
+void start_hypervisor_subscriber() {
+  pthread_t t;
+  int rc;
+
+  rc = pthread_create(&t, NULL, start_hypervisor_subscriber_routine, NULL); /* Read rc */
   wsyserr(rc < 0, "pthread_create");
   pthread_detach(t);
 }
@@ -656,6 +710,12 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
     }
     freeReplyObject(reply);
   }
+}
+
+void publish(const char* channel, const char *data) {
+  redisReply *reply = redisCommand(c, "PUBLISH %s %s", channel, data);
+  werr2(reply == NULL, /* Do nothing */, "Redis publish error: %s", c->errstr);
+  freeReplyObject(reply);
 }
 
 #endif /* COMMUNICATION */
