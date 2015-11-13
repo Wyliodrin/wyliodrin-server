@@ -33,8 +33,8 @@
 #define REDIS_HOST "127.0.0.1"
 #define REDIS_PORT 6379
 
-#define REDIS_PUB_CHANNEL "whypconn"
-#define REDIS_SUB_CHANNEL "wconnhyp"
+#define REDIS_PUB_CHANNEL "whypsrv"
+#define REDIS_SUB_CHANNEL "wsrvhyp"
 
 #define SLEEP_TIME_BETWEEN_CONNECTION_RETRY 1
 

@@ -19,6 +19,9 @@
 #define PUB_CHANNEL       "communication_client"
 #define SUB_CHANNEL       "communication_server:*"
 
+#define HYPERVISOR_SUB_CHANNEL "whypsrv"
+#define HYPERVISOR_PUB_CHANNEL "wsrvhyp"
+
 void init_communication();
 
 void communication(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
