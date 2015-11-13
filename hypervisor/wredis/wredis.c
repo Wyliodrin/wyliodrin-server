@@ -158,25 +158,25 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
       winfo("message: %s", r->element[2]->str);
 
-      cmp_ctx_t cmp;
-      cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
+      // cmp_ctx_t cmp;
+      // cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
 
-      uint32_t array_size;
-      werr2(!cmp_read_array(&cmp, &array_size),
-            return,
-            "cmp_read_array error: %s", cmp_strerror(&cmp));
+      // uint32_t array_size;
+      // werr2(!cmp_read_array(&cmp, &array_size),
+      //       return,
+      //       "cmp_read_array error: %s", cmp_strerror(&cmp));
 
-      werr2(array_size < 3, return, "Received array with less than 3 values");
+      // werr2(array_size < 3, return, "Received array with less than 3 values");
 
-      char *str = NULL;
-      werr2(!cmp_read_str(&cmp, &str),
-            return,
-            "cmp_read_str error: %s", cmp_strerror(&cmp));
+      // char *str = NULL;
+      // werr2(!cmp_read_str(&cmp, &str),
+      //       return,
+      //       "cmp_read_str error: %s", cmp_strerror(&cmp));
 
-      if (strncmp(str, "shells", 6) == 0) {
-        shells(r->element[2]->str);
-        free(str);
-      }
+      // if (strncmp(str, "shells", 6) == 0) {
+      //   shells(r->element[2]->str);
+      //   free(str);
+      // }
     }
   } else {
     werr("Got message on subscription different from REDIS_REPLY_ARRAY");
