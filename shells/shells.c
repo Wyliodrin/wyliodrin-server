@@ -243,25 +243,25 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   werr2(strncasecmp(owner, from, strlen(owner)) != 0, return,
         "Ignore shells stanza received from %s", from);
 
-  char *action_attr = xmpp_stanza_get_attribute(stanza, "action");
-  werr2(action_attr == NULL, return, "Received shells stanza without action attribute");
+  // char *action_attr = xmpp_stanza_get_attribute(stanza, "action");
+  // werr2(action_attr == NULL, return, "Received shells stanza without action attribute");
 
-  if (strncasecmp(action_attr, "open", 4) == 0) {
-    shells_open(from, stanza);
-  } else if (strncasecmp(action_attr, "close", 5) == 0) {
-    shells_close(from, stanza);
-  } else if (strncasecmp(action_attr, "keys", 4) == 0) {
-    shells_keys(from, stanza);
-  } else if (strncasecmp(action_attr, "status", 6) == 0) {
-    shells_status(from, stanza);
-  } else if (strncasecmp(action_attr, "poweroff", 8) == 0) {
-    shells_poweroff();
-  } else if (strncasecmp(action_attr, "disconnect", 10) == 0) {
-    shells_disconnect(from, stanza);
-  } else {
-    werr("Received shells stanza with unknown action attribute %s from %s",
-         action_attr, from);
-  }
+  // if (strncasecmp(action_attr, "open", 4) == 0) {
+  //   shells_open(from, stanza);
+  // } else if (strncasecmp(action_attr, "close", 5) == 0) {
+  //   shells_close(from, stanza);
+  // } else if (strncasecmp(action_attr, "keys", 4) == 0) {
+  //   shells_keys(from, stanza);
+  // } else if (strncasecmp(action_attr, "status", 6) == 0) {
+  //   shells_status(from, stanza);
+  // } else if (strncasecmp(action_attr, "poweroff", 8) == 0) {
+  //   shells_poweroff();
+  // } else if (strncasecmp(action_attr, "disconnect", 10) == 0) {
+  //   shells_disconnect(from, stanza);
+  // } else {
+  //   werr("Received shells stanza with unknown action attribute %s from %s",
+  //        action_attr, from);
+  // }
 
   /* Build msgpack map from stanza and send it to redis */
   char *stanza_to_text;
@@ -269,9 +269,6 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   int xmpp_stanza_to_text_rc = xmpp_stanza_to_text(stanza, &stanza_to_text,
                                                    &stanza_to_text_len);
   werr2(xmpp_stanza_to_text_rc < 0, return, "Could not convert stanza to text");
-
-  /* Make room for from attribute */
-  stanza_to_text_len += strlen(from);
 
   char *msgpack_buf = malloc(stanza_to_text_len * sizeof(char));
   werr2(msgpack_buf == NULL, return, "Could not allocate memory for msgpack_buf");
@@ -287,17 +284,9 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   char *text = xmpp_stanza_get_text(stanza);
 
   /* Write map */
-  werr2(!cmp_write_map(&cmp, 2 + 2 * num_attrs),
+  werr2(!cmp_write_map(&cmp, 1 + 2 * num_attrs),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
-
-  /* Write from */
-  werr2(!cmp_write_str(&cmp, "f", 1),
-        return,
-        "cmp_write_str error: %s", cmp_strerror(&cmp));
-  werr2(!cmp_write_str(&cmp, from, strlen(from)),
-        return,
-        "cmp_write_str error: %s", cmp_strerror(&cmp));
 
   /* Write text */
   werr2(!cmp_write_str(&cmp, "t", 1),
