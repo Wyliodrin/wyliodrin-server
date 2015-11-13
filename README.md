@@ -19,4 +19,4 @@ Building
  2. Download [install_raspberrypi.sh](https://raw.githubusercontent.com/Wyliodrin/wyliodrin-server/master/scripts/install_raspberrypi.sh) on your Raspberry Pi and run it
  3. Add an Raspberry Pi device on [wyliodrin](https://wyliodrin.com/)
  4. Download the wyliodrin.json file and put in /boot
- 5. reboot
+ 5. Reboot
