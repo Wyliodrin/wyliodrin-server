@@ -620,6 +620,7 @@ void *init_communication_routine(void *args) {
     } else {
       start_subscriber();
       start_wyliodrin_subscriber();
+      start_hypervisor_subscriber();
 
       is_connetion_in_progress = false;
       return NULL;

@@ -29,6 +29,7 @@
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../cmp/cmp.h"               /* msgpack handling */
 #include "../../libds/ds.h"           /* hashmap */
+#include "../wredis/wredis.h"         /* redis */
 // #include "../wxmpp/wxmpp.h"           /* WNS */
 // #include "../base64/base64.h"         /* encode decode */
 // #include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
@@ -334,7 +335,8 @@ static void send_shells_open_response(char *request_attr, bool success, int shel
   // xmpp_stanza_release(shells_stz);
   // xmpp_stanza_release(message_stz);
 
-
+  winfo("publish");
+  publish("open response");
 }
 
 
