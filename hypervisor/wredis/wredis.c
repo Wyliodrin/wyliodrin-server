@@ -182,7 +182,8 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
               return,
               "cmp_read_str error: %s", cmp_strerror(&cmp));
 
-        winfo("(%s, %s)", key, value);
+        hashmap_put(hm, key, value, strlen(value) + 1);
+
         free(key);
         free(value);
       }

@@ -284,7 +284,7 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   char *text = xmpp_stanza_get_text(stanza);
 
   /* Write map */
-  werr2(!cmp_write_map(&cmp, 1 + 2 * num_attrs),
+  werr2(!cmp_write_map(&cmp, 2 + 2 * num_attrs),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
@@ -302,6 +302,8 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
           return,
           "cmp_write_str error: %s", cmp_strerror(&cmp));
   }
+
+  msgpack_buf[cmp.writer_offset] = 0;
 
   publish(HYPERVISOR_PUB_CHANNEL, msgpack_buf);
   free(msgpack_buf);
