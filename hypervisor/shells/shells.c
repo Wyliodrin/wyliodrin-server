@@ -277,7 +277,6 @@ void start_dead_projects() {
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
 
 static void shells_open(hashmap_p hm) {
-  goto _error;
 
   char *request_attr = (char *)hashmap_get(hm, "request");
   werr2(request_attr == NULL, goto _error,
@@ -335,8 +334,71 @@ static void send_shells_open_response(char *request_attr, bool success, int shel
   // xmpp_stanza_release(shells_stz);
   // xmpp_stanza_release(message_stz);
 
-  winfo("publish");
-  publish("open response");
+  char msgpack_buf[256];
+
+  cmp_ctx_t cmp;
+  cmp_init(&cmp, msgpack_buf, 256);
+
+  uint32_t map_size = 3;
+  if (success) {
+    map_size += 2;
+  }
+
+  werr2(!cmp_write_map(&cmp, 2 * map_size),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+  /* Action */
+  werr2(!cmp_write_str(&cmp, "action", 6),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+  werr2(!cmp_write_str(&cmp, "open", 4),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+  /* Request */
+  werr2(!cmp_write_str(&cmp, "request", 7),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+  werr2(!cmp_write_str(&cmp, request_attr, strlen(request_attr)),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+  /* Response */
+  werr2(!cmp_write_str(&cmp, "response", 8),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+  if (success) {
+    werr2(!cmp_write_str(&cmp, "done", 4),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+    /* Shellid */
+    char shellid_str[8];
+    snprintf(shellid_str, 8, "%d", shell_id);
+
+    werr2(!cmp_write_str(&cmp, "shellid", 7),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+    werr2(!cmp_write_str(&cmp, shellid_str, strlen(shellid_str)),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+    /* Running */
+    werr2(!cmp_write_str(&cmp, "running", 7),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+    werr2(!cmp_write_str(&cmp, running ? "true" : "false", strlen(running ? "true" : "false")),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+  } else {
+    werr2(!cmp_write_str(&cmp, "error", 5),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+  }
+
+  msgpack_buf[cmp.writer_offset] = 0;
+  publish(msgpack_buf);
 }
 
 
