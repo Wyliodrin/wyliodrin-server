@@ -130,7 +130,7 @@ static void shells_keys(hashmap_p hm);
 /**
  * Status of project (running or not).
  */
-static void shells_status(const char *data);
+static void shells_status(hashmap_p hm);
 
 /**
  * Disconnect shell.
@@ -233,7 +233,7 @@ void shells(hashmap_p hm) {
   } else if (strncasecmp(action, "keys", 4) == 0) {
     shells_keys(hm);
   } else if (strncasecmp(action, "status", 6) == 0) {
-    // shells_status(from, stanza);
+    shells_status(hm);
   } else if (strncasecmp(action, "poweroff", 8) == 0) {
     shells_poweroff();
   } else if (strncasecmp(action, "disconnect", 10) == 0) {
@@ -673,39 +673,79 @@ static void shells_keys(hashmap_p hm) {
 }
 
 
-static void shells_status(const char *data) {
-//   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
-//   werr2(request_attr == NULL, return,
-//         "Received shells status with no request attribute from %s", from);
+static void shells_status(hashmap_p hm) {
+  char *request_attr = (char *)hashmap_get(hm, "request");
+  werr2(request_attr == NULL, return,
+        "Received shells status with no request attribute");
 
-//   char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid");
-//   werr2(projectid_attr == NULL, return,
-//         "Received shells status with no projectid attribute from %s", from);
+  char *projectid_attr = (char *)hashmap_get(hm, "projectid");
+  werr2(projectid_attr == NULL, return,
+        "Received shells status with no projectid attribute");
 
-//   char projectid_filepath[128];
-//   snprintf(projectid_filepath, 127, "/tmp/wyliodrin/%s", projectid_attr);
-//   int projectid_fd = open(projectid_filepath, O_RDWR);
-//   bool is_project_running = projectid_fd != -1;
-//   if (is_project_running) {
-//     close(projectid_fd);
-//   }
+  char projectid_filepath[128];
+  snprintf(projectid_filepath, 127, "/tmp/wyliodrin/%s", projectid_attr);
+  int projectid_fd = open(projectid_filepath, O_RDWR);
+  bool is_project_running = projectid_fd != -1;
+  if (is_project_running) {
+    close(projectid_fd);
+  }
 
-//   xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
-//   xmpp_stanza_set_name(message_stz, "message");
-//   xmpp_stanza_set_attribute(message_stz, "to", owner);
-//   xmpp_stanza_t *shells_stz = xmpp_stanza_new(global_ctx);
-//   xmpp_stanza_set_name(shells_stz, "shells");
-//   xmpp_stanza_set_ns(shells_stz, WNS);
 //   xmpp_stanza_set_attribute(shells_stz, "action", "status");
 //   xmpp_stanza_set_attribute(shells_stz, "request", request_attr);
 //   xmpp_stanza_set_attribute(shells_stz, "projectid", projectid_attr);
 //   xmpp_stanza_set_attribute(shells_stz, "running",
 //     is_project_running ? "true" : "false");
 
-//   xmpp_stanza_add_child(message_stz, shells_stz);
-//   xmpp_send(global_conn, message_stz);
-//   xmpp_stanza_release(shells_stz);
-//   xmpp_stanza_release(message_stz);
+  /* Init msgpack */
+  cmp_ctx_t cmp;
+  char msgpack_buf[128];
+  cmp_init(&cmp, msgpack_buf, 128);
+
+  /* Init msgpack map */
+  uint32_t map_size = 1 + /* action    */
+                      1 + /* request   */
+                      1 + /* projectid */
+                      1;  /* running   */
+  werr2(!cmp_write_map(&cmp, 2 * map_size),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+  /* Write action */
+  werr2(!cmp_write_str(&cmp, "action", 6),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+  werr2(!cmp_write_str(&cmp, "status", 5),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+  /* Write request */
+  werr2(!cmp_write_str(&cmp, "request", 7),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+  werr2(!cmp_write_str(&cmp, request_attr, strlen(request_attr)),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+
+  /* Write projectid */
+  werr2(!cmp_write_str(&cmp, "projectid", 9),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+  werr2(!cmp_write_str(&cmp, projectid_attr, strlen(projectid_attr)),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+  /* Write running */
+  werr2(!cmp_write_str(&cmp, "running", 7),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+  werr2(!cmp_write_str(&cmp, is_project_running ? "true" : "false",
+                       strlen(is_project_running ? "true" : "false")),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+  /* Send msgpack map via redis */
+  publish(msgpack_buf, cmp.writer_offset);
 }
 
 
