@@ -501,7 +501,7 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
       // winfo("message: %s", r->element[2]->str);
 
       cmp_ctx_t cmp;
-      cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
+      cmp_init(&cmp, r->element[2]->str, r->element[2]->len);
 
       uint32_t map_size;
       werr2(!cmp_read_map(&cmp, &map_size),
