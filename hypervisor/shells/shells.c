@@ -135,7 +135,7 @@ static void shells_status(hashmap_p hm);
 /**
  * Disconnect shell.
  */
-static void shells_disconnect(const char *data);
+static void shells_disconnect(hashmap_p hm);
 
 /**
  * Poweroff board.
@@ -237,7 +237,7 @@ void shells(hashmap_p hm) {
   } else if (strncasecmp(action, "poweroff", 8) == 0) {
     shells_poweroff();
   } else if (strncasecmp(action, "disconnect", 10) == 0) {
-    // shells_disconnect(from, stanza);
+    shells_disconnect(hm);
   } else {
     werr("Received shells stanza with unknown action attribute %s", action);
   }
@@ -749,26 +749,26 @@ static void shells_status(hashmap_p hm) {
 }
 
 
-static void shells_disconnect(const char *data) {
-//   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
-//   werr2(request_attr == NULL, return,
-//         "Received shells disconnect stanza without request attribute from %s", from);
+static void shells_disconnect(hashmap_p hm) {
+  char *request_attr = (char *)hashmap_get(hm, "request");
+  werr2(request_attr == NULL, return,
+        "Received shells disconnect stanza without request attribute");
 
-//   char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid");
-//   werr2(shellid_attr == NULL, return,
-//         "Received shells disconnect stanza without shellid attribute from %s", from);
+  char *shellid_attr = (char *)hashmap_get(hm, "shellid");
+  werr2(shellid_attr == NULL, return,
+        "Received shells disconnect stanza without shellid attribute");
 
-//   char *endptr;
-//   long int shellid = strtol(shellid_attr, &endptr, 10);
-//   werr2(*endptr != '\0', return, "Invalid shellid attribute: %s", shellid_attr);
+  char *endptr;
+  long int shellid = strtol(shellid_attr, &endptr, 10);
+  werr2(*endptr != '\0', return, "Invalid shellid attribute: %s", shellid_attr);
 
-//   werr2(shells_vector[shellid] == NULL, return, "Shell %ld already disconnected", shellid);
+  werr2(shells_vector[shellid] == NULL, return, "Shell %ld already disconnected", shellid);
 
-//   winfo("Shell %s disconnected", shellid_attr);
+  winfo("Shell %s disconnected", shellid_attr);
 
-//   pthread_mutex_lock(&shells_lock);
-//   shells_vector[shellid]->is_connected = false;
-//   pthread_mutex_unlock(&shells_lock);
+  pthread_mutex_lock(&shells_lock);
+  shells_vector[shellid]->is_connected = false;
+  pthread_mutex_unlock(&shells_lock);
 }
 
 
