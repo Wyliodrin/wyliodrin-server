@@ -96,8 +96,9 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   }
 
   /* Send msgpack buffer to hypervisor via redis */
+  winfo("publish");
   publish(HYPERVISOR_PUB_CHANNEL, msgpack_buf, cmp.writer_offset);
-
+  winfo("done message");
   /* Clean */
   free(msgpack_buf);
 }

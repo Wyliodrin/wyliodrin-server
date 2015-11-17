@@ -408,25 +408,26 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
       handler = (module_hander *)hashmap_get(modules, name);
       if (handler != NULL) {
         /* Build routine arguments */
-        exec_handler_args_t *args = (exec_handler_args_t *)malloc(sizeof(exec_handler_args_t));
-        wsyserr2(args == NULL, /* Do nothing */, "Could not allocate memory for thread argument");
-        args->handler = handler;
-        args->stz = xmpp_stanza_copy(child_stz);
-        args->from_attr = strdup(from_attr);
-        wsyserr2(args->from_attr == NULL, /* Do nothing */,
-                 "Could not allocate memory for from attribute");
-        args->to_attr = strdup(to_attr);
-        wsyserr2(args->from_attr == NULL, /* Do nothing */,
-                 "Could not allocate memory for to attribute");
+        // exec_handler_args_t *args = (exec_handler_args_t *)malloc(sizeof(exec_handler_args_t));
+        // wsyserr2(args == NULL, /* Do nothing */, "Could not allocate memory for thread argument");
+        // args->handler = handler;
+        // args->stz = xmpp_stanza_copy(child_stz);
+        // args->from_attr = strdup(from_attr);
+        // wsyserr2(args->from_attr == NULL, /* Do nothing */,
+        //          "Could not allocate memory for from attribute");
+        // args->to_attr = strdup(to_attr);
+        // wsyserr2(args->from_attr == NULL, /* Do nothing */,
+        //          "Could not allocate memory for to attribute");
 
-        pthread_t exec_handler_thread;
-        int pthread_create_rc = pthread_create(&exec_handler_thread, NULL,
-                                               exec_handler_routine, args);
-        if (pthread_create_rc != 0) {
-          werr("Could not create thread to execute the handler");
-        } else {
-          pthread_detach(exec_handler_thread);
-        }
+        // pthread_t exec_handler_thread;
+        // int pthread_create_rc = pthread_create(&exec_handler_thread, NULL,
+        //                                        exec_handler_routine, args);
+        // if (pthread_create_rc != 0) {
+        //   werr("Could not create thread to execute the handler");
+        // } else {
+        //   pthread_detach(exec_handler_thread);
+        // }
+        (*handler)(from_attr, to_attr, 0, child_stz, global_conn, global_ctx);
       } else {
         werr("Got message from %s that is trying to trigger unavailable module %s",
              from_attr, name);

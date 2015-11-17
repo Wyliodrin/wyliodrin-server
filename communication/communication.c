@@ -775,6 +775,7 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
 void publish(const char* channel, const char *data, int data_len) {
   redisReply *reply = redisCommand(c, "PUBLISH %s %b", channel, data, data_len);
   werr2(reply == NULL, /* Do nothing */, "Redis publish error: %s", c->errstr);
+  winfo("reply = %p", reply);
   freeReplyObject(reply);
 }
 
