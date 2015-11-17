@@ -1,8 +1,8 @@
 cmake_minimum_required (VERSION 2.8.8)
 project (wyliodrin-connect)
 
-set (wyliodrin_hypervisor_VERSION_MAJOR 3)
-set (wyliodrin_hypervisor_VERSION_MINOR 0)
+set (WYLIODRIN_HYPERVISOR_VERSION_MAJOR 3)
+set (WYLIODRIN_HYPERVISOR_VERSION_MINOR 0)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/wyliodrin_hypervisor_config.h.in"
@@ -42,6 +42,8 @@ set (wyliodrin_hypervisor_SRCS
   ${PROJECT_SOURCE_DIR}/wredis/wredis.c
   ${PROJECT_SOURCE_DIR}/cmp/cmp.c
   ${PROJECT_SOURCE_DIR}/shells/shells.c
+  ${PROJECT_SOURCE_DIR}/base64/base64.c
+  ${PROJECT_SOURCE_DIR}/wjson/wjson.c
 )
 
 add_library (dbs STATIC

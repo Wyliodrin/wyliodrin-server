@@ -528,7 +528,14 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
               return,
               "cmp_read_str error: %s", cmp_strerror(&cmp));
 
-        xmpp_stanza_set_attribute(shells_stz, key, value);
+        if (strcmp(key, "t") == 0) {
+          xmpp_stanza_t *data_stz = xmpp_stanza_new(global_ctx);
+          xmpp_stanza_set_text(data_stz, value);
+          xmpp_stanza_add_child(shells_stz, data_stz);
+        } else {
+          xmpp_stanza_set_attribute(shells_stz, key, value);
+        }
+
 
         free(key);
         free(value);
@@ -537,12 +544,12 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
       xmpp_stanza_add_child(message_stz, shells_stz);
       xmpp_send(global_conn, message_stz);
 
-      // char *stanza_to_text;
-      // size_t stanza_to_text_len;
-      // int xmpp_stanza_to_text_rc = xmpp_stanza_to_text(message_stz, &stanza_to_text,
-      //                                                  &stanza_to_text_len);
-      // werr2(xmpp_stanza_to_text_rc < 0, return, "Could not convert stanza to text");
-      // winfo("%s", stanza_to_text);
+      char *stanza_to_text;
+      size_t stanza_to_text_len;
+      int xmpp_stanza_to_text_rc = xmpp_stanza_to_text(message_stz, &stanza_to_text,
+                                                       &stanza_to_text_len);
+      werr2(xmpp_stanza_to_text_rc < 0, return, "Could not convert stanza to text");
+      winfo("%s\n\n\n", stanza_to_text);
 
       xmpp_stanza_release(shells_stz);
       xmpp_stanza_release(message_stz);
