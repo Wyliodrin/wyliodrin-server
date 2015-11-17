@@ -189,10 +189,10 @@ static char **build_local_env_for_shell(int *num_env, char *request_attr, char *
 static char **build_local_env_for_project(int *num_env, char *request_attr, char *projectid_attr,
                                           char *userid_attr);
 
-// /**
-//  * Remove project id from running projects file.
-//  */
-// static void remove_project_id_from_running_projects(char *projectid_attr);
+/**
+ * Remove project id from running projects file.
+ */
+static void remove_project_id_from_running_projects(char *projectid_attr);
 
 /**
  * Routine for shell or project.
