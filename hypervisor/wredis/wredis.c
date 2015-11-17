@@ -158,12 +158,12 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
 
     /* Manage message */
     if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
-      // winfo("message: %s", r->element[2]->str);
+      winfo("message: %s", r->element[2]->str);
 
       hashmap_p hm = create_hashmap();
 
       cmp_ctx_t cmp;
-      cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
+      cmp_init(&cmp, r->element[2]->str, r->element[2]->len);
 
       uint32_t map_size;
       werr2(!cmp_read_map(&cmp, &map_size),

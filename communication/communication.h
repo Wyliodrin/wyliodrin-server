@@ -27,7 +27,7 @@ void init_communication();
 void communication(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   xmpp_conn_t *const conn, void *const userdata);
 
-void publish(const char* channel, const char *data);
+void publish(const char* channel, const char *data, int data_len);
 
 #endif /* COMMUNICATION */
 

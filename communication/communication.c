@@ -498,7 +498,7 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
 
     /* Manage message */
     else if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
-      winfo("message: %s", r->element[2]->str);
+      // winfo("message: %s", r->element[2]->str);
 
       cmp_ctx_t cmp;
       cmp_init(&cmp, r->element[2]->str, strlen(r->element[2]->str));
@@ -544,12 +544,12 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
       xmpp_stanza_add_child(message_stz, shells_stz);
       xmpp_send(global_conn, message_stz);
 
-      char *stanza_to_text;
-      size_t stanza_to_text_len;
-      int xmpp_stanza_to_text_rc = xmpp_stanza_to_text(message_stz, &stanza_to_text,
-                                                       &stanza_to_text_len);
-      werr2(xmpp_stanza_to_text_rc < 0, return, "Could not convert stanza to text");
-      winfo("%s\n\n\n", stanza_to_text);
+      // char *stanza_to_text;
+      // size_t stanza_to_text_len;
+      // int xmpp_stanza_to_text_rc = xmpp_stanza_to_text(message_stz, &stanza_to_text,
+      //                                                  &stanza_to_text_len);
+      // werr2(xmpp_stanza_to_text_rc < 0, return, "Could not convert stanza to text");
+      // winfo("%s\n\n\n", stanza_to_text);
 
       xmpp_stanza_release(shells_stz);
       xmpp_stanza_release(message_stz);
@@ -772,8 +772,8 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
   }
 }
 
-void publish(const char* channel, const char *data) {
-  redisReply *reply = redisCommand(c, "PUBLISH %s %s", channel, data);
+void publish(const char* channel, const char *data, int data_len) {
+  redisReply *reply = redisCommand(c, "PUBLISH %s %b", channel, data, data_len);
   werr2(reply == NULL, /* Do nothing */, "Redis publish error: %s", c->errstr);
   freeReplyObject(reply);
 }

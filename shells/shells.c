@@ -303,9 +303,14 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
           "cmp_write_str error: %s", cmp_strerror(&cmp));
   }
 
-  msgpack_buf[cmp.writer_offset] = 0;
+  winfo("%d", msgpack_buf[0]);
+  winfo("%d", msgpack_buf[1]);
+  winfo("%d", msgpack_buf[2]);
+  winfo("%d", msgpack_buf[3]);
+  winfo("%d", msgpack_buf[4]);
+  winfo("%d", msgpack_buf[5]);
 
-  publish(HYPERVISOR_PUB_CHANNEL, msgpack_buf);
+  publish(HYPERVISOR_PUB_CHANNEL, msgpack_buf, cmp.writer_offset);
   free(msgpack_buf);
 }
 

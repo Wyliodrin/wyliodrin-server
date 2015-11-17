@@ -291,6 +291,7 @@ static void shells_open(hashmap_p hm) {
   if (projectid_attr == NULL) {
     open_shell_or_project(SHELL, request_attr, width_attr, height_attr, NULL, NULL);
   } else {
+    winfo("Open projectid %s %s", projectid_attr, userid_attr);
     open_shell_or_project(PROJECT, request_attr, width_attr, height_attr,
           projectid_attr, userid_attr);
   }
@@ -393,6 +394,7 @@ static void send_shells_open_response(char *request_attr, bool success, int shel
   }
 
   msgpack_buf[cmp.writer_offset] = 0;
+  winfo("publish open: %s", msgpack_buf);
   publish(msgpack_buf);
 }
 
@@ -805,6 +807,7 @@ static void send_shells_keys_response(char *data_str, int data_len, int shell_id
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   msgpack_buf[cmp.writer_offset] = 0;
+  winfo("publish: %s", msgpack_buf);
   publish(msgpack_buf);
 
   free(encoded_data);
