@@ -2,7 +2,7 @@
  * XMPP implementation
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: October 2015
+ * Date last modified: November 2015
  *************************************************************************************************/
 
 
@@ -127,11 +127,6 @@ static int message_handler  (xmpp_conn_t *const conn, xmpp_stanza_t *const stanz
  */
 static void create_modules_hashmap();
 
-/**
- * Exec handler routine
- */
-static void *exec_handler_routine(void *raw_args);
-
 /*************************************************************************************************/
 
 
@@ -174,7 +169,7 @@ void xmpp_connect(const char *jid, const char *pass) {
   xmpp_run(global_ctx);
 
   /* Event loop should run forever */
-  werr("XMPP event loop completed. Retrying to connect...");
+  werr("XMPP event loop completed");
 
   /* Cleaning */
   xmpp_conn_release(global_conn);
@@ -182,12 +177,6 @@ void xmpp_connect(const char *jid, const char *pass) {
   xmpp_shutdown();
   global_ctx = NULL;
   global_conn = NULL;
-
-  /* Retry to connect */
-  if (strcmp(board, "server") != 0) {
-    sleep(CONN_INTERVAL);
-    return xmpp_connect(jid, pass);
-  }
 }
 
 /*************************************************************************************************/
@@ -300,7 +289,8 @@ int ping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *con
 }
 
 
-int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *const userdata) {
+static int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza,
+                            void *const userdata) {
   /* Update XMPP context and connection */
   global_ctx = (xmpp_ctx_t *)userdata;
   global_conn = conn;
@@ -407,26 +397,6 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
       char *name = xmpp_stanza_get_name(child_stz);
       handler = (module_hander *)hashmap_get(modules, name);
       if (handler != NULL) {
-        /* Build routine arguments */
-        // exec_handler_args_t *args = (exec_handler_args_t *)malloc(sizeof(exec_handler_args_t));
-        // wsyserr2(args == NULL, /* Do nothing */, "Could not allocate memory for thread argument");
-        // args->handler = handler;
-        // args->stz = xmpp_stanza_copy(child_stz);
-        // args->from_attr = strdup(from_attr);
-        // wsyserr2(args->from_attr == NULL, /* Do nothing */,
-        //          "Could not allocate memory for from attribute");
-        // args->to_attr = strdup(to_attr);
-        // wsyserr2(args->from_attr == NULL, /* Do nothing */,
-        //          "Could not allocate memory for to attribute");
-
-        // pthread_t exec_handler_thread;
-        // int pthread_create_rc = pthread_create(&exec_handler_thread, NULL,
-        //                                        exec_handler_routine, args);
-        // if (pthread_create_rc != 0) {
-        //   werr("Could not create thread to execute the handler");
-        // } else {
-        //   pthread_detach(exec_handler_thread);
-        // }
         (*handler)(from_attr, to_attr, 0, child_stz, global_conn, global_ctx);
       } else {
         werr("Got message from %s that is trying to trigger unavailable module %s",
@@ -469,20 +439,6 @@ static void create_modules_hashmap() {
     addr = ps;
     hashmap_put(modules, "ps", &addr, sizeof(void *));
   #endif
-}
-
-
-static void *exec_handler_routine(void *raw_args) {
-  exec_handler_args_t *args = (exec_handler_args_t *)raw_args;
-
-  (*(args->handler))(args->from_attr, args->to_attr, 0, args->stz, global_conn, global_ctx);
-
-  /* Cleaning */
-  free(args->from_attr);
-  free(args->to_attr);
-  xmpp_stanza_release(args->stz);
-
-  return NULL;
 }
 
 /*************************************************************************************************/

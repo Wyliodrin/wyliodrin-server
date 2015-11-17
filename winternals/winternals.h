@@ -1,8 +1,8 @@
 /**************************************************************************************************
- * Internals of wtalk
+ * Logs and errors
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: October 2015
+ * Date last modified: November 2015
  *************************************************************************************************/
 
 #ifndef _WINTERNALS_H
