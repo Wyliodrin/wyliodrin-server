@@ -76,8 +76,8 @@ void init_redis() {
 }
 
 
-void publish(const char *str) {
-  redisReply *reply = redisCommand(c, "PUBLISH %s %s", REDIS_PUB_CHANNEL, str);
+void publish(const char *str, int data_len) {
+  redisReply *reply = redisCommand(c, "PUBLISH %s %b", REDIS_PUB_CHANNEL, str, data_len);
   werr2(reply == NULL, /* Do nothing */, "Redis publish error: %s", c->errstr);
   freeReplyObject(reply);
 }
@@ -188,6 +188,7 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
         free(value);
       }
       shells(hm);
+      destroy_hashmap(hm);
     }
   } else {
     werr("Got message on subscription different from REDIS_REPLY_ARRAY");

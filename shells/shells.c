@@ -14,6 +14,7 @@
 #include <stdlib.h> /* memory handling */
 
 #include "../winternals/winternals.h"       /* logs and errs */
+#include "../wxmpp/wxmpp.h"                 /* xmpp handling */
 #include "../cmp/cmp.h"                     /* msgpack       */
 #include "../communication/communication.h" /* redis         */
 

@@ -30,7 +30,6 @@
 #include "../cmp/cmp.h"               /* msgpack handling */
 #include "../../libds/ds.h"           /* hashmap */
 #include "../wredis/wredis.h"         /* redis */
-// #include "../wxmpp/wxmpp.h"           /* WNS */
 #include "../base64/base64.h"         /* encode decode */
 #include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
 
@@ -116,7 +115,7 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
 /**
  * Close shell
  */
-static void shells_close(const char *data);
+static void shells_close(hashmap_p hm);
 
 /**
  * Send shells close response
@@ -225,27 +224,23 @@ void init_shells() {
 
 
 void shells(hashmap_p hm) {
-
   char *action = (char *)hashmap_get(hm, "action");
 
   if (strncasecmp(action, "open", 4) == 0) {
     shells_open(hm);
   } else if (strncasecmp(action, "close", 5) == 0) {
-    // shells_close(from, stanza);
+    shells_close(hm);
   } else if (strncasecmp(action, "keys", 4) == 0) {
     shells_keys(hm);
   } else if (strncasecmp(action, "status", 6) == 0) {
     // shells_status(from, stanza);
   } else if (strncasecmp(action, "poweroff", 8) == 0) {
-    // shells_poweroff();
+    shells_poweroff();
   } else if (strncasecmp(action, "disconnect", 10) == 0) {
     // shells_disconnect(from, stanza);
   } else {
-    // werr("Received shells stanza with unknown action attribute %s from %s",
-         // action_attr, from);
+    werr("Received shells stanza with unknown action attribute %s", action);
   }
-
-  destroy_hashmap(hm);
 }
 
 
@@ -393,9 +388,7 @@ static void send_shells_open_response(char *request_attr, bool success, int shel
           "cmp_write_map error: %s", cmp_strerror(&cmp));
   }
 
-  msgpack_buf[cmp.writer_offset] = 0;
-  winfo("publish open: %s", msgpack_buf);
-  publish(msgpack_buf);
+  publish(msgpack_buf, cmp.writer_offset);
 }
 
 
@@ -549,64 +542,94 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
 }
 
 
-static void shells_close(const char *data) {
-//   char *request_attr = xmpp_stanza_get_attribute(stanza, "request");
-//   werr2(request_attr == NULL, return,
-//         "Received shells close stanza without request attribute from %s", from);
+static void shells_close(hashmap_p hm) {
+  char *request_attr = (char *)hashmap_get(hm, "request");
+  werr2(request_attr == NULL, return,
+        "Received shells close stanza without request attribute");
 
-//   char *shellid_attr = xmpp_stanza_get_attribute(stanza, "shellid");
-//   werr2(shellid_attr == NULL, return,
-//         "Received shells close stanza without shellid attribute from %s", from);
+  char *shellid_attr = (char *)hashmap_get(hm, "shellid");
+  werr2(shellid_attr == NULL, return,
+        "Received shells close stanza without shellid attribute");
 
-//   char *endptr;
-//   long int shellid = strtol(shellid_attr, &endptr, 10);
-//   werr2(*endptr != '\0', goto _error, "Invalid shellid attribute: %s", shellid_attr);
+  char *endptr;
+  long int shellid = strtol(shellid_attr, &endptr, 10);
+  werr2(*endptr != '\0', goto _error, "Invalid shellid attribute: %s", shellid_attr);
 
-//   werr2(shells_vector[shellid] == NULL, goto _error, "Shell %ld already closed", shellid);
+  werr2(shells_vector[shellid] == NULL, goto _error, "Shell %ld already closed", shellid);
 
-//   /* Set close request or ignore it if it comes from unopened shell */
-//   pthread_mutex_lock(&shells_lock);
-//   free(shells_vector[shellid]->request);
-//   shells_vector[shellid]->request = strdup(request_attr);
-//   shells_vector[shellid]->is_connected = false;
-//   pthread_mutex_unlock(&shells_lock);
+  /* Set close request or ignore it if it comes from unopened shell */
+  pthread_mutex_lock(&shells_lock);
+  free(shells_vector[shellid]->request);
+  shells_vector[shellid]->request = strdup(request_attr);
+  shells_vector[shellid]->is_connected = false;
+  pthread_mutex_unlock(&shells_lock);
 
-//   if (xmpp_stanza_get_attribute(stanza, "background") == NULL) {
-//     char screen_quit_cmd[64];
-//     snprintf(screen_quit_cmd, 64, "%s %d", stop, shells_vector[shellid]->pid);
-//     system(screen_quit_cmd);
-//   }
+  if ((char *)hashmap_get(hm, "background") == NULL) {
+    char screen_quit_cmd[64];
+    snprintf(screen_quit_cmd, 64, "%s %d", stop, shells_vector[shellid]->pid);
+    system(screen_quit_cmd);
+  }
 
-//   return;
+  return;
 
-//   _error: ;
-//     send_shells_close_response(request_attr, shellid_attr, NULL);
+  _error: ;
+    send_shells_close_response(request_attr, shellid_attr, NULL);
 }
 
 
 static void send_shells_close_response(char *request_attr, char *shellid_attr, char *code) {
-//   if (!is_xmpp_connection_set) {
-//     /* Don't send keys if not connected */
-//     return;
-//   }
+  werr2(request_attr == NULL, return, "Trying to send close response without request attribute");
+  werr2(shellid_attr == NULL, return, "Trying to send close response without shellid attribute");
 
-//   werr2(request_attr == NULL, return, "Trying to send close response without request attribute");
-//   werr2(shellid_attr == NULL, return, "Trying to send close response without shellid attribute");
+  /* Init msgpack */
+  cmp_ctx_t cmp;
+  char msgpack_buf[128];
+  cmp_init(&cmp, msgpack_buf, 128);
 
-//   xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
-//   xmpp_stanza_set_name(message_stz, "message");
-//   xmpp_stanza_set_attribute(message_stz, "to", owner);
-//   xmpp_stanza_t *close_stz = xmpp_stanza_new(global_ctx);
-//   xmpp_stanza_set_name(close_stz, "shells");
-//   xmpp_stanza_set_ns(close_stz, WNS);
-//   xmpp_stanza_set_attribute(close_stz, "request", request_attr);
-//   xmpp_stanza_set_attribute(close_stz, "action", "close");
-//   xmpp_stanza_set_attribute(close_stz, "shellid", shellid_attr);
-//   xmpp_stanza_set_attribute(close_stz, "code", code != NULL ? code : "-1");
-//   xmpp_stanza_add_child(message_stz, close_stz);
-//   xmpp_send(global_conn, message_stz);
-//   xmpp_stanza_release(close_stz);
-//   xmpp_stanza_release(message_stz);
+  /* Init msgpack map */
+  uint32_t map_size = 1 + /* action  */
+                      1 + /* request */
+                      1 + /* shellid */
+                      1;  /* code    */
+  werr2(!cmp_write_map(&cmp, 2 * map_size),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+  /* Write action */
+  werr2(!cmp_write_str(&cmp, "action", 6),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+  werr2(!cmp_write_str(&cmp, "close", 5),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+  /* Write request */
+  werr2(!cmp_write_str(&cmp, "request", 7),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+  werr2(!cmp_write_str(&cmp, request_attr, strlen(request_attr)),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+
+  /* Write shellid */
+  werr2(!cmp_write_str(&cmp, "shellid", 7),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+  werr2(!cmp_write_str(&cmp, shellid_attr, strlen(shellid_attr)),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+  /* Write code */
+  werr2(!cmp_write_str(&cmp, "code", 4),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+  werr2(!cmp_write_str(&cmp, code != NULL ? code : "-1", strlen(code != NULL ? code : "-1")),
+        return,
+        "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+  /* Send msgpack map via redis */
+  publish(msgpack_buf, cmp.writer_offset);
 }
 
 
@@ -710,68 +733,35 @@ static void shells_disconnect(const char *data) {
 
 
 static void shells_poweroff() {
-//   if (strncmp(board, "server", 6) != 0) {
-//     char cmd[64];
-//     snprintf(cmd, 64, "%spoweroff", strcmp(board, "raspberrypi") == 0 ? "sudo " : "");
-//     system(cmd);
-//   }
-
-//   exit(EXIT_SUCCESS);
+  system("sudo poweroff");
+  exit(EXIT_SUCCESS);
 }
 
 
 static void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
-//   xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
-//   xmpp_stanza_set_name(message_stz, "message");
-//   xmpp_stanza_set_attribute(message_stz, "to", owner);
-//   xmpp_stanza_t *keys_stz = xmpp_stanza_new(global_ctx);
-//   xmpp_stanza_set_name(keys_stz, "shells");
-//   xmpp_stanza_set_ns(keys_stz, WNS);
-
-//   char shell_id_str[8];
-//   snprintf(shell_id_str, 8, "%d", shell_id);
-//   xmpp_stanza_set_attribute(keys_stz, "shellid", shell_id_str);
-//   xmpp_stanza_set_attribute(keys_stz, "action", "keys");
-//   xmpp_stanza_set_attribute(keys_stz, "request", shells_vector[shell_id]->request);
-//   xmpp_stanza_t *data = xmpp_stanza_new(global_ctx);
-
-//   char *encoded_data = malloc(BASE64_SIZE(data_len) * sizeof(char));
-//   wsyserr2(encoded_data == NULL, return, "Could not allocate memory for keys");
-//   encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len),
-//     (const unsigned char *)data_str, data_len);
-//   werr2(encoded_data == NULL, return, "Could not encode keys data");
-
-//   xmpp_stanza_set_text(data, encoded_data);
-//   xmpp_stanza_add_child(keys_stz, data);
-//   xmpp_stanza_add_child(message_stz, keys_stz);
-//   xmpp_send(global_conn, message_stz);
-//   xmpp_stanza_release(data);
-//   xmpp_stanza_release(keys_stz);
-//   xmpp_stanza_release(message_stz);
-
-//   free(encoded_data);
-
+  /* Encode data */
   char *encoded_data = malloc(BASE64_SIZE(data_len) * sizeof(char));
   wsyserr2(encoded_data == NULL, return, "Could not allocate memory for keys");
   encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len),
     (const unsigned char *)data_str, data_len);
   werr2(encoded_data == NULL, return, "Could not encode keys data");
 
-  char msgpack_buf[64 + BASE64_SIZE(data_len)];
 
+  /* Init msgpack */
   cmp_ctx_t cmp;
+  char msgpack_buf[64 + BASE64_SIZE(data_len)];
   cmp_init(&cmp, msgpack_buf, 64 + BASE64_SIZE(data_len));
 
+  /* Init msgpack map */
   uint32_t map_size = 1 + /* action  */
                       1 + /* request */
                       1 + /* shellid */
                       1;  /* text    */
-
   werr2(!cmp_write_map(&cmp, 2 * map_size),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
-  /* Action */
+  /* Write action */
   werr2(!cmp_write_str(&cmp, "action", 6),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
@@ -779,7 +769,7 @@ static void send_shells_keys_response(char *data_str, int data_len, int shell_id
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
-  /* Request */
+  /* Write request */
   werr2(!cmp_write_str(&cmp, "request", 7),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
@@ -787,10 +777,10 @@ static void send_shells_keys_response(char *data_str, int data_len, int shell_id
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
+
+  /* Write shellid */
   char shell_id_str[8];
   snprintf(shell_id_str, 8, "%d", shell_id);
-
-  /* Shellid */
   werr2(!cmp_write_str(&cmp, "shellid", 7),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
@@ -798,7 +788,7 @@ static void send_shells_keys_response(char *data_str, int data_len, int shell_id
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
-  /* Text */
+  /* Write text */
   werr2(!cmp_write_str(&cmp, "t", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
@@ -806,10 +796,10 @@ static void send_shells_keys_response(char *data_str, int data_len, int shell_id
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
-  msgpack_buf[cmp.writer_offset] = 0;
-  winfo("publish: %s", msgpack_buf);
-  publish(msgpack_buf);
+  /* Send msgpack map via redis */
+  publish(msgpack_buf, cmp.writer_offset);
 
+  /* Clean */
   free(encoded_data);
 }
 

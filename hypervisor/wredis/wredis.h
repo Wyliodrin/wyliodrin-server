@@ -20,7 +20,7 @@ void init_redis();
 /**
  * Publish to redis
  */
-void publish(const char *str);
+void publish(const char *str, int data_len);
 
 /*************************************************************************************************/
 
