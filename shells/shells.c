@@ -8,34 +8,16 @@
 #ifdef SHELLS
 
 
+
 /*** INCLUDES ************************************************************************************/
 
-#include <strings.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <termios.h>
-#include <sys/select.h>
-#include <sys/ioctl.h>
-#include <string.h>
-#include <pthread.h>
-#include <sys/wait.h>
-#include <pty.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <stdlib.h> /* memory handling */
 
-#include "../winternals/winternals.h" /* logs and errs */
-#include "../wxmpp/wxmpp.h"           /* WNS */
-#include "../base64/base64.h"         /* encode decode */
-#include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
-#include "../cmp/cmp.h"               /* msgpack       */
+#include "../winternals/winternals.h"       /* logs and errs */
+#include "../cmp/cmp.h"                     /* msgpack       */
+#include "../communication/communication.h" /* redis         */
 
-#include "../communication/communication.h" /* redis */
-
-#include "shells.h"                   /* shells module api */
-#include "wtalk_config.h"             /* version */
+#include "shells.h" /* API */
 
 /*************************************************************************************************/
 
