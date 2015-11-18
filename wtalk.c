@@ -18,7 +18,6 @@
 #include <sys/types.h> /* stat         */
 #include <sys/wait.h>  /* waitpid      */
 #include <unistd.h>    /* stat         */
-#include <Wyliodrin.h> /* lw version   */
 
 #include "winternals/winternals.h" /* logs and errs   */
 #include "wjson/wjson.h"           /* json stuff      */
@@ -51,6 +50,9 @@ static const char *psk;
 bool privacy = false;
 
 bool is_fuse_available = false;
+
+int libwyliodrin_version_major;
+int libwyliodrin_version_minor;
 
 /*************************************************************************************************/
 
@@ -125,6 +127,13 @@ static void wifi_raspberrypi();
 /*** MAIN ****************************************************************************************/
 
 int main(int argc, char *argv[]) {
+  /* Get libwyliodrin version */
+  char *libwyliodrin_version = getenv("libwyliodrin_version");
+  werr2(libwyliodrin_version == NULL, goto _finish, "There is no libwyliodrin_version env");
+  int sscanf_rc = sscanf(libwyliodrin_version, "v%d.%d", &libwyliodrin_version_major,
+                                                         &libwyliodrin_version_minor);
+  werr2(sscanf_rc != 2, goto _finish, "Invalid libwyliodrin_version format.");
+
   /* Catch SIGTERM */
   if (signal(SIGTERM, signal_handler) == SIG_ERR) {
     werr("Unable to catch SIGTERM");
@@ -186,7 +195,11 @@ int main(int argc, char *argv[]) {
 
   winfo("Starting wyliodrin-server v%d.%d with libwyliodrin v%d.%d",
     WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR,
-    get_version_major(), get_version_minor());
+    libwyliodrin_version_major, libwyliodrin_version_minor);
+
+  winfo("Board = %s", board);
+  winfo("Owner = %s", owner);
+  winfo("Connecting to XMPP as %s", jid);
 
   xmpp_connect(jid, password);
 

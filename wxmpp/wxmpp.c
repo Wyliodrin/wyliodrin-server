@@ -13,7 +13,6 @@
 #include <pthread.h> /* mutex and cond */
 
 #include "wtalk_config.h" /* wtalk version        */
-#include <Wyliodrin.h>    /* libwyliodrin version */
 
 #include "../libds/ds.h"              /* hashmap         */
 #include "../winternals/winternals.h" /* logs and errs   */
@@ -91,6 +90,9 @@ extern bool signal_attr;
 extern bool signal_list;
 extern bool signal_read;
 extern bool signal_fail;
+
+extern int libwyliodrin_version_major;
+extern int libwyliodrin_version_minor;
 
 /*************************************************************************************************/
 
@@ -325,8 +327,8 @@ static int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza
 
       snprintf(wmajor,  4, "%d", WTALK_VERSION_MAJOR);
       snprintf(wminor,  4, "%d", WTALK_VERSION_MINOR);
-      snprintf(lwmajor, 4, "%d", get_version_major());
-      snprintf(lwminor, 4, "%d", get_version_minor());
+      snprintf(lwmajor, 4, "%d", libwyliodrin_version_major);
+      snprintf(lwminor, 4, "%d", libwyliodrin_version_minor);
 
       xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
       xmpp_stanza_set_name(message_stz, "message");
