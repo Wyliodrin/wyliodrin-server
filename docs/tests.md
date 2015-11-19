@@ -1,6 +1,6 @@
 * Teste conectare
   * [1] test conectare
-  * [0] versiuni dupa conectare (wtalk primeste versiunea din variabila de mediu)
+  * [1] versiuni dupa conectare (wtalk primeste versiunea din variabila de mediu)
   * [0] test fisier json gresit -> vad un error log
   * [0] test conectare esuata
   * [0] test incercare reconectare
