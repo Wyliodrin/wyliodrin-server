@@ -1,2 +1,4 @@
 * openfire xmpp server at x500jk
 * owner and board users created
+* export libwyliodrin_version
+* run test command: sudo -E mocha test.js
