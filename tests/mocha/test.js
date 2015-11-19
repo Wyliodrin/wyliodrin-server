@@ -1,9 +1,68 @@
 'use strict'
 
-var test_passed = false;
+var is_board_online = false;
 var assert = require('assert');
+var exec = require('child_process').exec;
 
-before(function(done) {
+var wyliodrinJsonPath = '/etc/wyliodrin';
+
+function replaceWyliodrinJson() {
+  exec('mv ' + wyliodrinJsonPath + '/wyliodrin.json ' +
+               wyliodrinJsonPath + '/wyliodrin.jsonBCK',
+    function(error, stdout, stderr) {
+        // console.log('stdout: ' + stdout);
+        // console.log('stderr: ' + stderr);
+        // if (error !== null) {
+        //   console.log('exec error: ' + error);
+        // }
+    });
+
+  exec('cp res/wyliodrin.json ' +
+           wyliodrinJsonPath + '/wyliodrin.json',
+    function (error, stdout, stderr) {
+        // console.log('stdout: ' + stdout);
+        // console.log('stderr: ' + stderr);
+        // if (error !== null) {
+        //   console.log('exec error: ' + error);
+        // }
+    });
+}
+
+function restoreWyliodrinJson() {
+  exec('mv ' + wyliodrinJsonPath + '/wyliodrin.jsonBCK ' +
+               wyliodrinJsonPath + '/wyliodrin.json',
+    function (error, stdout, stderr) {
+        // console.log('stdout: ' + stdout);
+        // console.log('stderr: ' + stderr);
+        // if (error !== null) {
+        //   console.log('exec error: ' + error);
+        // }
+    });
+}
+
+function startWyliodrind() {
+  exec('wyliodrind',
+    function (error, stdout, stderr) {
+        // console.log('stdout: ' + stdout);
+        // console.log('stderr: ' + stderr);
+        // if (error !== null) {
+        //   console.log('exec error: ' + error);
+        // }
+    });
+}
+
+function killWyliodrind() {
+  exec('kill -9 $(pgrep wyliodrind)',
+    function (error, stdout, stderr) {
+        // console.log('stdout: ' + stdout);
+        // console.log('stderr: ' + stderr);
+        // if (error !== null) {
+        //   console.log('exec error: ' + error);
+        // }
+    });
+}
+
+function connectOwnerAndWaitForBoard(done) {
   var Client = require('node-xmpp-client')
   var argv = process.argv
 
@@ -19,9 +78,7 @@ before(function(done) {
   })
 
   client.on('online', function() {
-    // console.log('online')
-
-    /* Send priority */
+    /* I'm online */
     client.send(new Client.Element('presence', {})
       .c('priority').t('50')
     )
@@ -33,12 +90,9 @@ before(function(done) {
   })
 
   client.on('stanza', function (stanza) {
-    // console.log('stanza: ' + stanza.toString() + '\n');
-
     /* Manage subscription */
     if (stanza.is('presence') && (stanza.attrs.from.indexOf(board) !== -1) &&
         (stanza.attrs.type == 'subscribe')) {
-      console.log("Subscripton");
       client.send(new Client.Element('presence', {to: board, type: 'subscribed'}))
       client.send(new Client.Element('presence', {to: board, type: 'subscribe'}))
       client.send(new Client.Element('presence', {})
@@ -46,19 +100,32 @@ before(function(done) {
       )
     }
 
-    if (stanza.is('message') && (stanza.attrs.from.indexOf(board) !== -1)) {
-      test_passed = true;
+    /* Check presence from board */
+    if (stanza.is('presence') && (stanza.attrs.from.indexOf(board) !== -1)) {
+      is_board_online = true;
+
+      /* Clean */
+      killWyliodrind();
+      restoreWyliodrinJson();
       client.end();
       done();
     }
   })
-});
+
+  replaceWyliodrinJson();
+  startWyliodrind();
+};
+
 
 /* Connection tests */
-describe('Connection', function() {
-  describe('User connects with valid credentials', function () {
-    it('test_passed should be true', function () {
-      assert.equal(test_passed, true);
+describe('Board connection tests', function() {
+  describe('Board should become online', function() {
+    before(function(done) {
+      connectOwnerAndWaitForBoard(done);
+    })
+
+    it('is_board_online should be true', function() {
+      assert.equal(is_board_online, true);
     });
   });
 });
