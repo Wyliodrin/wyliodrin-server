@@ -30,13 +30,7 @@ function startWyliodrind() {
 
 function killWyliodrind() {
   exec('kill -9 $(pgrep wyliodrind)',
-    function (error, stdout, stderr) {
-        // console.log('stdout: ' + stdout);
-        // console.log('stderr: ' + stderr);
-        // if (error !== null) {
-        //   console.log('exec error: ' + error);
-        // }
-    });
+    function (error, stdout, stderr) {});
 }
 
 function connectOwnerAndWaitForBoard(done) {
