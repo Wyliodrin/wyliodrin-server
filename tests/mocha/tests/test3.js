@@ -7,6 +7,8 @@ var wyliodrinJsonPath = '/etc/wyliodrin';
 
 var is_test_passed;
 
+var gdone;
+
 var request = require('request');
 
 var username = 'admin',
@@ -25,7 +27,20 @@ function callback(error, response, body) {
   var res = JSON.parse(body);
   var size = Object.keys(res).length;
   if (size == 1) {
-    module.exports.is_test_passed = true;
+    request.del(options, function (error, response, body) {
+      setTimeout(function() {
+        request(options, function (error, response, body) {
+          var res = JSON.parse(body);
+          var size = Object.keys(res).length;
+          if (size == 1) {
+            module.exports.is_test_passed = true;
+          }
+          killWyliodrind();
+          restoreWyliodrinJson();
+          gdone();
+        });
+      }, 3000);
+    });
   }
 }
 
@@ -56,21 +71,19 @@ function killWyliodrind() {
 }
 
 function run(done) {
+  gdone = done;
   replaceWyliodrinJson();
   startWyliodrind();
 
   setTimeout(function() {
     request(options, function (error, response, body) {
       callback(error, response, body);
-      restoreWyliodrinJson();
-      killWyliodrind();
-      done();
     });
   }, 1000);
 };
 
 module.exports = {
   run: run,
-  desc: 'Board connects to XMPP (tested via REST api)',
+  desc: 'Board reconnects to XMPP after kickout',
   is_test_passed: is_test_passed
 };
