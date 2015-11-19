@@ -72,7 +72,8 @@ function run(done) {
     }
 
     /* Check presence from board */
-    if (stanza.is('presence') && (stanza.attrs.from.indexOf(board) !== -1)) {
+   if (stanza.is('message') && (stanza.attrs.from.indexOf(board) !== -1) &&
+       (stanza.children.length == 1) && (stanza.children[0].name === 'version')) {
       module.exports.is_test_passed = true;
       /* Clean */
       killWyliodrind();
@@ -88,6 +89,6 @@ function run(done) {
 
 module.exports = {
   run: run,
-  desc: 'Board connects to XMPP',
+  desc: 'Board sends version',
   is_test_passed: is_test_passed
 };
