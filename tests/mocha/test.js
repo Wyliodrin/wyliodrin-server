@@ -1,54 +1,31 @@
 'use strict'
 
-var is_board_online = false;
 var assert = require('assert');
 var exec = require('child_process').exec;
 
 var wyliodrinJsonPath = '/etc/wyliodrin';
 
+var is_board_online = false;
+
 function replaceWyliodrinJson() {
   exec('mv ' + wyliodrinJsonPath + '/wyliodrin.json ' +
                wyliodrinJsonPath + '/wyliodrin.jsonBCK',
-    function(error, stdout, stderr) {
-        // console.log('stdout: ' + stdout);
-        // console.log('stderr: ' + stderr);
-        // if (error !== null) {
-        //   console.log('exec error: ' + error);
-        // }
-    });
+    function(error, stdout, stderr) {});
 
   exec('cp res/wyliodrin.json ' +
            wyliodrinJsonPath + '/wyliodrin.json',
-    function (error, stdout, stderr) {
-        // console.log('stdout: ' + stdout);
-        // console.log('stderr: ' + stderr);
-        // if (error !== null) {
-        //   console.log('exec error: ' + error);
-        // }
-    });
+    function (error, stdout, stderr) {});
 }
 
 function restoreWyliodrinJson() {
   exec('mv ' + wyliodrinJsonPath + '/wyliodrin.jsonBCK ' +
                wyliodrinJsonPath + '/wyliodrin.json',
-    function (error, stdout, stderr) {
-        // console.log('stdout: ' + stdout);
-        // console.log('stderr: ' + stderr);
-        // if (error !== null) {
-        //   console.log('exec error: ' + error);
-        // }
-    });
+    function (error, stdout, stderr) {});
 }
 
 function startWyliodrind() {
   exec('wyliodrind',
-    function (error, stdout, stderr) {
-        // console.log('stdout: ' + stdout);
-        // console.log('stderr: ' + stderr);
-        // if (error !== null) {
-        //   console.log('exec error: ' + error);
-        // }
-    });
+    function (error, stdout, stderr) {});
 }
 
 function killWyliodrind() {
