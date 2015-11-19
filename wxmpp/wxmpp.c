@@ -171,7 +171,7 @@ void xmpp_connect(const char *jid, const char *pass) {
   xmpp_run(global_ctx);
 
   /* Event loop should run forever */
-  werr("XMPP event loop completed");
+  werr("XMPP event loop completed. Retrying to connect...");
 
   /* Cleaning */
   xmpp_conn_release(global_conn);
@@ -179,6 +179,12 @@ void xmpp_connect(const char *jid, const char *pass) {
   xmpp_shutdown();
   global_ctx = NULL;
   global_conn = NULL;
+
+  /* Retry to connect */
+  if (strcmp(board, "server") != 0) {
+    sleep(CONN_INTERVAL);
+    return xmpp_connect(jid, pass);
+  }
 }
 
 /*************************************************************************************************/
