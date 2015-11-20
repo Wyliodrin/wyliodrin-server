@@ -1,7 +1,7 @@
 {
-  "jid": "board@x550jk",
+  "jid": "board@localhost",
   "password": "wyliodrin",
-  "owner": "owner@x550jk",
+  "owner": "owner@localhost",
   "ssid": "",
   "psk": ""
 }

@@ -72,11 +72,6 @@ static void start_send_logs_routine();
 /*** API IMPLEMENTATION **************************************************************************/
 
 void add_log(log_type_t log_type, const char *msg, ...) {
-  if (jid == NULL) {
-    // fprintf(stderr, "Can't send logs because there is no jid\n");
-    return;
-  }
-
   if (logs_size == MAX_LOGS) {
     fprintf(stderr, "Maximum number of logs reached\n");
     return;
@@ -108,11 +103,11 @@ void add_log(log_type_t log_type, const char *msg, ...) {
   char *str = malloc(MAX_LOG_SIZE * sizeof(char));
   time_str[strlen(time_str) - 1] = 0; /* Get rid of the newline character */
   if (log_type == ERROR_LOG) {
-    snprintf(str, MAX_LOG_SIZE, "[ERROR: %s] %s", time_str, full_msg);
+    snprintf(str, MAX_LOG_SIZE, "[H_ERROR: %s] %s", time_str, full_msg);
   } else if (log_type == INFO_LOG) {
-    snprintf(str, MAX_LOG_SIZE, "[INFO: %s] %s", time_str, full_msg);
+    snprintf(str, MAX_LOG_SIZE, "[H_INFO: %s] %s", time_str, full_msg);
   } else if (log_type == SYSERROR_LOG) {
-    snprintf(str, MAX_LOG_SIZE, "[SYSERROR: %s] %s", time_str, full_msg);
+    snprintf(str, MAX_LOG_SIZE, "[H_SYSERROR: %s] %s", time_str, full_msg);
   } else {
     fprintf(stderr, "Invalid log type\n");
     free(full_msg);

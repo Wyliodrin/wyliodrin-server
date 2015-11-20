@@ -1,8 +1,8 @@
 /**************************************************************************************************
- * Internals of wtalk
+ * Logs and errors
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: October 2015
+ * Date last modified: November 2015
  *************************************************************************************************/
 
 #ifndef _WINTERNALS_H
@@ -17,13 +17,15 @@
 #include <stdio.h>    /* fprintf  */
 #include <string.h>   /* strerror */
 
+#include "../logs/logs.h" /* add_log */
+
 /*************************************************************************************************/
 
 
 
 /*** EXTERN VARIABLES ****************************************************************************/
 
-// extern bool privacy; /* Don't add logs if privacy is set to true */
+extern bool privacy; /* Don't add logs if privacy is set to true */
 
 /*************************************************************************************************/
 
@@ -44,6 +46,9 @@
 #define werr(msg, ...)                                                                            \
   do {                                                                                            \
     fprintf(stderr, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);              \
+    if (!privacy) {                                                                               \
+      add_log(ERROR_LOG, msg, ##__VA_ARGS__);                                                     \
+    }                                                                                             \
   } while (0)
 
 
@@ -51,6 +56,9 @@
   do {                                                                                            \
     if (assertion) {                                                                              \
       fprintf(stderr, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);            \
+      if (!privacy) {                                                                             \
+        add_log(ERROR_LOG, msg, ##__VA_ARGS__);                                                   \
+      }                                                                                           \
       action;                                                                                     \
     }                                                                                             \
   } while (0)
@@ -59,6 +67,9 @@
 #define winfo(msg, ...)                                                                           \
   do {                                                                                            \
     fprintf(stderr, "[winfo in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);             \
+    if (!privacy) {                                                                               \
+      add_log(INFO_LOG, msg, ##__VA_ARGS__);                                                      \
+    }                                                                                             \
   } while (0)
 
 
@@ -67,6 +78,9 @@
     if (assertion) {                                                                              \
       fprintf(stderr, "[syserr in %s:%d] " msg ": %s\n", __FILE__, __LINE__, ##__VA_ARGS__,       \
                                                          strerror(errno));                        \
+      if (!privacy) {                                                                             \
+        add_log(SYSERROR_LOG, msg, ##__VA_ARGS__);                                                \
+      }                                                                                           \
     }                                                                                             \
   } while (0)
 
@@ -76,6 +90,9 @@
     if (assertion) {                                                                              \
       fprintf(stderr, "[syserr in %s:%d] " msg ": %s\n", __FILE__, __LINE__, ##__VA_ARGS__,       \
                                                          strerror(errno));                        \
+      if (!privacy) {                                                                             \
+        add_log(SYSERROR_LOG, msg, ##__VA_ARGS__);                                                \
+      }                                                                                           \
       action;                                                                                     \
     }                                                                                             \
   } while (0)

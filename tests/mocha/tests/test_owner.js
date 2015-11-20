@@ -1,11 +1,8 @@
 'use strict'
 
-var assert = require('assert');
 var exec = require('child_process').exec;
 
 var wyliodrinJsonPath = '/etc/wyliodrin';
-
-var is_test_passed;
 
 function replaceWyliodrinJson() {
   exec('mv ' + wyliodrinJsonPath + '/wyliodrin.json ' +
@@ -33,22 +30,24 @@ function killWyliodrind() {
     function (error, stdout, stderr) {});
 }
 
-function run(done) {
+function run() {
   var Client = require('node-xmpp-client')
   var argv = process.argv
 
   /* Credentials */
-  var board    = 'board@localhost'
-  var owner    = 'owner@localhost'
-  var password = "wyliodrin"
+  var board    = 'board@localhost';
+  var owner    = 'owner@x550jk';
+  var password = "wyliodrin";
 
   var client = new Client({
     port: 5222,
     jid: owner,
-    password: password,
+    password: password
   })
 
+
   client.on('online', function() {
+    console.log('online');
     /* I'm online */
     client.send(new Client.Element('presence', {})
       .c('priority').t('50')
@@ -72,22 +71,15 @@ function run(done) {
     }
 
     /* Check presence from board */
-    if (stanza.is('presence') && (stanza.attrs.from.indexOf(board) !== -1)) {
-      module.exports.is_test_passed = true;
+   if (stanza.is('message') && (stanza.attrs.from.indexOf(board) !== -1) &&
+       (stanza.children.length == 1) && (stanza.children[0].name === 'version')) {
+//      module.exports.is_test_passed = true;
       /* Clean */
       killWyliodrind();
       restoreWyliodrinJson();
       client.end();
-      done();
     }
   })
+}
 
-  replaceWyliodrinJson();
-  startWyliodrind();
-};
-
-module.exports = {
-  run: run,
-  desc: 'Board connects to XMPP',
-  is_test_passed: is_test_passed
-};
+run();

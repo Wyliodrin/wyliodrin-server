@@ -54,6 +54,9 @@ bool is_fuse_available = false;
 int libwyliodrin_version_major;
 int libwyliodrin_version_minor;
 
+FILE *log_out;
+FILE *log_err;
+
 /*************************************************************************************************/
 
 
@@ -127,6 +130,14 @@ static void wifi_raspberrypi();
 /*** MAIN ****************************************************************************************/
 
 int main(int argc, char *argv[]) {
+  log_out = NULL;
+  log_err = NULL;
+  /* Get stdout and stderr */
+  // log_out = fopen(LOCAL_STDOUT_PATH, "a");
+  if (log_out == NULL) { log_out = stdout; }
+  // log_err = fopen(LOCAL_STDERR_PATH, "a");
+  if (log_err == NULL) { log_err = stderr; }
+
   /* Get libwyliodrin version */
   char *libwyliodrin_version = getenv("libwyliodrin_version");
   werr2(libwyliodrin_version == NULL, goto _finish, "There is no libwyliodrin_version env");

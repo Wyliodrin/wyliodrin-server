@@ -44,6 +44,7 @@ set (wyliodrin_hypervisor_SRCS
   ${PROJECT_SOURCE_DIR}/shells/shells.c
   ${PROJECT_SOURCE_DIR}/base64/base64.c
   ${PROJECT_SOURCE_DIR}/wjson/wjson.c
+  ${PROJECT_SOURCE_DIR}/logs/logs.c
 )
 
 add_library (dbs STATIC

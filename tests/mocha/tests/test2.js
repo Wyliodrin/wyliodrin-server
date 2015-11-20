@@ -38,15 +38,16 @@ function run(done) {
   var argv = process.argv
 
   /* Credentials */
-  var board    = 'board@x550jk'
-  var owner    = 'owner@x550jk'
-  var password = "wyliodrin"
+  var board    = 'board@localhost';
+  var owner    = 'owner@localhost';
+  var password = "wyliodrin";
 
   var client = new Client({
     port: 5222,
     jid: owner,
-    password: password,
+    password: password
   })
+
 
   client.on('online', function() {
     /* I'm online */
@@ -82,6 +83,7 @@ function run(done) {
       done();
     }
   })
+
 
   replaceWyliodrinJson();
   startWyliodrind();

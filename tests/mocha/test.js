@@ -5,6 +5,7 @@ var assert = require('assert');
 var test1 = require('./tests/test1');
 var test2 = require('./tests/test2');
 var test3 = require('./tests/test3');
+var test4 = require('./tests/test4');
 
 /* Connection tests */
 describe('All tests', function() {
@@ -26,6 +27,13 @@ describe('All tests', function() {
     before(test3.run);
     it(test3.desc, function() {
       assert.equal(test3.is_test_passed, true);
+    });
+  });
+
+  describe('Test4', function() {
+    before(test4.run);
+    it(test4.desc, function() {
+      assert.equal(test4.is_test_passed, true);
     });
   });
 });

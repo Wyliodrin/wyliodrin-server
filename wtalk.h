@@ -27,6 +27,9 @@
 #define RPI_WIFI_PATH "/etc/wyliodrin/wireless.conf" /* Wifi connection credentials used by
                                                       * Raspberry Pi */
 
+#define LOCAL_STDOUT_PATH "/etc/wyliodrin/logs.out"
+#define LOCAL_STDERR_PATH "/etc/wyliodrin/logs.err"
+
 /*************************************************************************************************/
 
 

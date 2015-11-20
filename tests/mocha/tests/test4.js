@@ -2,47 +2,20 @@
 
 var assert = require('assert');
 var exec = require('child_process').exec;
-
-var wyliodrinJsonPath = '/etc/wyliodrin';
-
-var is_test_passed;
-
-var gdone;
-
+var https = require('https');
+var fs = require('fs');
 var request = require('request');
 
-var username = 'admin',
-    password = 'server',
-    url = 'http://' + username + ':' + password +
-          '@localhost:9090/plugins/restapi/v1/sessions/board';
+var wyliodrinJsonPath = '/etc/wyliodrin';
+var logsPath = '/gadgets/logs/board@localhost';
+
+var is_test_passed;
+var gdone;
 
 var options = {
-  url: url,
-  headers: {
-    'Accept': 'application/json'
-  }
+  key: fs.readFileSync('res/key.pem'),
+  cert: fs.readFileSync('res/cert.pem')
 };
-
-function callback(error, response, body) {
-  var res = JSON.parse(body);
-  var size = Object.keys(res).length;
-  if (size == 1) {
-    request.del(options, function (error, response, body) {
-      setTimeout(function() {
-        request(options, function (error, response, body) {
-          var res = JSON.parse(body);
-          var size = Object.keys(res).length;
-          if (size == 1) {
-            module.exports.is_test_passed = true;
-          }
-          killWyliodrind();
-          restoreWyliodrinJson();
-          gdone();
-        });
-      }, 3000);
-    });
-  }
-}
 
 function replaceWyliodrinJson() {
   exec('mv ' + wyliodrinJsonPath + '/wyliodrin.json ' +
@@ -71,19 +44,26 @@ function killWyliodrind() {
 }
 
 function run(done) {
-  gdone = done;
   replaceWyliodrinJson();
   startWyliodrind();
 
   setTimeout(function() {
-    request(options, function (error, response, body) {
-      callback(error, response, body);
-    });
+    https.createServer(options, function (req, res) {
+      if (req.method == 'POST' && req.url == logsPath) {
+        module.exports.is_test_passed = true;
+        restoreWyliodrinJson();
+        killWyliodrind();
+        done();
+      }
+
+      res.writeHead(200);
+      res.end();
+    }).listen(443);
   }, 1000);
 };
 
 module.exports = {
   run: run,
-  desc: 'Board reconnects to XMPP after kickout',
+  desc: 'Board sends logs',
   is_test_passed: is_test_passed
 };
