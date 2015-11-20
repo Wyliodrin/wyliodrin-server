@@ -39,7 +39,8 @@ extern FILE *log_err;
 #ifdef LOG
   #define wlog(msg, ...)                                                                          \
     do {                                                                                          \
-      fprintf(log_out, "[wlog in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);            \
+      fprintf(log_out, "[wlog in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);           \
+      fflush(log_out);                                                                            \
     } while (0)
 #else
   #define wlog(msg, ...) /* Do nothing */
@@ -48,7 +49,8 @@ extern FILE *log_err;
 
 #define werr(msg, ...)                                                                            \
   do {                                                                                            \
-    fprintf(log_err, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);              \
+    fprintf(log_err, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);             \
+    fflush(log_err);                                                                              \
     if (!privacy) {                                                                               \
       add_log(ERROR_LOG, msg, ##__VA_ARGS__);                                                     \
     }                                                                                             \
@@ -58,7 +60,8 @@ extern FILE *log_err;
 #define werr2(assertion, action, msg, ...)                                                        \
   do {                                                                                            \
     if (assertion) {                                                                              \
-      fprintf(log_err, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);            \
+      fprintf(log_err, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);           \
+      fflush(log_err);                                                                            \
       if (!privacy) {                                                                             \
         add_log(ERROR_LOG, msg, ##__VA_ARGS__);                                                   \
       }                                                                                           \
@@ -69,7 +72,8 @@ extern FILE *log_err;
 
 #define winfo(msg, ...)                                                                           \
   do {                                                                                            \
-    fprintf(log_err, "[winfo in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);             \
+    fprintf(log_out, "[winfo in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);            \
+    fflush(log_out);                                                                              \
     if (!privacy) {                                                                               \
       add_log(INFO_LOG, msg, ##__VA_ARGS__);                                                      \
     }                                                                                             \
@@ -79,8 +83,9 @@ extern FILE *log_err;
 #define wsyserr(assertion, msg, ...)                                                              \
   do {                                                                                            \
     if (assertion) {                                                                              \
-      fprintf(log_err, "[syserr in %s:%d] " msg ": %s\n", __FILE__, __LINE__, ##__VA_ARGS__,       \
+      fprintf(log_err, "[syserr in %s:%d] " msg ": %s\n", __FILE__, __LINE__, ##__VA_ARGS__,      \
                                                          strerror(errno));                        \
+      fflush(log_err);                                                                            \
       if (!privacy) {                                                                             \
         add_log(SYSERROR_LOG, msg, ##__VA_ARGS__);                                                \
       }                                                                                           \
@@ -91,8 +96,9 @@ extern FILE *log_err;
 #define wsyserr2(assertion, action, msg, ...)                                                     \
   do {                                                                                            \
     if (assertion) {                                                                              \
-      fprintf(log_err, "[syserr in %s:%d] " msg ": %s\n", __FILE__, __LINE__, ##__VA_ARGS__,       \
+      fprintf(log_err, "[syserr in %s:%d] " msg ": %s\n", __FILE__, __LINE__, ##__VA_ARGS__,      \
                                                          strerror(errno));                        \
+      fflush(log_err);                                                                            \
       if (!privacy) {                                                                             \
         add_log(SYSERROR_LOG, msg, ##__VA_ARGS__);                                                \
       }                                                                                           \
