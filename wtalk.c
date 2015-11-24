@@ -131,10 +131,12 @@ static void wifi_raspberrypi();
 
 int main(int argc, char *argv[]) {
   /* Get stdout and stderr */
-  log_out = fopen(LOCAL_STDOUT_PATH, "a");
-  if (log_out == NULL) { log_out = stdout; }
-  log_err = fopen(LOCAL_STDERR_PATH, "a");
-  if (log_err == NULL) { log_err = stderr; }
+  log_out = stdout;
+  log_err = stderr;
+  // log_out = fopen(LOCAL_STDOUT_PATH, "a");
+  // if (log_out == NULL) { log_out = stdout; }
+  // log_err = fopen(LOCAL_STDERR_PATH, "a");
+  // if (log_err == NULL) { log_err = stderr; }
 
   /* Get libwyliodrin version */
   char *libwyliodrin_version = getenv("libwyliodrin_version");

@@ -64,7 +64,9 @@ function run(done) {
       restoreWyliodrinJson();
       exec('/etc/init.d/openfire start',
         function (error, stdout, stderr) {});
-      done();
+      setTimeout(function() {
+        done();
+      }, 3000);
     });
   }, 2000);
 };

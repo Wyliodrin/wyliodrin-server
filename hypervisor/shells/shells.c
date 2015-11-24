@@ -225,6 +225,7 @@ void init_shells() {
 
 void shells(hashmap_p hm) {
   char *action = (char *)hashmap_get(hm, "action");
+  werr2(action == NULL, return, "There is no action in shells open stanza");
 
   if (strncasecmp(action, "open", 4) == 0) {
     shells_open(hm);
@@ -267,7 +268,7 @@ void start_dead_projects() {
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
 
 static void shells_open(hashmap_p hm) {
-
+  /* Sanity checks */
   char *request_attr = (char *)hashmap_get(hm, "request");
   werr2(request_attr == NULL, goto _error,
         "Received shells open without request");
@@ -284,9 +285,10 @@ static void shells_open(hashmap_p hm) {
   char *userid_attr    = (char *)hashmap_get(hm, "userid");
 
   if (projectid_attr == NULL) {
+    winfo("Open shell request");
     open_shell_or_project(SHELL, request_attr, width_attr, height_attr, NULL, NULL);
   } else {
-    winfo("Open projectid %s %s", projectid_attr, userid_attr);
+    winfo("Open project request");
     open_shell_or_project(PROJECT, request_attr, width_attr, height_attr,
           projectid_attr, userid_attr);
   }
@@ -395,9 +397,8 @@ static void send_shells_open_response(char *request_attr, bool success, int shel
 static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
                                   char *width_attr, char *height_attr,
                                   char *projectid_attr, char *userid_attr) {
-  werr2(shell_type != SHELL && shell_type != PROJECT, goto _error, "Unrecognized shell type");
-
   /* Sanity checks */
+  werr2(shell_type != SHELL && shell_type != PROJECT, goto _error, "Unrecognized shell type");
   werr2(width_attr     == NULL, return, "Trying to open shell with NULL width");
   werr2(height_attr    == NULL, return, "Trying to open shell with NULL height");
   if (shell_type == PROJECT) {
@@ -525,16 +526,12 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
     send_shells_open_response(request_attr, true, shell_index, false);
   }
 
-  if (shell_type == PROJECT) {
-    winfo("Project %s is now running in shell %d", projectid_attr, shell_index);
-  } else {
-    winfo("Opening shell %d", shell_index);
-  }
+  winfo("Open %s success", shell_type == SHELL ? "shell" : "project");
 
   return;
 
   _error:
-    werr("Failed to open new shell");
+    werr("Failed to open new %s", shell_type == SHELL ? "shell" : "project");
     if (request_attr != NULL) {
       /* Not starting a dead project */
       send_shells_open_response(request_attr, false, 0, false);
