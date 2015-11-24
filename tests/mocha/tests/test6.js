@@ -16,7 +16,7 @@ function replaceWyliodrinJson() {
                wyliodrinJsonPath + '/wyliodrin.jsonBCK',
     function(error, stdout, stderr) {});
 
-  exec('cp res/wrong_wyliodrin.json ' +
+  exec('cp res/invalid_jid_wyliodrin.json ' +
            wyliodrinJsonPath + '/wyliodrin.json',
     function (error, stdout, stderr) {});
 }
@@ -51,10 +51,7 @@ function run(done) {
     fs.readFile(localLogsPath + '/logs.err', 'utf-8', function(err, data) {
       if (err) throw err;
 
-      var lines = data.trim().split('\n');
-      var lastLine = lines[lines.length - 1];
-
-      if (lastLine.indexOf('Could not load JSON from ' + wyliodrinJsonPath + "/wyliodrin.json") != -1) {
+      if (data.indexOf('XMPP connection error') != -1) {
         module.exports.is_test_passed = true;
       }
 
@@ -62,11 +59,11 @@ function run(done) {
       restoreWyliodrinJson();
       done();
     });
-  }, 1000);
+  }, 2000);
 };
 
 module.exports = {
   run: run,
-  desc: 'Test error log on invalid wyliodrin.json',
+  desc: 'Test error log on xmpp connection error',
   is_test_passed: is_test_passed
 };

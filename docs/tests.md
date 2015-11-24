@@ -1,8 +1,8 @@
 * Teste conectare
   * [1] test conectare
   * [1] versiuni dupa conectare (wtalk primeste versiunea din variabila de mediu)
-  * [0] test fisier json gresit -> vad un error log (daca json-ul e gresit nu vad jid)
-  * [0] test conectare esuata
+  * [1] test fisier json gresit -> vad un error log (daca json-ul e gresit nu vad jid)
+  * [1] test conectare esuata
   * [0] test incercare reconectare
   * [0] test deconectare server xmpp
   * [1] test deconectare / reconectare xmpp
