@@ -9,7 +9,7 @@ var test4 = require('./tests/test4');
 var test5 = require('./tests/test5');
 var test6 = require('./tests/test6');
 var test7 = require('./tests/test7');
-
+var test8 = require('./tests/test8');
 
 /* Connection tests */
 describe('All tests', function() {
@@ -59,6 +59,13 @@ describe('All tests', function() {
     before(test7.run);
     it(test7.desc, function() {
       assert.equal(test7.is_test_passed, true);
+    });
+  });
+
+  describe('Test8', function() {
+    before(test8.run);
+    it(test8.desc, function() {
+      assert.equal(test8.is_test_passed, true);
     });
   });
 });
