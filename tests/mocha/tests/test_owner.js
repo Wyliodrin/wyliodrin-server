@@ -36,7 +36,7 @@ function run() {
 
   /* Credentials */
   var board    = 'board@localhost';
-  var owner    = 'owner@x550jk';
+  var owner    = 'owner@localhost';
   var password = "wyliodrin";
 
   var client = new Client({
