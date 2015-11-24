@@ -10,7 +10,6 @@ var wyliodrinJsonPath = '/etc/wyliodrin';
 var logsPath = '/gadgets/logs/board@localhost';
 
 var is_test_passed;
-var gdone;
 
 var options = {
   key: fs.readFileSync('res/key.pem'),
@@ -48,11 +47,12 @@ function run(done) {
   startWyliodrind();
 
   setTimeout(function() {
-    https.createServer(options, function (req, res) {
+    var server = https.createServer(options, function (req, res) {
       if (req.method == 'POST' && req.url == logsPath) {
         module.exports.is_test_passed = true;
         restoreWyliodrinJson();
         killWyliodrind();
+        server.close();
         done();
       }
 
