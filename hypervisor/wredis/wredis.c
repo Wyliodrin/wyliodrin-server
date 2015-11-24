@@ -149,7 +149,8 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
   redisReply *r = reply;
 
   if (reply == NULL) {
-    wlog("onMessage NULL reply");
+    wlog("Redis conntetion error. Retrying to connect");
+    init_redis();
     return;
   }
 
@@ -161,8 +162,6 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
 
     /* Manage message */
     if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
-      winfo("message: %s", r->element[2]->str);
-
       hashmap_p hm = create_hashmap();
 
       cmp_ctx_t cmp;
