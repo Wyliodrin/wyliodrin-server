@@ -78,6 +78,12 @@ void init_redis() {
 
 
 void publish(const char *str, int data_len) {
+  if (c == NULL || c->err != 0) {
+    werr("Cannot publish because redis is not connected: %s",
+      c->err != 0 ? c->errstr : "context is NULL");
+    return;
+  }
+
   pthread_mutex_lock(&publish_lock);
   redisReply *reply = redisCommand(c, "PUBLISH %s %b", REDIS_PUB_CHANNEL, str, data_len);
   werr2(reply == NULL, /* Do nothing */, "Redis publish error: %s", c->errstr);
