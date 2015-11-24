@@ -213,6 +213,14 @@ int main(int argc, char *argv[]) {
   xmpp_connect(jid, password);
 
   _finish: ;
+    if (log_out != stdout) {
+      fclose(log_out);
+    }
+
+    if (log_err != stderr) {
+      fclose(log_err);
+    }
+
     /* Let it sleep for a while for error messages to be sent */
     sleep(3);
 
