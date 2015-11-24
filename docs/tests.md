@@ -4,7 +4,7 @@
   * [1] test fisier json gresit -> vad un error log (daca json-ul e gresit nu vad jid)
   * [1] test conectare esuata
   * [1] test incercare reconectare
-  * [0] test deconectare server xmpp
+  * [1] test deconectare server xmpp
   * [1] test deconectare / reconectare xmpp
 
 * Test FUSE
