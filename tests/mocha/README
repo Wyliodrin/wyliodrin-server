@@ -1,4 +1,4 @@
-* openfire xmpp server at x500jk
-* owner and board users created
+* openfire xmpp server at x500jk: 127.0.0.1:9090
+* owner and board users created (password = wyliodrin)
 * export libwyliodrin_version
-* run test command: sudo -E mocha test.js
+* run tests command: sudo -E mocha test.js
