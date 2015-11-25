@@ -64,6 +64,6 @@ function run(done) {
 
 module.exports = {
   run: run,
-  desc: 'Test error log on xmpp connection error',
+  desc: 'Test retry to connect on xmpp connection error',
   is_test_passed: is_test_passed
 };
