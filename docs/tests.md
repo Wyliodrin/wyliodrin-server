@@ -15,7 +15,7 @@
   * [0] build no fuse
 
 * Test shell
-  * [0] open / close
+  * [1] open / close
   * [0] disconnect / reconnect XMPP server
   * [0] se verifica cu fisiere (ls / mkdir / etc)
   * [0] se verifica daca proiectul functioneaza (prin contorizarea testelor)

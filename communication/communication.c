@@ -16,6 +16,7 @@
 #include <jansson.h>
 #include <unistd.h>
 #include <curl/curl.h>
+#include <time.h>
 
 #include <hiredis/hiredis.h>
 #include <hiredis/async.h>
@@ -39,6 +40,8 @@ extern const char *jid;
 extern const char *owner;
 
 static bool is_connetion_in_progress = false;
+
+clock_t time_of_last_hypervior_msg = 0;
 
 #ifdef USEMSGPACK
   #include <stdbool.h>
@@ -494,10 +497,20 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
   if (r->type == REDIS_REPLY_ARRAY) {
     if (r->elements == 3 && strncmp(r->element[0]->str, "subscribe", 9) == 0) {
       winfo("Successfully subscribed to %s", r->element[1]->str);
+      publish(HYPERVISOR_PUB_CHANNEL, "ping", 4);
     }
 
     /* Manage message */
     else if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
+      time_of_last_hypervior_msg = clock();
+
+      /* Manage pong */
+      if (r->element[2]->len == 4 && strcmp(r->element[2]->str, "pong") == 0) {
+        winfo("Hypervisor is up and running");
+        return;
+      }
+
+
       cmp_ctx_t cmp;
       cmp_init(&cmp, r->element[2]->str, r->element[2]->len);
 

@@ -168,6 +168,12 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
 
     /* Manage message */
     if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
+      /* Manage ping */
+      if (r->element[2]->len == 4 && strcmp(r->element[2]->str, "ping") == 0) {
+        publish("pong", 4);
+        return;
+      }
+
       hashmap_p hm = create_hashmap();
 
       cmp_ctx_t cmp;

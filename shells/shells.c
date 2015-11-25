@@ -12,6 +12,7 @@
 /*** INCLUDES ************************************************************************************/
 
 #include <stdlib.h> /* memory handling */
+#include <time.h>   /* hypervisor time */
 
 #include "../winternals/winternals.h"       /* logs and errs */
 #include "../wxmpp/wxmpp.h"                 /* xmpp handling */
@@ -33,9 +34,18 @@ int xmpp_stanza_get_attributes(xmpp_stanza_t *const stanza, const char **attr, i
 
 
 
+/*** STATIC VARIABLES ****************************************************************************/
+
+static clock_t time_of_last_command = 0;
+
+/*************************************************************************************************/
+
+
+
 /*** EXTERN VARIABLES ****************************************************************************/
 
 extern const char *owner;
+extern clock_t time_of_last_hypervior_msg;
 
 /*************************************************************************************************/
 
@@ -46,6 +56,18 @@ extern const char *owner;
 
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
             xmpp_conn_t *const conn, void *const userdata) {
+  werr2(time_of_last_hypervior_msg == 0, return, "hypervisor is not running");
+
+  if (time_of_last_command != 0) {
+    /* Not the first shells command */
+    if (time_of_last_hypervior_msg - time_of_last_command < 0) {
+      werr("Hypervisor is dead");
+      return;
+    }
+  }
+
+  time_of_last_command = clock();
+
   werr2(strncasecmp(owner, from, strlen(owner)) != 0, return,
         "Ignore shells stanza received from %s", from);
 
