@@ -640,8 +640,56 @@ static void shells_keys(hashmap_p hm) {
         "Received shells keys with no shellid attribute");
 
   char *data_str = (char *)hashmap_get(hm, "t");
-  if (data_str == NULL) {
+  if (data_str[0] == 0) {
     /* Ignore stanza with no data */
+    cmp_ctx_t cmp;
+    char msgpack_buf[64];
+    cmp_init(&cmp, msgpack_buf, 64);
+
+    /* Init msgpack map */
+    uint32_t map_size = 1 + /* action  */
+                        1 + /* request */
+                        1 + /* shellid */
+                        1;  /* text    */
+    werr2(!cmp_write_map(&cmp, 2 * map_size),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+    /* Write action */
+    werr2(!cmp_write_str(&cmp, "action", 6),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+    werr2(!cmp_write_str(&cmp, "keys", 4),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+    /* Write request */
+    werr2(!cmp_write_str(&cmp, "request", 7),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+    werr2(!cmp_write_str(&cmp, request_attr, strlen(request_attr)),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+    /* Write shellid */
+    werr2(!cmp_write_str(&cmp, "shellid", 7),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+    werr2(!cmp_write_str(&cmp, shellid_attr, strlen(shellid_attr)),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+    /* Write text */
+    werr2(!cmp_write_str(&cmp, "t", 1),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+    werr2(!cmp_write_str(&cmp, "", 0),
+          return,
+          "cmp_write_map error: %s", cmp_strerror(&cmp));
+
+    /* Send msgpack map via redis */
+    publish(msgpack_buf, cmp.writer_offset);
+
     return;
   }
 
