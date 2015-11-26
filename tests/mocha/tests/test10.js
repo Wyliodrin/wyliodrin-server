@@ -3,12 +3,22 @@
 var assert = require('assert');
 var exec = require('child_process').exec;
 var spawn = require('child_process').spawn;
+var https = require('https');
+var fs = require('fs');
 
 var wyliodrinJsonPath = '/etc/wyliodrin';
+var logsPath = '/gadgets/logs/board@localhost';
 
 var is_test_passed;
+var listen_for_error_logs = false;
+
 var hypervisor_proc;
 var wyliodrin_proc;
+
+var options = {
+  key: fs.readFileSync('res/key.pem'),
+  cert: fs.readFileSync('res/cert.pem')
+};
 
 function replaceWyliodrinJson() {
   exec('mv ' + wyliodrinJsonPath + '/wyliodrin.json ' +
@@ -85,6 +95,8 @@ function run(done) {
     if (stanza.is('message') && (stanza.attrs.from.indexOf(board) !== -1) &&
         (stanza.children.length == 1) && (stanza.children[0].name === 'version')) {
 
+      killWyliodrinHypervisor();
+
       var shells_stz = new Client.Element('shells', {
         request: "0",
         width: "80",
@@ -95,32 +107,70 @@ function run(done) {
       var msg_stz = new Client.Element('message', {to : board}).cnode(shells_stz);
 
       client.send(msg_stz);
-    }
 
-    if (stanza.is('message') && (stanza.attrs.from.indexOf(board) !== -1) &&
-        (stanza.children.length == 1) && (stanza.children[0].name === 'shells')) {
-      if (stanza.children[0].attrs.response === 'done') {
-        module.exports.is_test_passed = true;
-      } else {
-        module.exports.is_test_passed = false;
-      }
+      setTimeout(function() {
+        var shells_stz = new Client.Element('shells', {
+          request: "1",
+          width: "80",
+          height: "10",
+          action: "open"
+        });
+        shells_stz.attrs.xmlns = "wyliodrin";
+        var msg_stz = new Client.Element('message', {to : board}).cnode(shells_stz);
 
-      /* Clean */
-      killWyliodrind();
-      killWyliodrinHypervisor();
-      restoreWyliodrinJson();
-      client.end();
-      done();
+        client.send(msg_stz);
+        listen_for_error_logs = true;
+
+        setTimeout(function() {
+          var shells_stz = new Client.Element('shells', {
+            request: "2",
+            width: "80",
+            height: "10",
+            action: "open"
+          });
+          shells_stz.attrs.xmlns = "wyliodrin";
+          var msg_stz = new Client.Element('message', {to : board}).cnode(shells_stz);
+
+          client.send(msg_stz);
+          listen_for_error_logs = true;
+        }, 1000);
+
+      }, 5000);
     }
-  })
+  });
 
   replaceWyliodrinJson();
-  startWyliodrind();
   startWyliodrinHypervisor();
+  setTimeout(function() {
+    startWyliodrind();
+    var server = https.createServer(options, function (req, res) {
+      if (listen_for_error_logs == true && req.method == 'POST' && req.url == logsPath) {
+        var body = "";
+        req.on('data', function (chunk) {
+          body += chunk;
+        });
+        req.on('end', function () {
+          if (body.indexOf("Hypervisor is dead") != -1) {
+            module.exports.is_test_passed = true;
+          } else {
+            module.exports.is_test_passed = false;
+          }
+          restoreWyliodrinJson();
+          killWyliodrind();
+          client.end();
+          server.close();
+          done();
+        });
+      }
+
+      res.writeHead(200);
+      res.end();
+    }).listen(443);
+  }, 2000);
 };
 
 module.exports = {
   run: run,
-  desc: 'Shell open test',
+  desc: 'Shell error mesage when hypervisor is dead',
   is_test_passed: is_test_passed
 };

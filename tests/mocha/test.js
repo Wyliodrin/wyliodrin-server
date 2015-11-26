@@ -2,15 +2,16 @@
 
 var assert = require('assert');
 
-var test1 = require('./tests/test1');
-var test2 = require('./tests/test2');
-var test3 = require('./tests/test3');
-var test4 = require('./tests/test4');
-var test5 = require('./tests/test5');
-var test6 = require('./tests/test6');
-var test7 = require('./tests/test7');
-var test8 = require('./tests/test8');
-var test9 = require('./tests/test9');
+var test1  = require('./tests/test1');
+var test2  = require('./tests/test2');
+var test3  = require('./tests/test3');
+var test4  = require('./tests/test4');
+var test5  = require('./tests/test5');
+var test6  = require('./tests/test6');
+var test7  = require('./tests/test7');
+var test8  = require('./tests/test8');
+var test9  = require('./tests/test9');
+var test10 = require('./tests/test10');
 
 /* Connection tests */
 describe('All tests', function() {
@@ -74,6 +75,13 @@ describe('All tests', function() {
     before(test9.run);
     it(test9.desc, function() {
       assert.equal(test9.is_test_passed, true);
+    });
+  });
+
+  describe('Test10', function() {
+    before(test10.run);
+    it(test10.desc, function() {
+      assert.equal(test10.is_test_passed, true);
     });
   });
 });

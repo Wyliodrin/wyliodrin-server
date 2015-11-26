@@ -2,10 +2,12 @@
 
 var assert = require('assert');
 var exec = require('child_process').exec;
+var spawn = require('child_process').spawn;
 
 var wyliodrinJsonPath = '/etc/wyliodrin';
 
 var is_test_passed;
+var wyliodrin_proc;
 
 var gdone;
 
@@ -61,13 +63,11 @@ function restoreWyliodrinJson() {
 }
 
 function startWyliodrind() {
-  exec('wyliodrind',
-    function (error, stdout, stderr) {});
+  wyliodrin_proc = spawn('wyliodrind', {detached: true});
 }
 
 function killWyliodrind() {
-  exec('kill -9 $(pgrep wyliodrind)',
-    function (error, stdout, stderr) {});
+  process.kill(-wyliodrin_proc.pid);
 }
 
 function run(done) {
