@@ -711,7 +711,7 @@ static void shells_status(hashmap_p hm) {
   werr2(!cmp_write_str(&cmp, "action", 6),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
-  werr2(!cmp_write_str(&cmp, "status", 5),
+  werr2(!cmp_write_str(&cmp, "status", 6),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
