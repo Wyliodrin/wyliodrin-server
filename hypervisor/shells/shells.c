@@ -342,15 +342,15 @@ static void send_shells_open_response(char *request_attr, bool success, int shel
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Action */
-  werr2(!cmp_write_str(&cmp, "action", 6),
+  werr2(!cmp_write_str(&cmp, "a", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
-  werr2(!cmp_write_str(&cmp, "open", 4),
+  werr2(!cmp_write_str(&cmp, "o", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Request */
-  werr2(!cmp_write_str(&cmp, "request", 7),
+  werr2(!cmp_write_str(&cmp, "r", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
   werr2(!cmp_write_str(&cmp, request_attr, strlen(request_attr)),
@@ -358,7 +358,7 @@ static void send_shells_open_response(char *request_attr, bool success, int shel
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Response */
-  werr2(!cmp_write_str(&cmp, "response", 8),
+  werr2(!cmp_write_str(&cmp, "re", 2),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
   if (success) {
@@ -370,7 +370,7 @@ static void send_shells_open_response(char *request_attr, bool success, int shel
     char shellid_str[8];
     snprintf(shellid_str, 8, "%d", shell_id);
 
-    werr2(!cmp_write_str(&cmp, "shellid", 7),
+    werr2(!cmp_write_str(&cmp, "s", 1),
           return,
           "cmp_write_map error: %s", cmp_strerror(&cmp));
     werr2(!cmp_write_str(&cmp, shellid_str, strlen(shellid_str)),
@@ -378,7 +378,7 @@ static void send_shells_open_response(char *request_attr, bool success, int shel
           "cmp_write_map error: %s", cmp_strerror(&cmp));
 
     /* Running */
-    werr2(!cmp_write_str(&cmp, "running", 7),
+    werr2(!cmp_write_str(&cmp, "ru", 2),
           return,
           "cmp_write_map error: %s", cmp_strerror(&cmp));
     werr2(!cmp_write_str(&cmp, running ? "true" : "false", strlen(running ? "true" : "false")),
@@ -593,15 +593,15 @@ static void send_shells_close_response(char *request_attr, char *shellid_attr, c
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Write action */
-  werr2(!cmp_write_str(&cmp, "action", 6),
+  werr2(!cmp_write_str(&cmp, "a", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
-  werr2(!cmp_write_str(&cmp, "close", 5),
+  werr2(!cmp_write_str(&cmp, "c", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Write request */
-  werr2(!cmp_write_str(&cmp, "request", 7),
+  werr2(!cmp_write_str(&cmp, "r", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
   werr2(!cmp_write_str(&cmp, request_attr, strlen(request_attr)),
@@ -610,7 +610,7 @@ static void send_shells_close_response(char *request_attr, char *shellid_attr, c
 
 
   /* Write shellid */
-  werr2(!cmp_write_str(&cmp, "shellid", 7),
+  werr2(!cmp_write_str(&cmp, "s", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
   werr2(!cmp_write_str(&cmp, shellid_attr, strlen(shellid_attr)),
@@ -618,7 +618,7 @@ static void send_shells_close_response(char *request_attr, char *shellid_attr, c
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Write code */
-  werr2(!cmp_write_str(&cmp, "code", 4),
+  werr2(!cmp_write_str(&cmp, "c", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
   werr2(!cmp_write_str(&cmp, code != NULL ? code : "-1", strlen(code != NULL ? code : "-1")),
@@ -656,10 +656,10 @@ static void shells_keys(hashmap_p hm) {
           "cmp_write_map error: %s", cmp_strerror(&cmp));
 
     /* Write action */
-    werr2(!cmp_write_str(&cmp, "action", 6),
+    werr2(!cmp_write_str(&cmp, "a", 1),
           return,
           "cmp_write_map error: %s", cmp_strerror(&cmp));
-    werr2(!cmp_write_str(&cmp, "keys", 4),
+    werr2(!cmp_write_str(&cmp, "k", 1),
           return,
           "cmp_write_map error: %s", cmp_strerror(&cmp));
 
@@ -672,7 +672,7 @@ static void shells_keys(hashmap_p hm) {
           "cmp_write_map error: %s", cmp_strerror(&cmp));
 
     /* Write shellid */
-    werr2(!cmp_write_str(&cmp, "shellid", 7),
+    werr2(!cmp_write_str(&cmp, "s", 1),
           return,
           "cmp_write_map error: %s", cmp_strerror(&cmp));
     werr2(!cmp_write_str(&cmp, shellid_attr, strlen(shellid_attr)),
@@ -756,15 +756,15 @@ static void shells_status(hashmap_p hm) {
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Write action */
-  werr2(!cmp_write_str(&cmp, "action", 6),
+  werr2(!cmp_write_str(&cmp, "a", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
-  werr2(!cmp_write_str(&cmp, "status", 6),
+  werr2(!cmp_write_str(&cmp, "s", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Write request */
-  werr2(!cmp_write_str(&cmp, "request", 7),
+  werr2(!cmp_write_str(&cmp, "r", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
   werr2(!cmp_write_str(&cmp, request_attr, strlen(request_attr)),
@@ -773,7 +773,7 @@ static void shells_status(hashmap_p hm) {
 
 
   /* Write projectid */
-  werr2(!cmp_write_str(&cmp, "projectid", 9),
+  werr2(!cmp_write_str(&cmp, "p", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
   werr2(!cmp_write_str(&cmp, projectid_attr, strlen(projectid_attr)),
@@ -781,7 +781,7 @@ static void shells_status(hashmap_p hm) {
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Write running */
-  werr2(!cmp_write_str(&cmp, "running", 7),
+  werr2(!cmp_write_str(&cmp, "ru", 2),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
   werr2(!cmp_write_str(&cmp, is_project_running ? "true" : "false",
@@ -847,10 +847,10 @@ static void send_shells_keys_response(char *data_str, int data_len, int shell_id
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Write action */
-  werr2(!cmp_write_str(&cmp, "action", 6),
+  werr2(!cmp_write_str(&cmp, "a", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
-  werr2(!cmp_write_str(&cmp, "keys", 4),
+  werr2(!cmp_write_str(&cmp, "k", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
@@ -866,7 +866,7 @@ static void send_shells_keys_response(char *data_str, int data_len, int shell_id
   /* Write shellid */
   char shell_id_str[8];
   snprintf(shell_id_str, 8, "%d", shell_id);
-  werr2(!cmp_write_str(&cmp, "shellid", 7),
+  werr2(!cmp_write_str(&cmp, "s", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
   werr2(!cmp_write_str(&cmp, shell_id_str, strlen(shell_id_str)),

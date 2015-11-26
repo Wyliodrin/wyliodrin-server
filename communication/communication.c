@@ -41,6 +41,9 @@ extern const char *owner;
 
 static bool is_connetion_in_progress = false;
 
+static hashmap_p hm;
+static hashmap_p action_hm;
+
 time_t time_of_last_hypervior_msg = 0;
 
 #ifdef USEMSGPACK
@@ -510,7 +513,6 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
         return;
       }
 
-
       cmp_ctx_t cmp;
       cmp_init(&cmp, r->element[2]->str, r->element[2]->len);
 
@@ -544,9 +546,20 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
           xmpp_stanza_set_text(data_stz, value);
           xmpp_stanza_add_child(shells_stz, data_stz);
         } else {
-          xmpp_stanza_set_attribute(shells_stz, key, value);
-        }
+          char *key_replacement = (char *)hashmap_get(hm, key);
+          werr2(key_replacement == NULL, return, "No entry named %s in attribute hashmap", key);
 
+          char *value_replacement;
+          if (strncmp(key, "a", strlen("a")) == 0) {
+            value_replacement = (char *)hashmap_get(action_hm, value);
+            werr2(value_replacement == NULL, return, "No entry named %s in attribute action hashmap",
+                  value);
+          } else {
+            value_replacement = value;
+          }
+
+          xmpp_stanza_set_attribute(shells_stz, key_replacement, value_replacement);
+        }
 
         free(key);
         free(value);
@@ -692,6 +705,28 @@ void *init_communication_routine(void *args) {
 }
 
 void init_communication() {
+  hm = create_hashmap();
+
+  hashmap_put(hm, "w",  "width",     strlen("width")     + 1);
+  hashmap_put(hm, "h",  "height",    strlen("height")    + 1);
+  hashmap_put(hm, "r",  "request",   strlen("request")   + 1);
+  hashmap_put(hm, "a",  "action",    strlen("action")    + 1);
+  hashmap_put(hm, "p",  "projectid", strlen("projectid") + 1);
+  hashmap_put(hm, "s",  "shellid",   strlen("shellid")   + 1);
+  hashmap_put(hm, "u",  "userid",    strlen("userid")    + 1);
+  hashmap_put(hm, "c",  "code",      strlen("code")      + 1);
+  hashmap_put(hm, "ru", "running",   strlen("running")   + 1);
+  hashmap_put(hm, "re", "response",  strlen("response")  + 1);
+
+  action_hm = create_hashmap();
+
+  hashmap_put(action_hm, "o", "open",       strlen("open")       + 1);
+  hashmap_put(action_hm, "c", "close",      strlen("close")      + 1);
+  hashmap_put(action_hm, "k", "keys",       strlen("keys")       + 1);
+  hashmap_put(action_hm, "s", "status",     strlen("status")     + 1);
+  hashmap_put(action_hm, "p", "poweroff",   strlen("poweroff")   + 1);
+  hashmap_put(action_hm, "d", "disconnect", strlen("disconnect") + 1);
+
   pthread_t t; /* Read thread */
   int rc_int;
 
