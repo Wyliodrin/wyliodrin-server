@@ -41,7 +41,7 @@ extern const char *owner;
 
 static bool is_connetion_in_progress = false;
 
-clock_t time_of_last_hypervior_msg = 0;
+time_t time_of_last_hypervior_msg = 0;
 
 #ifdef USEMSGPACK
   #include <stdbool.h>
@@ -502,7 +502,7 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
 
     /* Manage message */
     else if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
-      time_of_last_hypervior_msg = clock();
+      time_of_last_hypervior_msg = time(NULL);
 
       /* Manage pong */
       if (r->element[2]->len == 4 && strcmp(r->element[2]->str, "pong") == 0) {
