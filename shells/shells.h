@@ -23,6 +23,11 @@
 /*** API *****************************************************************************************/
 
 /**
+ * Shell initialization
+ */
+void init_shells();
+
+/**
  * Parse shells commands
  */
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,

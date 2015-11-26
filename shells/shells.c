@@ -14,6 +14,8 @@
 #include <stdlib.h> /* memory handling */
 #include <time.h>   /* hypervisor time */
 
+#include "../libds/ds.h" /* hashmap */
+
 #include "../winternals/winternals.h"       /* logs and errs */
 #include "../wxmpp/wxmpp.h"                 /* xmpp handling */
 #include "../cmp/cmp.h"                     /* msgpack       */
@@ -37,6 +39,8 @@ int xmpp_stanza_get_attributes(xmpp_stanza_t *const stanza, const char **attr, i
 /*** STATIC VARIABLES ****************************************************************************/
 
 static time_t time_of_last_command = 0;
+static hashmap_p hm;
+static hashmap_p action_hm;
 
 /*************************************************************************************************/
 
@@ -53,6 +57,28 @@ extern time_t time_of_last_hypervior_msg;
 
 
 /*** API IMPLEMENTATION **************************************************************************/
+
+void init_shells() {
+  hm = create_hashmap();
+
+  hashmap_put(hm, "width",     "w", strlen("w") + 1);
+  hashmap_put(hm, "height",    "h", strlen("h") + 1);
+  hashmap_put(hm, "request",   "r", strlen("r") + 1);
+  hashmap_put(hm, "action",    "a", strlen("a") + 1);
+  hashmap_put(hm, "projectid", "p", strlen("p") + 1);
+  hashmap_put(hm, "shellid",   "s", strlen("s") + 1);
+  hashmap_put(hm, "userid",    "u", strlen("u") + 1);
+
+  action_hm = create_hashmap();
+
+  hashmap_put(action_hm, "open",       "o", strlen("o") + 1);
+  hashmap_put(action_hm, "close",      "c", strlen("c") + 1);
+  hashmap_put(action_hm, "keys",       "k", strlen("k") + 1);
+  hashmap_put(action_hm, "status",     "s", strlen("s") + 1);
+  hashmap_put(action_hm, "poweroff",   "p", strlen("p") + 1);
+  hashmap_put(action_hm, "disconnect", "d", strlen("d") + 1);
+}
+
 
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
             xmpp_conn_t *const conn, void *const userdata) {
@@ -90,14 +116,15 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   int num_attrs = xmpp_stanza_get_attribute_count(stanza);
   char **attrs = malloc(2 * num_attrs * sizeof(char *));
   werr2(attrs == NULL, return, "Could not allocate memory for attrs");
+
   xmpp_stanza_get_attributes(stanza, (const char **)attrs, 2 * num_attrs);
 
   /* Get text from stanza */
   char *text = xmpp_stanza_get_text(stanza);
 
   /* Write map */
-  werr2(!cmp_write_map(&cmp, 2 +             /* text */
-                             2 * num_attrs), /* attributes */
+  werr2(!cmp_write_map(&cmp, 2 +                  /* text */
+                             2 * num_attrs - 4 ), /* attributes without gadgetid and xmlns */
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
@@ -111,10 +138,32 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 
   /* Write attributes */
   int i;
-  for (i = 0; i < 2 * num_attrs; i++) {
-    werr2(!cmp_write_str(&cmp, attrs[i], strlen(attrs[i])),
+  for (i = 0; i < 2 * num_attrs; i += 2) {
+    if ((strncmp(attrs[i], "gadgetid", strlen("gadgetid")) == 0) ||
+        (strncmp(attrs[i], "xmlns",    strlen("xmlns"))    == 0)) {
+      continue;
+    }
+
+    char *replacement = (char *)hashmap_get(hm, attrs[i]);
+    werr2(replacement == NULL, return, "No entry named %s in attribute hashmap", attrs[i]);
+
+    werr2(!cmp_write_str(&cmp, replacement, strlen(replacement)),
           return,
           "cmp_write_str error: %s", cmp_strerror(&cmp));
+
+    if (strncmp(attrs[i], "action", strlen("action")) == 0) {
+      char *action_replacement = (char *)hashmap_get(action_hm, attrs[i+1]);
+      werr2(action_replacement == NULL, return, "No entry named %s in attribute action hashmap",
+            attrs[i+1]);
+
+      werr2(!cmp_write_str(&cmp, action_replacement, strlen(action_replacement)),
+          return,
+          "cmp_write_str error: %s", cmp_strerror(&cmp));
+    } else {
+      werr2(!cmp_write_str(&cmp, attrs[i+1], strlen(attrs[i+1])),
+            return,
+            "cmp_write_str error: %s", cmp_strerror(&cmp));
+    }
   }
 
   /* Send msgpack buffer to hypervisor via redis */

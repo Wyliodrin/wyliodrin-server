@@ -224,20 +224,20 @@ void init_shells() {
 
 
 void shells(hashmap_p hm) {
-  char *action = (char *)hashmap_get(hm, "action");
+  char *action = (char *)hashmap_get(hm, "a");
   werr2(action == NULL, return, "There is no action in shells open stanza");
 
-  if (strncasecmp(action, "open", 4) == 0) {
+  if (strncasecmp(action, "o", 1) == 0) {
     shells_open(hm);
-  } else if (strncasecmp(action, "close", 5) == 0) {
+  } else if (strncasecmp(action, "c", 1) == 0) {
     shells_close(hm);
-  } else if (strncasecmp(action, "keys", 4) == 0) {
+  } else if (strncasecmp(action, "k", 1) == 0) {
     shells_keys(hm);
-  } else if (strncasecmp(action, "status", 6) == 0) {
+  } else if (strncasecmp(action, "s", 1) == 0) {
     shells_status(hm);
-  } else if (strncasecmp(action, "poweroff", 8) == 0) {
+  } else if (strncasecmp(action, "p", 1) == 0) {
     shells_poweroff();
-  } else if (strncasecmp(action, "disconnect", 10) == 0) {
+  } else if (strncasecmp(action, "d", 1) == 0) {
     shells_disconnect(hm);
   } else {
     werr("Received shells stanza with unknown action attribute %s", action);
@@ -269,20 +269,20 @@ void start_dead_projects() {
 
 static void shells_open(hashmap_p hm) {
   /* Sanity checks */
-  char *request_attr = (char *)hashmap_get(hm, "request");
+  char *request_attr = (char *)hashmap_get(hm, "r");
   werr2(request_attr == NULL, goto _error,
         "Received shells open without request");
 
-  char *width_attr = (char *)hashmap_get(hm, "width");
+  char *width_attr = (char *)hashmap_get(hm, "w");
   werr2(width_attr == NULL, goto _error,
         "Received shells open stanza without width");
 
-  char *height_attr = (char *)hashmap_get(hm, "height");
+  char *height_attr = (char *)hashmap_get(hm, "h");
   werr2(height_attr == NULL, goto _error,
         "Received shells open stanza without height");
 
-  char *projectid_attr = (char *)hashmap_get(hm, "projectid");
-  char *userid_attr    = (char *)hashmap_get(hm, "userid");
+  char *projectid_attr = (char *)hashmap_get(hm, "p");
+  char *userid_attr    = (char *)hashmap_get(hm, "u");
 
   if (projectid_attr == NULL) {
     winfo("Open shell request");
@@ -540,11 +540,11 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
 
 
 static void shells_close(hashmap_p hm) {
-  char *request_attr = (char *)hashmap_get(hm, "request");
+  char *request_attr = (char *)hashmap_get(hm, "r");
   werr2(request_attr == NULL, return,
         "Received shells close stanza without request attribute");
 
-  char *shellid_attr = (char *)hashmap_get(hm, "shellid");
+  char *shellid_attr = (char *)hashmap_get(hm, "s");
   werr2(shellid_attr == NULL, return,
         "Received shells close stanza without shellid attribute");
 
@@ -631,11 +631,11 @@ static void send_shells_close_response(char *request_attr, char *shellid_attr, c
 
 
 static void shells_keys(hashmap_p hm) {
-  char *request_attr = (char *)hashmap_get(hm, "request");
+  char *request_attr = (char *)hashmap_get(hm, "r");
   werr2(request_attr == NULL, return,
         "Received shells keys with no request attribute");
 
-  char *shellid_attr = (char *)hashmap_get(hm, "shellid");
+  char *shellid_attr = (char *)hashmap_get(hm, "s");
   werr2(shellid_attr == NULL, return,
         "Received shells keys with no shellid attribute");
 
@@ -664,7 +664,7 @@ static void shells_keys(hashmap_p hm) {
           "cmp_write_map error: %s", cmp_strerror(&cmp));
 
     /* Write request */
-    werr2(!cmp_write_str(&cmp, "request", 7),
+    werr2(!cmp_write_str(&cmp, "r", 7),
           return,
           "cmp_write_map error: %s", cmp_strerror(&cmp));
     werr2(!cmp_write_str(&cmp, request_attr, strlen(request_attr)),
@@ -719,11 +719,11 @@ static void shells_keys(hashmap_p hm) {
 
 
 static void shells_status(hashmap_p hm) {
-  char *request_attr = (char *)hashmap_get(hm, "request");
+  char *request_attr = (char *)hashmap_get(hm, "r");
   werr2(request_attr == NULL, return,
         "Received shells status with no request attribute");
 
-  char *projectid_attr = (char *)hashmap_get(hm, "projectid");
+  char *projectid_attr = (char *)hashmap_get(hm, "p");
   werr2(projectid_attr == NULL, return,
         "Received shells status with no projectid attribute");
 
@@ -795,11 +795,11 @@ static void shells_status(hashmap_p hm) {
 
 
 static void shells_disconnect(hashmap_p hm) {
-  char *request_attr = (char *)hashmap_get(hm, "request");
+  char *request_attr = (char *)hashmap_get(hm, "r");
   werr2(request_attr == NULL, return,
         "Received shells disconnect stanza without request attribute");
 
-  char *shellid_attr = (char *)hashmap_get(hm, "shellid");
+  char *shellid_attr = (char *)hashmap_get(hm, "s");
   werr2(shellid_attr == NULL, return,
         "Received shells disconnect stanza without shellid attribute");
 
@@ -855,7 +855,7 @@ static void send_shells_keys_response(char *data_str, int data_len, int shell_id
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Write request */
-  werr2(!cmp_write_str(&cmp, "request", 7),
+  werr2(!cmp_write_str(&cmp, "r", 7),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
   werr2(!cmp_write_str(&cmp, shells_vector[shell_id]->request, strlen(shells_vector[shell_id]->request)),
