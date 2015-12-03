@@ -31,7 +31,7 @@
 #include "../../libds/ds.h"           /* hashmap */
 #include "../wredis/wredis.h"         /* redis */
 #include "../base64/base64.h"         /* encode decode */
-#include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
+// #include "../wtalk.h"                 /* RUNNING_PROJECTS_PATH */
 
 #include "shells.h"                   /* shells module api */
 #include "wyliodrin_hypervisor_config.h"  /* version */
@@ -192,7 +192,7 @@ static char **build_local_env_for_project(int *num_env, char *request_attr, char
 /**
  * Remove project id from running projects file.
  */
-static void remove_project_id_from_running_projects(char *projectid_attr);
+// static void remove_project_id_from_running_projects(char *projectid_attr);
 
 /**
  * Routine for shell or project.
@@ -245,21 +245,21 @@ void shells(hashmap_p hm) {
 }
 
 
-void start_dead_projects() {
-  // FILE *fp = fopen(RUNNING_PROJECTS_PATH, "r");
-  // werr2(fp == NULL, return, "Could no open %s", RUNNING_PROJECTS_PATH);
+// void start_dead_projects() {
+//   // FILE *fp = fopen(RUNNING_PROJECTS_PATH, "r");
+//   // werr2(fp == NULL, return, "Could no open %s", RUNNING_PROJECTS_PATH);
 
-  // char projectid[128];
-  // while (fscanf(fp, "%[^:]:", projectid) != EOF) {
-  //   if (strlen(projectid) > 0) {
-  //     remove_project_id_from_running_projects(projectid);
-  //     winfo("Starting project %s", projectid);
-  //     open_shell_or_project(PROJECT, NULL, DEFAULT_WIDTH, DEFAULT_HEIGHT, projectid, NULL);
-  //   }
-  // }
+//   // char projectid[128];
+//   // while (fscanf(fp, "%[^:]:", projectid) != EOF) {
+//   //   if (strlen(projectid) > 0) {
+//   //     remove_project_id_from_running_projects(projectid);
+//   //     winfo("Starting project %s", projectid);
+//   //     open_shell_or_project(PROJECT, NULL, DEFAULT_WIDTH, DEFAULT_HEIGHT, projectid, NULL);
+//   //   }
+//   // }
 
-  // fclose(fp);
-}
+//   // fclose(fp);
+// }
 
 /*************************************************************************************************/
 
@@ -507,12 +507,12 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
     write(projectid_fd, &shell_index, sizeof(int));
     close(projectid_fd);
 
-    int open_rc = open(RUNNING_PROJECTS_PATH, O_WRONLY | O_APPEND);
-    char projectid_attr_with_colon[64];
-    sprintf(projectid_attr_with_colon, "%s:", projectid_attr);
-    write(open_rc, projectid_attr_with_colon, strlen(projectid_attr_with_colon));
-    fsync(open_rc);
-    close(open_rc);
+    // int open_rc = open(RUNNING_PROJECTS_PATH, O_WRONLY | O_APPEND);
+    // char projectid_attr_with_colon[64];
+    // sprintf(projectid_attr_with_colon, "%s:", projectid_attr);
+    // write(open_rc, projectid_attr_with_colon, strlen(projectid_attr_with_colon));
+    // fsync(open_rc);
+    // close(open_rc);
   }
 
   /* Create new thread for read routine */
@@ -1039,11 +1039,11 @@ static char **build_local_env_for_project(int *num_env, char *request_attr, char
 }
 
 
-static void remove_project_id_from_running_projects(char *projectid_attr) {
-  char cmd[256];
-  snprintf(cmd, 256, "sed -i -e 's/%s://g' %s", projectid_attr, RUNNING_PROJECTS_PATH);
-  system(cmd);
-}
+// static void remove_project_id_from_running_projects(char *projectid_attr) {
+//   char cmd[256];
+//   snprintf(cmd, 256, "sed -i -e 's/%s://g' %s", projectid_attr, RUNNING_PROJECTS_PATH);
+//   system(cmd);
+// }
 
 
 static void *read_routine(void *args) {
@@ -1111,7 +1111,7 @@ static void *read_routine(void *args) {
         free(shell->request);
       }
       if (shell->projectid != NULL) {
-        remove_project_id_from_running_projects(shell->projectid);
+        // remove_project_id_from_running_projects(shell->projectid);
 
         char projectid_path[64];
         snprintf(projectid_path, 64, "/tmp/wyliodrin/%s", shell->projectid);

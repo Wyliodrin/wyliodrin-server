@@ -13,6 +13,7 @@
 
 #include <stdlib.h> /* memory handling */
 #include <time.h>   /* hypervisor time */
+#include <unistd.h> /**/
 
 #include "../libds/ds.h" /* hashmap */
 
@@ -38,7 +39,6 @@ int xmpp_stanza_get_attributes(xmpp_stanza_t *const stanza, const char **attr, i
 
 /*** STATIC VARIABLES ****************************************************************************/
 
-static time_t time_of_last_command = 0;
 static hashmap_p hm;
 static hashmap_p action_hm;
 
@@ -82,17 +82,17 @@ void init_shells() {
 
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
             xmpp_conn_t *const conn, void *const userdata) {
-  werr2(time_of_last_hypervior_msg == 0, return, "hypervisor is not running");
-
-  if (time_of_last_command != 0) {
-    /* Not the first shells command */
-    if (time_of_last_command - time_of_last_hypervior_msg >= 15) {
+  if (time(NULL) - time_of_last_hypervior_msg >= 15) {
+    winfo("Hypervisor possibly dead");
+    publish(HYPERVISOR_PUB_CHANNEL, "ping", 4);
+    sleep(1);
+    if (time(NULL) - time_of_last_hypervior_msg >= 15) {
       werr("Hypervisor is dead");
       return;
+    } else {
+      winfo("Hypervisor is alive");
     }
   }
-
-  time_of_last_command = time(NULL);
 
   werr2(strncasecmp(owner, from, strlen(owner)) != 0, return,
         "Ignore shells stanza received from %s", from);

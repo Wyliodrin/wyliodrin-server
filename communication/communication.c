@@ -509,7 +509,7 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
 
       /* Manage pong */
       if (r->element[2]->len == 4 && strcmp(r->element[2]->str, "pong") == 0) {
-        winfo("Hypervisor is up and running");
+        // winfo("Hypervisor is up and running");
         return;
       }
 

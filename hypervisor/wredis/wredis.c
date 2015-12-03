@@ -47,7 +47,6 @@
 /*** STATIC VARIABLIES ***************************************************************************/
 
 static redisContext *c = NULL;
-static pthread_mutex_t publish_lock;
 
 /*************************************************************************************************/
 
@@ -84,11 +83,9 @@ void publish(const char *str, int data_len) {
     return;
   }
 
-  pthread_mutex_lock(&publish_lock);
   redisReply *reply = redisCommand(c, "PUBLISH %s %b", REDIS_PUB_CHANNEL, str, data_len);
   werr2(reply == NULL, /* Do nothing */, "Redis publish error: %s", c->errstr);
   freeReplyObject(reply);
-  pthread_mutex_unlock(&publish_lock);
 }
 
 /*************************************************************************************************/

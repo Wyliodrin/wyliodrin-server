@@ -62,7 +62,7 @@ void shells(hashmap_p hm);
 /**
  * Start projects that died on board shutdown.
  */
-void start_dead_projects();
+// void start_dead_projects();
 
 /*************************************************************************************************/
 
