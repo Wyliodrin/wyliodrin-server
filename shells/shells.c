@@ -86,7 +86,7 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 
   if (time_of_last_command != 0) {
     /* Not the first shells command */
-    if (time_of_last_command - time_of_last_hypervior_msg >= 5) {
+    if (time_of_last_command - time_of_last_hypervior_msg >= 15) {
       werr("Hypervisor is dead");
       return;
     }
