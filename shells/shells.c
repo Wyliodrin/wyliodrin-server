@@ -50,6 +50,8 @@ static hashmap_p action_hm;
 
 extern const char *owner;
 extern time_t time_of_last_hypervior_msg;
+extern xmpp_ctx_t *global_ctx;
+extern xmpp_conn_t *global_conn;
 
 /*************************************************************************************************/
 
@@ -83,14 +85,11 @@ void init_shells() {
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
             xmpp_conn_t *const conn, void *const userdata) {
   if (time(NULL) - time_of_last_hypervior_msg >= 15) {
-    winfo("Hypervisor possibly dead");
     publish(HYPERVISOR_PUB_CHANNEL, "ping", 4);
     sleep(1);
     if (time(NULL) - time_of_last_hypervior_msg >= 15) {
       werr("Hypervisor is dead");
       return;
-    } else {
-      winfo("Hypervisor is alive");
     }
   }
 
