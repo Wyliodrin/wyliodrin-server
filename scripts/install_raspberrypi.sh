@@ -69,9 +69,8 @@ apt-get update
 apt-get install -y git gcc g++ gcc-4.7 g++-4.7 make pkg-config libexpat1-dev libssl-dev           \
   libhiredis-dev dh-autoreconf libfuse-dev libcurl4-gnutls-dev libevent-dev redis-server          \
   supervisor vim python-dev libi2c-dev python-pip libjansson-dev cmake mc mplayer arduino minicom \
-  picocom bluez-utils bluez-compat bluez-hcidump libusb-dev libbluetooth-dev bluetooth joystick   \
-  python-smbus curl libicu-dev mpg123 firmware-ralink firmware-realtek wireless-tools             \
-  wpasupplicant
+  picocom bluez fuse libusb-dev libbluetooth-dev bluetooth joystick wpasupplicant                 \
+  python-smbus curl libicu-dev mpg123 firmware-ralink firmware-realtek wireless-tools
 apt-get clean
 
 # Use gcc and g++ 4.7
@@ -167,7 +166,7 @@ rm -rf swig-3.0.5
 cd $SANDBOX_PATH
 git clone https://github.com/Wyliodrin/libwyliodrin.git
 cd libwyliodrin
-git checkout $LWVERSION
+# git checkout $LWVERSION
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
@@ -187,7 +186,8 @@ ln -s /usr/lib/node_modules /usr/lib/node
 cd $SANDBOX_PATH
 git clone https://github.com/Wyliodrin/wyliodrin-server.git
 cd wyliodrin-server
-git checkout $WVERSION
+#git checkout $WVERSION
+git checkout hypervisor
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
@@ -223,12 +223,22 @@ mkdir -p /wyliodrin/projects/build
 # Startup script
 printf '
 [supervisord]
-[program:wtalk]
+[program:wyliodrind]
 command=/usr/bin/wyliodrind
 user=pi
 autostart=true
 autorestart=true
+environment=HOME="/wyliodrin",libwyliodrin_version="v1.16"
+priority=20
+
+[supervisord]
+[program:wyliodrin_hypervisor]
+command="/usr/bin/wyliodrin_hypervisor"
+user=pi
+autostart=true
+autorestart=true
 environment=HOME="/wyliodrin"
+priority=10
 ' >> /etc/supervisor/supervisord.conf
 
 # Wifi
