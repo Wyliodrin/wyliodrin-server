@@ -214,7 +214,14 @@ int execvpe(const char *file, char *const argv[], char *const envp[]);
 /*** API IMPLEMENTATION **************************************************************************/
 
 void init_shells() {
-  mkdir("/tmp/wyliodrin", 0700);
+  winfo("Shell initialization");
+
+  winfo("Creating /tmp/wyliodrin");
+  int mkdir_rc = mkdir("/tmp/wyliodrin", 0700);
+  if (mkdir_rc != 0) {
+    winfo("/tmp/wyliodrin exists. Removing its contents.");
+    system("rm -rf /tmp/wyliodrin/*");
+  }
 
   int i;
   for (i = 0; i < MAX_SHELLS; i++) {
@@ -288,7 +295,7 @@ static void shells_open(hashmap_p hm) {
     winfo("Open shell request");
     open_shell_or_project(SHELL, request_attr, width_attr, height_attr, NULL, NULL);
   } else {
-    winfo("Open project request");
+    winfo("Open project %s request", projectid_attr);
     open_shell_or_project(PROJECT, request_attr, width_attr, height_attr,
           projectid_attr, userid_attr);
   }
@@ -526,7 +533,11 @@ static void open_shell_or_project(shell_type_t shell_type, char *request_attr,
     send_shells_open_response(request_attr, true, shell_index, false);
   }
 
-  winfo("Open %s success", shell_type == SHELL ? "shell" : "project");
+  if (shell_type == SHELL) {
+    winfo("Successfully opened shell %d with pid %d", shell_index, pid);
+  } else {
+    winfo("Successfully opened project %s inside shell %d with pid %d", projectid_attr, shell_index, pid);
+  }
 
   return;
 

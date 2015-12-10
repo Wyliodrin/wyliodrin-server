@@ -37,6 +37,9 @@ const char *build_file;
 const char *shell;
 const char *run;
 const char *stop;
+const char *logout_path;
+const char *logerr_path;
+int pong_timeout = DEFAULT_PONG_TIMEOUT;
 static const char *config_file;
 
 /* Values from wyliodrin.json */
@@ -48,6 +51,9 @@ static const char *psk;
 bool privacy = false;
 
 bool is_fuse_available = false;
+
+FILE *log_out;
+FILE *log_err;
 
 /*************************************************************************************************/
 
@@ -82,6 +88,11 @@ static bool load_content_from_config_file(json_t *config_json, const char *confi
 /*** MAIN*****************************************************************************************/
 
 int main() {
+  log_out = stdout;
+  log_err = stderr;
+
+  winfo("Starting hypervisor");
+
   /* Get boartype */
   char *boardtype = get_boardtype();
   werr2(boardtype == NULL, return -1, "Could not get boardtype");
@@ -103,6 +114,12 @@ int main() {
   werr2(strcmp(board, boardtype) != 0, return -1,
     "Content of boardtype does not coincide with board value from settings file");
 
+  /* Set local logs */
+  log_out = fopen(logout_path, "a");
+  if (log_out == NULL) { log_out = stdout; }
+  log_err = fopen(logerr_path, "a");
+  if (log_err == NULL) { log_err = stderr; }
+
   free(boardtype);
 
   /* Load content from wyliodrin.json. The path to this file is indicated by the config_file
@@ -117,7 +134,8 @@ int main() {
   init_redis();
 
   while (true) {
-    sleep(60);
+    sleep(pong_timeout);
+    publish("pong", 4);
   }
 
   return 0;
@@ -193,6 +211,25 @@ static bool load_content_from_settings_file(json_t *settings_json, const char *s
 
   stop = get_str_value(settings_json, "stop");
   werr2(stop == NULL, goto _finish, "There is no stop entry in %s", settings_file);
+
+  const char *pong_timeout_str = get_str_value(settings_json, "pong_timeout");
+  if (pong_timeout_str != NULL) {
+    char *pEnd;
+    pong_timeout = strtol(pong_timeout_str, &pEnd, 10);
+    if (pong_timeout == 0) {
+      pong_timeout = DEFAULT_PONG_TIMEOUT;
+    }
+  }
+
+  logout_path = get_str_value(settings_json, "hlogout");
+  if (logout_path == NULL) {
+    logout_path = LOCAL_STDOUT_PATH;
+  }
+
+  logerr_path = get_str_value(settings_json, "hlogerr");
+  if (logerr_path == NULL) {
+    logerr_path = LOCAL_STDERR_PATH;
+  }
 
   /* Success */
   return_value = true;

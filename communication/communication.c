@@ -691,7 +691,7 @@ void *init_communication_routine(void *args) {
   while (1) {
     c = redisConnectWithTimeout(REDIS_HOST, REDIS_PORT, timeout);
     if (c == NULL || c->err != 0) {
-      werr("redis connect error: %s", c->err != 0 ? c->errstr : "context is NULL");
+      werr("redis connect error: %s", c != NULL ? c->errstr : "context is NULL");
       sleep(1);
     } else {
       start_subscriber();

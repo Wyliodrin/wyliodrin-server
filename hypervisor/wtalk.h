@@ -36,6 +36,11 @@
 #define SETTINGS_PATH_MAX_LENGTH 128      /* Max length of settings file path */
 #define JSON_CONTENT_MAX_LENGTH  128      /* Used in snprintf */
 
+#define LOCAL_STDOUT_PATH "/etc/wyliodrin/hlogs.out"
+#define LOCAL_STDERR_PATH "/etc/wyliodrin/hlogs.err"
+
+#define DEFAULT_PONG_TIMEOUT 15 /* Time in seconds between pongs */
+
 /*************************************************************************************************/
 
 

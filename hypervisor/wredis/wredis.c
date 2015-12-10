@@ -79,7 +79,7 @@ void init_redis() {
 void publish(const char *str, int data_len) {
   if (c == NULL || c->err != 0) {
     werr("Cannot publish because redis is not connected: %s",
-      c->err != 0 ? c->errstr : "context is NULL");
+      c != NULL ? c->errstr : "context is NULL");
     return;
   }
 
@@ -104,6 +104,7 @@ static void *init_redis_routine(void *args) {
       sleep(SLEEP_TIME_BETWEEN_CONNECTION_RETRY);
     } else {
       winfo("Redis initialization success");
+      publish("pong", 4);
       start_subscriber();
       return NULL;
     }
@@ -161,6 +162,7 @@ static void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     /* Manage subscription */
     if (r->elements == 3 && strncmp(r->element[0]->str, "subscribe", 9) == 0) {
       winfo("Successfully subscribed to %s", r->element[1]->str);
+
     }
 
     /* Manage message */

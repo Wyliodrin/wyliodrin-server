@@ -27,6 +27,9 @@
 
 extern bool privacy; /* Don't add logs if privacy is set to true */
 
+extern FILE *log_out;
+extern FILE *log_err;
+
 /*************************************************************************************************/
 
 
@@ -36,7 +39,8 @@ extern bool privacy; /* Don't add logs if privacy is set to true */
 #ifdef LOG
   #define wlog(msg, ...)                                                                          \
     do {                                                                                          \
-      fprintf(stdout, "[wlog in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);            \
+      fprintf(log_out, "[wlog in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);           \
+      fflush(log_out);                                                                            \
     } while (0)
 #else
   #define wlog(msg, ...) /* Do nothing */
@@ -45,7 +49,8 @@ extern bool privacy; /* Don't add logs if privacy is set to true */
 
 #define werr(msg, ...)                                                                            \
   do {                                                                                            \
-    fprintf(stderr, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);              \
+    fprintf(log_err, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);             \
+    fflush(log_err);                                                                              \
     if (!privacy) {                                                                               \
       add_log(ERROR_LOG, msg, ##__VA_ARGS__);                                                     \
     }                                                                                             \
@@ -55,7 +60,8 @@ extern bool privacy; /* Don't add logs if privacy is set to true */
 #define werr2(assertion, action, msg, ...)                                                        \
   do {                                                                                            \
     if (assertion) {                                                                              \
-      fprintf(stderr, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);            \
+      fprintf(log_err, "[werr in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);           \
+      fflush(log_err);                                                                            \
       if (!privacy) {                                                                             \
         add_log(ERROR_LOG, msg, ##__VA_ARGS__);                                                   \
       }                                                                                           \
@@ -66,7 +72,8 @@ extern bool privacy; /* Don't add logs if privacy is set to true */
 
 #define winfo(msg, ...)                                                                           \
   do {                                                                                            \
-    fprintf(stderr, "[winfo in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);             \
+    fprintf(log_out, "[winfo in %s:%d] " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__);            \
+    fflush(log_out);                                                                              \
     if (!privacy) {                                                                               \
       add_log(INFO_LOG, msg, ##__VA_ARGS__);                                                      \
     }                                                                                             \
@@ -76,8 +83,9 @@ extern bool privacy; /* Don't add logs if privacy is set to true */
 #define wsyserr(assertion, msg, ...)                                                              \
   do {                                                                                            \
     if (assertion) {                                                                              \
-      fprintf(stderr, "[syserr in %s:%d] " msg ": %s\n", __FILE__, __LINE__, ##__VA_ARGS__,       \
+      fprintf(log_err, "[syserr in %s:%d] " msg ": %s\n", __FILE__, __LINE__, ##__VA_ARGS__,      \
                                                          strerror(errno));                        \
+      fflush(log_err);                                                                            \
       if (!privacy) {                                                                             \
         add_log(SYSERROR_LOG, msg, ##__VA_ARGS__);                                                \
       }                                                                                           \
@@ -88,8 +96,9 @@ extern bool privacy; /* Don't add logs if privacy is set to true */
 #define wsyserr2(assertion, action, msg, ...)                                                     \
   do {                                                                                            \
     if (assertion) {                                                                              \
-      fprintf(stderr, "[syserr in %s:%d] " msg ": %s\n", __FILE__, __LINE__, ##__VA_ARGS__,       \
+      fprintf(log_err, "[syserr in %s:%d] " msg ": %s\n", __FILE__, __LINE__, ##__VA_ARGS__,      \
                                                          strerror(errno));                        \
+      fflush(log_err);                                                                            \
       if (!privacy) {                                                                             \
         add_log(SYSERROR_LOG, msg, ##__VA_ARGS__);                                                \
       }                                                                                           \

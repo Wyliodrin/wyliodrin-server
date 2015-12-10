@@ -30,6 +30,8 @@
 #define LOCAL_STDOUT_PATH "/etc/wyliodrin/logs.out"
 #define LOCAL_STDERR_PATH "/etc/wyliodrin/logs.err"
 
+#define DEFAULT_PONG_TIMEOUT 15 /* Time in seconds between pongs */
+
 /*************************************************************************************************/
 
 

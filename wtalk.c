@@ -39,6 +39,9 @@ const char *build_file;
 const char *shell;
 const char *run;
 const char *stop;
+const char *logout_path;
+const char *logerr_path;
+int pong_timeout = DEFAULT_PONG_TIMEOUT;
 static const char *config_file;
 
 /* Values from wyliodrin.json */
@@ -130,14 +133,10 @@ static void wifi_raspberrypi();
 /*** MAIN ****************************************************************************************/
 
 int main(int argc, char *argv[]) {
-  /* Get stdout and stderr */
-  log_out = fopen(LOCAL_STDOUT_PATH, "a");
-  if (log_out == NULL) { log_out = stdout; }
-  log_err = fopen(LOCAL_STDERR_PATH, "a");
-  if (log_err == NULL) { log_err = stderr; }
-
   log_out = stdout;
   log_err = stderr;
+
+  winfo("Starting wyliodrind");
 
   /* Get libwyliodrin version */
   char *libwyliodrin_version = getenv("libwyliodrin_version");
@@ -173,6 +172,12 @@ int main(int argc, char *argv[]) {
     "Content of boardtype does not coincide with board value from settings file");
 
   free(boardtype);
+
+  /* Set local logs */
+  log_out = fopen(logout_path, "a");
+  if (log_out == NULL) { log_out = stdout; }
+  log_err = fopen(logerr_path, "a");
+  if (log_err == NULL) { log_err = stderr; }
 
   /* Load content from wyliodrin.json. The path to this file is indicated by the config_file
    * entry from the settings configuration file. */
@@ -300,6 +305,25 @@ static bool load_content_from_settings_file(json_t *settings_json, const char *s
 
   stop = get_str_value(settings_json, "stop");
   werr2(stop == NULL, goto _finish, "There is no stop entry in %s", settings_file);
+
+  const char *pong_timeout_str = get_str_value(settings_json, "pong_timeout");
+  if (pong_timeout_str != NULL) {
+    char *pEnd;
+    pong_timeout = strtol(pong_timeout_str, &pEnd, 10);
+    if (pong_timeout == 0) {
+      pong_timeout = DEFAULT_PONG_TIMEOUT;
+    }
+  }
+
+  logout_path = get_str_value(settings_json, "logout");
+  if (logout_path == NULL) {
+    logout_path = LOCAL_STDOUT_PATH;
+  }
+
+  logerr_path = get_str_value(settings_json, "logerr");
+  if (logerr_path == NULL) {
+    logerr_path = LOCAL_STDERR_PATH;
+  }
 
   /* Success */
   return_value = true;
