@@ -146,6 +146,7 @@ static void *send_logs_routine(void *args) {
       char *big_msg = calloc(logs_size * MAX_LOG_SIZE, sizeof(char));
       if (big_msg == NULL) {
         fprintf(stderr, "Calloc failed\n");
+        pthread_mutex_unlock(&logs_mutex);
         continue;
       }
       sprintf(big_msg, "{\"str\":\"");

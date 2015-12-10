@@ -38,6 +38,7 @@ extern xmpp_ctx_t *global_ctx;
 extern xmpp_conn_t *global_conn;
 extern const char *jid;
 extern const char *owner;
+extern bool is_xmpp_connection_set;
 
 static bool is_connetion_in_progress = false;
 
@@ -224,21 +225,23 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     werr2(encoded_data == NULL, return, "Could not encode");
 
     /* Send it */
-    xmpp_stanza_t *message = xmpp_stanza_new(global_ctx);
-    xmpp_stanza_set_name(message, "message");
-    xmpp_stanza_set_attribute(message, "to", id_str);
-    xmpp_stanza_t *communication = xmpp_stanza_new(global_ctx);
-    xmpp_stanza_set_name(communication, "communication");
-    xmpp_stanza_set_ns(communication, WNS);
-    xmpp_stanza_set_attribute(communication, "port", port);
+    if (is_xmpp_connection_set) {
+      xmpp_stanza_t *message = xmpp_stanza_new(global_ctx);
+      xmpp_stanza_set_name(message, "message");
+      xmpp_stanza_set_attribute(message, "to", id_str);
+      xmpp_stanza_t *communication = xmpp_stanza_new(global_ctx);
+      xmpp_stanza_set_name(communication, "communication");
+      xmpp_stanza_set_ns(communication, WNS);
+      xmpp_stanza_set_attribute(communication, "port", port);
 
-    xmpp_stanza_t *data_stz = xmpp_stanza_new(global_ctx);
-    xmpp_stanza_set_text(data_stz, encoded_data);
+      xmpp_stanza_t *data_stz = xmpp_stanza_new(global_ctx);
+      xmpp_stanza_set_text(data_stz, encoded_data);
 
-    xmpp_stanza_add_child(communication, data_stz);
-    xmpp_stanza_add_child(message, communication);
-    xmpp_send(global_conn, message);
-    xmpp_stanza_release(message);
+      xmpp_stanza_add_child(communication, data_stz);
+      xmpp_stanza_add_child(message, communication);
+      xmpp_send(global_conn, message);
+      xmpp_stanza_release(message);
+    }
   } else {
     werr("Got message on subscription different from REDIS_REPLY_ARRAY");
   }
@@ -522,54 +525,58 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
             "cmp_read_map error: %s", cmp_strerror(&cmp));
 
       /* Build stanza */
-      xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
-      xmpp_stanza_set_name(message_stz, "message");
-      xmpp_stanza_set_attribute(message_stz, "to", owner);
-      xmpp_stanza_t *shells_stz = xmpp_stanza_new(global_ctx);
-      xmpp_stanza_set_name(shells_stz, "shells");
-      xmpp_stanza_set_ns(shells_stz, WNS);
+      if (is_xmpp_connection_set) {
+        xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
+        xmpp_stanza_set_name(message_stz, "message");
+        xmpp_stanza_set_attribute(message_stz, "to", owner);
+        xmpp_stanza_t *shells_stz = xmpp_stanza_new(global_ctx);
+        xmpp_stanza_set_name(shells_stz, "shells");
+        xmpp_stanza_set_ns(shells_stz, WNS);
 
-      int i;
-      char *key = NULL;
-      char *value = NULL;
-      for (i = 0; i < map_size / 2; i++) {
-        werr2(!cmp_read_str(&cmp, &key),
-              return,
-              "cmp_read_str error: %s", cmp_strerror(&cmp));
+        int i;
+        char *key = NULL;
+        char *value = NULL;
+        for (i = 0; i < map_size / 2; i++) {
+          werr2(!cmp_read_str(&cmp, &key),
+                return,
+                "cmp_read_str error: %s", cmp_strerror(&cmp));
 
-        werr2(!cmp_read_str(&cmp, &value),
-              return,
-              "cmp_read_str error: %s", cmp_strerror(&cmp));
+          werr2(!cmp_read_str(&cmp, &value),
+                return,
+                "cmp_read_str error: %s", cmp_strerror(&cmp));
 
-        if (strcmp(key, "t") == 0) {
-          xmpp_stanza_t *data_stz = xmpp_stanza_new(global_ctx);
-          xmpp_stanza_set_text(data_stz, value);
-          xmpp_stanza_add_child(shells_stz, data_stz);
-        } else {
-          char *key_replacement = (char *)hashmap_get(hm, key);
-          werr2(key_replacement == NULL, return, "No entry named %s in attribute hashmap", key);
-
-          char *value_replacement;
-          if (strncmp(key, "a", strlen("a")) == 0) {
-            value_replacement = (char *)hashmap_get(action_hm, value);
-            werr2(value_replacement == NULL, return, "No entry named %s in attribute action hashmap",
-                  value);
+          if (strcmp(key, "t") == 0) {
+            xmpp_stanza_t *data_stz = xmpp_stanza_new(global_ctx);
+            xmpp_stanza_set_text(data_stz, value);
+            xmpp_stanza_add_child(shells_stz, data_stz);
           } else {
-            value_replacement = value;
+            char *key_replacement = (char *)hashmap_get(hm, key);
+            werr2(key_replacement == NULL, return, "No entry named %s in attribute hashmap", key);
+
+            char *value_replacement;
+            if (strncmp(key, "a", strlen("a")) == 0) {
+              value_replacement = (char *)hashmap_get(action_hm, value);
+              werr2(value_replacement == NULL, return, "No entry named %s in attribute action hashmap",
+                    value);
+            } else {
+              value_replacement = value;
+            }
+
+            xmpp_stanza_set_attribute(shells_stz, key_replacement, value_replacement);
           }
 
-          xmpp_stanza_set_attribute(shells_stz, key_replacement, value_replacement);
+          free(key);
+          free(value);
         }
 
-        free(key);
-        free(value);
+        xmpp_stanza_add_child(message_stz, shells_stz);
+        xmpp_send(global_conn, message_stz);
+
+        xmpp_stanza_release(shells_stz);
+        xmpp_stanza_release(message_stz);
       }
-
-      xmpp_stanza_add_child(message_stz, shells_stz);
-      xmpp_send(global_conn, message_stz);
-
-      xmpp_stanza_release(shells_stz);
-      xmpp_stanza_release(message_stz);
+    } else {
+      werr("Strange redis reply");
     }
   } else {
     werr("Got message on wyliodrin subscription different from REDIS_REPLY_ARRAY");

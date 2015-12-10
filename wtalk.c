@@ -306,15 +306,6 @@ static bool load_content_from_settings_file(json_t *settings_json, const char *s
   stop = get_str_value(settings_json, "stop");
   werr2(stop == NULL, goto _finish, "There is no stop entry in %s", settings_file);
 
-  const char *pong_timeout_str = get_str_value(settings_json, "pong_timeout");
-  if (pong_timeout_str != NULL) {
-    char *pEnd;
-    pong_timeout = strtol(pong_timeout_str, &pEnd, 10);
-    if (pong_timeout == 0) {
-      pong_timeout = DEFAULT_PONG_TIMEOUT;
-    }
-  }
-
   logout_path = get_str_value(settings_json, "logout");
   if (logout_path == NULL) {
     logout_path = LOCAL_STDOUT_PATH;
@@ -352,6 +343,15 @@ static bool load_content_from_config_file(json_t *config_json, const char *confi
   json_t *privacy_json = json_object_get(config_json, "privacy");
   if (privacy_json != NULL && json_is_boolean(privacy_json) && json_is_true(privacy_json)) {
     privacy = true;
+  }
+
+  const char *pong_timeout_str = get_str_value(config_json, "pong_timeout");
+  if (pong_timeout_str != NULL) {
+    char *pEnd;
+    pong_timeout = strtol(pong_timeout_str, &pEnd, 10);
+    if (pong_timeout == 0) {
+      pong_timeout = DEFAULT_PONG_TIMEOUT;
+    }
   }
 
   /* Success */
