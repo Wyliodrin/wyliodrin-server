@@ -97,6 +97,8 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
                                                    &stanza_to_text_len);
   werr2(xmpp_stanza_to_text_rc < 0, return, "Could not convert stanza to text");
 
+  winfo("Rec stanza = %s", stanza_to_text);
+
   /* Allocate memory for the msgpack buffer */
   char *msgpack_buf = malloc(stanza_to_text_len * sizeof(char));
   werr2(msgpack_buf == NULL, return, "Could not allocate memory for msgpack_buf");

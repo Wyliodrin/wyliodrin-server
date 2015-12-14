@@ -10,7 +10,7 @@
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v2.24
+WVERSION=v3.0
 LWVERSION=v1.16
 
 ###################################################################################################
@@ -73,6 +73,8 @@ cd libevent/
 ./configure --prefix=/usr
 make
 make install
+cd $SANDBOX_PATH
+rm -rf libevent
 
 # Install libwyliodrin
 cd $SANDBOX_PATH
@@ -84,7 +86,9 @@ cd build
 cmake -DEDISON=ON -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
 make
 make install
-cd ..
+cd $SANDBOX_PATH/wylio && make install
+cd $SANDBOX_PATH
+rm -rf libwyliodrin
 
 mkdir /home/wyliodrin
 ln -s /home/wyliodrin /wyliodrin
@@ -110,19 +114,26 @@ git clone https://github.com/strophe/libstrophe.git
 cd libstrophe
 ./bootstrap.sh
 ./configure --prefix=/usr
-make
 make install
+cd $SANDBOX_PATH
+rm -rf libstrophe
 
 # Install wyliodrin-server
 cd $SANDBOX_PATH
-git clone https://github.com/alexandruradovici/wyliodrin-server.git
+git clone https://github.com/Wyliodrin/wyliodrin-server.git
 cd wyliodrin-server
 git checkout $WVERSION
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
-make
 make install
+cd $SANDBOX_PATH/hypervisor
+mkdir build
+cd build
+cmake cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
+make install
+cd $SANDBOX_PATH
+rm -rf wyliodrin-server
 
 mkdir -p /etc/wyliodrin
 echo -n edison > /etc/wyliodrin/boardtype
@@ -131,9 +142,9 @@ printf '
   "config_file": "/boot/wyliodrin.json",
   "home": "/wyliodrin",
   "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build\",
-  "board": "raspberrypi",
-  "run": "make -f Makefile.raspberrypi run",
+  "build_file": "/wyliodrin/projects/build",
+  "board": "edison",
+  "run": "make -f Makefile.edison run",
   "shell": "bash",
   "stop": "kill -9"
 }\n' > /etc/wyliodrin/settings_edison.json
@@ -145,10 +156,11 @@ mkdir -p /wyliodrin/build
 echo "
 [Unit]
 Description=Wyliodrin server
-After=redis.service
+After=wyliodrin-hypervisor.service
 ConditionFileNotEmpty=/media/storage/wyliodrin.json
 [Service]
 Type=simple
+Environment=\"libwyliodrin_version=v1.16\"
 ExecStart=/usr/bin/wyliodrind
 Restart=always
 ExecStop=/bin/kill -15 $MAINPID
@@ -158,9 +170,26 @@ PIDFile=/var/run/wyliodrin-server.pid
 WantedBy=multi-user.target
 " > /lib/systemd/system/wyliodrin-server.service
 
+echo "
+[Unit]
+Description=Wyliodrin hypervisor
+After=redis.service
+ConditionFileNotEmpty=/media/storage/wyliodrin.json
+[Service]
+Type=simple
+ExecStart=/usr/bin/wyliodrin_hypervisor
+Restart=always
+ExecStop=/bin/kill -15 $MAINPID
+WorkingDirectory=/home/wyliodrin
+PIDFile=/var/run/wyliodrin-hypervisor.pid
+[Install]
+WantedBy=multi-user.target
+" > /lib/systemd/system/wyliodrin-hypervisor.service
+
 # Enable services
 systemctl enable redis
 systemctl enable wyliodrin-server
+systemctl enable wyliodrin-hypervisor
 
 # Run some more scripts
 export wyliodrin_board=edison

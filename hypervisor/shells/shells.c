@@ -829,7 +829,7 @@ static void shells_disconnect(hashmap_p hm) {
 
 
 static void shells_poweroff() {
-  system("sudo poweroff");
+  system("poweroff");
   exit(EXIT_SUCCESS);
 }
 
