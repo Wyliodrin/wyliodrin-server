@@ -15,10 +15,10 @@
 #
 # [1] https://www.abelectronics.co.uk/i2c-raspbian-wheezy/info.aspx
 #
-# Tested on 2015-05-05-raspbian-wheezy.
+# Tested on 2015-11-21-raspbian-jessie-lite.
 #
 # Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
-# Date last modified: October 2015
+# Date last modified: December 2015
 ###################################################################################################
 
 
@@ -55,8 +55,8 @@ fi
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v2.24
-LWVERSION=v1.16
+WVERSION=v3.2
+LWVERSION=v2.0
 
 
 
@@ -115,7 +115,6 @@ git clone https://github.com/strophe/libstrophe.git
 cd libstrophe
 ./bootstrap.sh
 ./configure --prefix=/usr
-make
 make install
 cd $SANDBOX_PATH
 rm -rf libstrophe
@@ -145,7 +144,6 @@ tar -xzf pcre-8.36.tar.gz
 rm -f pcre-8.36.tar.gz
 cd pcre-8.36
 ./configure --prefix=/usr
-make
 make install
 cd $SANDBOX_PATH
 rm -rf pcre-8.36
@@ -157,7 +155,6 @@ tar -xzf swig-3.0.5.tar.gz
 rm -f swig-3.0.5.tar.gz
 cd swig-3.0.5
 ./configure --prefix=/usr
-make
 make install
 cd $SANDBOX_PATH
 rm -rf swig-3.0.5
@@ -166,32 +163,38 @@ rm -rf swig-3.0.5
 cd $SANDBOX_PATH
 git clone https://github.com/Wyliodrin/libwyliodrin.git
 cd libwyliodrin
-# git checkout $LWVERSION
+git checkout $LWVERSION
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
-make
+make install
+cd $SANDBOX_PATH
+cd libwyliodrin/wylio
 make install
 cd $SANDBOX_PATH
 rm -rf libwyliodrin
 
 # Run libwyliodrin scripts
-install_social
-update_streams
+# install_social
+# update_streams
 
 # Link wyliodrin module used in node-red
-ln -s /usr/lib/node_modules /usr/lib/node
+# ln -s /usr/lib/node_modules /usr/lib/node
 
 # Install wyliodrin-server
 cd $SANDBOX_PATH
 git clone https://github.com/Wyliodrin/wyliodrin-server.git
 cd wyliodrin-server
-#git checkout $WVERSION
-git checkout hypervisor
+git checkout $WVERSION
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
-make
+make install
+cd $SANDBOX_PATH
+cd wyliodrin-server/hypervisor
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
 make install
 cd $SANDBOX_PATH
 rm -rf wyliodrin-server
@@ -201,20 +204,23 @@ mkdir -p /etc/wyliodrin
 echo -n raspberrypi > /etc/wyliodrin/boardtype
 
 # Create settings_raspberry.json
-printf '
-  "config_file": "/boot/wyliodrin.json",
-  "home": "/wyliodrin",
-  "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build\",
-  "board": "raspberrypi",
-  "run": "sudo -E make -f Makefile.raspberrypi run",
-  "shell": "bash",
-  "stop": "sudo kill -9"
+printf '{
+  "config_file":  "/boot/wyliodrin.json",
+  "home":         "/wyliodrin",
+  "mount_file":   "/wyliodrin/projects/mnt",
+  "build_file":   "/wyliodrin/projects/build",
+  "shell":        "bash",
+  "run":          "sudo make -f Makefile.arduinogalileo run",
+  "stop":         "sudo kill -9",
+  "poweroff":     "sudo poweroff",
+  "logout":       "/etc/wyliodrin/logs.out",
+  "logerr":       "/etc/wyliodrin/logs.err",
+  "hlogout":      "/etc/wyliodrin/hlogs.out",
+  "hlogerr":      "/etc/wyliodrin/hlogs.err"
 }\n' > /etc/wyliodrin/settings_raspberrypi.json
 
-# Create running_projects file
-mkdir -p /wyliodrin
-touch /wyliodrin/running_projects
+# Create home
+mkdir /wyliodrin
 
 # Create mount and build directories
 mkdir -p /wyliodrin/projects/mnt
@@ -228,7 +234,7 @@ command=/usr/bin/wyliodrind
 user=pi
 autostart=true
 autorestart=true
-environment=HOME="/wyliodrin",libwyliodrin_version="v1.16"
+environment=HOME="/wyliodrin"
 priority=20
 
 [supervisord]
