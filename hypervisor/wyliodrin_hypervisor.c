@@ -29,14 +29,17 @@
 
 /*** VARIABLES ***********************************************************************************/
 
-/* Values from settings configuration file */
 const char *board;
+
+
+/* Values from settings configuration file */
 const char *home;
 const char *mount_file;
 const char *build_file;
 const char *shell;
 const char *run;
 const char *stop;
+const char *poweroff;
 const char *logout_path;
 const char *logerr_path;
 int pong_timeout = DEFAULT_PONG_TIMEOUT;
@@ -94,12 +97,12 @@ int main() {
   winfo("Starting hypervisor");
 
   /* Get boartype */
-  char *boardtype = get_boardtype();
-  werr2(boardtype == NULL, return -1, "Could not get boardtype");
+  board = get_boardtype();
+  werr2(board == NULL, return -1, "Could not get boardtype");
 
   /* Build path of settings_<boardtype>.json */
   char settings_file[128];
-  int snprintf_rc = snprintf(settings_file, 128, "%s%s.json", SETTINGS_PATH, boardtype);
+  int snprintf_rc = snprintf(settings_file, 128, "%s%s.json", SETTINGS_PATH, board);
   wsyserr2(snprintf_rc < 0, return -1, "Could not build the settings configuration file");
   werr2(snprintf_rc >= 128, return -1, "File path of settings configuration file too long");
 
@@ -111,16 +114,11 @@ int main() {
   bool load_settings_rc = load_content_from_settings_file(settings_json, settings_file);
   werr2(!load_settings_rc, return -1, "Invalid settings in %s", settings_file);
 
-  werr2(strcmp(board, boardtype) != 0, return -1,
-    "Content of boardtype does not coincide with board value from settings file");
-
   /* Set local logs */
   log_out = fopen(logout_path, "a");
   if (log_out == NULL) { log_out = stdout; }
   log_err = fopen(logerr_path, "a");
   if (log_err == NULL) { log_err = stderr; }
-
-  free(boardtype);
 
   /* Load content from wyliodrin.json. The path to this file is indicated by the config_file
    * entry from the settings configuration file. */
@@ -188,9 +186,6 @@ static char *get_boardtype() {
 static bool load_content_from_settings_file(json_t *settings_json, const char *settings_file) {
   bool return_value = false;
 
-  board = get_str_value(settings_json, "board");
-  werr2(board == NULL, goto _finish, "There is no board entry in %s", settings_file);
-
   config_file = get_str_value(settings_json, "config_file");
   werr2(config_file == NULL, goto _finish, "There is no config_file entry in %s", settings_file);
 
@@ -211,6 +206,9 @@ static bool load_content_from_settings_file(json_t *settings_json, const char *s
 
   stop = get_str_value(settings_json, "stop");
   werr2(stop == NULL, goto _finish, "There is no stop entry in %s", settings_file);
+
+  poweroff = get_str_value(settings_json, "poweroff");
+  werr2(poweroff == NULL, goto _finish, "There is no poweroff entry in %s", settings_file);
 
   logout_path = get_str_value(settings_json, "hlogout");
   if (logout_path == NULL) {

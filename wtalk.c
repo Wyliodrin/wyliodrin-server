@@ -31,8 +31,9 @@
 
 /*** VARIABLES ***********************************************************************************/
 
-/* Values from settings configuration file */
 const char *board;
+
+/* Values from settings configuration file */
 const char *home;
 const char *mount_file;
 const char *build_file;
@@ -94,7 +95,7 @@ static void check_is_fuse_available();
 /**
  * Create running projects if this file does not exists.
  */
-static void create_running_projects_file_if_does_not_exist();
+// static void create_running_projects_file_if_does_not_exist();
 
 /**
  * Signal handler used to catch SIGTERM.
@@ -157,14 +158,15 @@ int main(int argc, char *argv[]) {
   }
 
   /* Get boartype */
-  char *boardtype = get_boardtype();
-  werr2(boardtype == NULL, goto _finish, "Could not get boardtype");
+  board = get_boardtype();
+  werr2(board == NULL, goto _finish, "Could not get type of board");
 
   /* Build path of settings_<boardtype>.json */
   char settings_file[128];
-  int snprintf_rc = snprintf(settings_file, 128, "%s%s.json", SETTINGS_PATH, boardtype);
+  int snprintf_rc = snprintf(settings_file, 128, "%s%s.json", SETTINGS_PATH, board);
   wsyserr2(snprintf_rc < 0, goto _finish, "Could not build the settings configuration file");
   werr2(snprintf_rc >= 128, goto _finish, "File path of settings configuration file too long");
+
 
   /* Get the content from the settings_<boardtype> file in a json_object */
   json_t *settings_json = file_to_json(settings_file);
@@ -174,10 +176,6 @@ int main(int argc, char *argv[]) {
   bool load_settings_rc = load_content_from_settings_file(settings_json, settings_file);
   werr2(!load_settings_rc, goto _finish, "Invalid settings in %s", settings_file);
 
-  werr2(strcmp(board, boardtype) != 0, goto _finish,
-    "Content of boardtype does not coincide with board value from settings file");
-
-  free(boardtype);
 
   /* Set local logs */
   log_out = fopen(logout_path, "a");
@@ -288,9 +286,6 @@ static char *get_boardtype() {
 static bool load_content_from_settings_file(json_t *settings_json, const char *settings_file) {
   bool return_value = false;
 
-  board = get_str_value(settings_json, "board");
-  werr2(board == NULL, goto _finish, "There is no board entry in %s", settings_file);
-
   config_file = get_str_value(settings_json, "config_file");
   werr2(config_file == NULL, goto _finish, "There is no config_file entry in %s", settings_file);
 
@@ -384,18 +379,17 @@ static void check_is_fuse_available() {
 }
 
 
-static void create_running_projects_file_if_does_not_exist() {
-  /* Try to open RUNNING_PROJECTS_PATH */
-  int open_rc = open(RUNNING_PROJECTS_PATH, O_RDONLY);
+// static void create_running_projects_file_if_does_not_exist() {
+//   /* Try to open RUNNING_PROJECTS_PATH */
+//   int open_rc = open(RUNNING_PROJECTS_PATH, O_RDONLY);
 
-  /* Create RUNNING_PROJECTS_PATH if it does not exist */
-  if (open_rc == -1) {
-    open_rc = open(RUNNING_PROJECTS_PATH, O_CREAT | O_RDWR);
-    wsyserr2(open_rc == -1, return, "Error while trying to create " RUNNING_PROJECTS_PATH);
-  }
+//   if (open_rc == -1) {
+//     open_rc = open(RUNNING_PROJECTS_PATH, O_CREAT | O_RDWR);
+//     wsyserr2(open_rc == -1, return, "Error while trying to create " RUNNING_PROJECTS_PATH);
+//   }
 
-  close(open_rc);
-}
+//   close(open_rc);
+// }
 
 
 static void signal_handler(int signum) {

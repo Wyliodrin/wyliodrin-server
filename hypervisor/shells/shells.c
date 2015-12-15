@@ -71,6 +71,7 @@ extern const char *board;
 extern const char *shell;
 extern const char *run;
 extern const char *stop;
+extern const char *poweroff;
 extern const char *build_file;
 
 /*************************************************************************************************/
@@ -829,7 +830,7 @@ static void shells_disconnect(hashmap_p hm) {
 
 
 static void shells_poweroff() {
-  system("poweroff");
+  system(poweroff);
   exit(EXIT_SUCCESS);
 }
 
