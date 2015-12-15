@@ -368,9 +368,9 @@ static bool load_content_from_config_file(json_t *config_json, const char *confi
     winfo("Updating /etc/resolf.conf");
     char cmd[128];
     if (strlen(poweroff) >= 4 && strncmp(poweroff, "sudo", 4) == 0) {
-      snprintf(cmd, 128, "sudo echo %s > /etc/resolv.conf", nameserver_str);
+      snprintf(cmd, 128, "sudo echo \"nameserver %s\" > /etc/resolv.conf", nameserver_str);
     } else {
-      snprintf(cmd, 128, "echo %s > /etc/resolv.conf", nameserver_str);
+      snprintf(cmd, 128, "echo \"nameserver %s\" > /etc/resolv.conf", nameserver_str);
     }
     system(cmd);
   }
