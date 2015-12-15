@@ -40,6 +40,7 @@ const char *build_file;
 const char *shell;
 const char *run;
 const char *stop;
+const char *poweroff;
 const char *logout_path;
 const char *logerr_path;
 int pong_timeout = DEFAULT_PONG_TIMEOUT;
@@ -307,6 +308,9 @@ static bool load_content_from_settings_file(json_t *settings_json, const char *s
   stop = get_str_value(settings_json, "stop");
   werr2(stop == NULL, goto _finish, "There is no stop entry in %s", settings_file);
 
+  poweroff = get_str_value(settings_json, "poweroff");
+  werr2(poweroff == NULL, goto _finish, "There is no poweroff entry in %s", settings_file);
+
   logout_path = get_str_value(settings_json, "logout");
   if (logout_path == NULL) {
     logout_path = LOCAL_STDOUT_PATH;
@@ -357,6 +361,19 @@ static bool load_content_from_config_file(json_t *config_json, const char *confi
 
   /* Success */
   return_value = true;
+
+  /* Update /etc/resolv.conf */
+  const char *nameserver_str = get_str_value(config_json, "nameserver");
+  if (nameserver_str != NULL) {
+    winfo("Updating /etc/resolf.conf");
+    char cmd[128];
+    if (strlen(poweroff) >= 4 && strncmp(poweroff, "sudo", 4) == 0) {
+      snprintf(cmd, 128, "sudo echo %s > /etc/resolv.conf", nameserver_str);
+    } else {
+      snprintf(cmd, 128, "echo %s > /etc/resolv.conf", nameserver_str);
+    }
+    system(cmd);
+  }
 
   _finish: ;
     return return_value;
