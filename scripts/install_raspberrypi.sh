@@ -115,6 +115,7 @@ git clone https://github.com/strophe/libstrophe.git
 cd libstrophe
 ./bootstrap.sh
 ./configure --prefix=/usr
+make
 make install
 cd $SANDBOX_PATH
 rm -rf libstrophe
@@ -144,6 +145,7 @@ tar -xzf pcre-8.36.tar.gz
 rm -f pcre-8.36.tar.gz
 cd pcre-8.36
 ./configure --prefix=/usr
+make
 make install
 cd $SANDBOX_PATH
 rm -rf pcre-8.36
@@ -155,6 +157,7 @@ tar -xzf swig-3.0.5.tar.gz
 rm -f swig-3.0.5.tar.gz
 cd swig-3.0.5
 ./configure --prefix=/usr
+make
 make install
 cd $SANDBOX_PATH
 rm -rf swig-3.0.5
@@ -167,19 +170,21 @@ git checkout $LWVERSION
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
+make
 make install
 cd $SANDBOX_PATH
 cd libwyliodrin/wylio
+make
 make install
 cd $SANDBOX_PATH
 rm -rf libwyliodrin
 
 # Run libwyliodrin scripts
-# install_social
-# update_streams
+install_social
+update_streams
 
 # Link wyliodrin module used in node-red
-# ln -s /usr/lib/node_modules /usr/lib/node
+ln -s /usr/lib/node_modules /usr/lib/node
 
 # Install wyliodrin-server
 cd $SANDBOX_PATH
@@ -189,12 +194,14 @@ git checkout $WVERSION
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
+make
 make install
 cd $SANDBOX_PATH
 cd wyliodrin-server/hypervisor
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
+make
 make install
 cd $SANDBOX_PATH
 rm -rf wyliodrin-server
