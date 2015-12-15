@@ -6,8 +6,11 @@
 
 SANDBOX_PATH=/wyliodrin/sandbox
 HOME=/wyliodrin
-WVERSION=v2.24
-LWVERSION=v1.17
+WVERSION=v3.2
+LWVERSION=v2.0
+BOARD=$(cat /etc/wyliodrin/boardtype)
+
+###################################################################################################
 
 
 
@@ -16,90 +19,61 @@ LWVERSION=v1.17
 # Create sandbox
 mkdir -p $SANDBOX_PATH
 
-# Create home
-mkdir -p $HOME
-
-if [ "$wyliodrin_board" = "raspberrypi" ]; then
-  CMAKE_PARAMS="-DRASPBERRYPI=ON"
-
-  # Copy bashrc
-  cp /home/pi/.bashrc /wyliodrin
-
-  # Settings
-printf '{
-  "config_file": "/boot/wyliodrin.json",
-  "home": "/wyliodrin",
-  "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build",
-  "board": "raspberrypi",
-  "run": "sudo -E make -f Makefile.raspberrypi run",
-  "shell": "bash",
-  "stop": "sudo kill -9"
-}\n' > /etc/wyliodrin/settings_raspberrypi.json
-
-elif [ "$wyliodrin_board" = "beagleboneblack" ]; then
-  CMAKE_PARAMS="-DBEAGLEBONEBLACK=ON -DNODE_ROOT_DIR=/usr/include"
-
-printf '{
-  "config_file": "/boot/wyliodrin.json",
-  "home": "/wyliodrin",
-  "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build",
-  "board": "beagleboneblack",
-  "run": "make -f Makefile.beagleboneblack run",
-  "shell": "bash",
-  "stop": "kill -9"
-}\n' > /etc/wyliodrin/settings_beagleboneblack.json
-
-elif [ "$wyliodrin_board" = "arduinogalileo" ]; then
+if [ $BOARD = "arduinogalileo" ]; then
   CMAKE_PARAMS="-DGALILEO=ON"
 
-printf '{
-  "config_file": "/media/card/wyliodrin.json",
-  "home": "/wyliodrin",
-  "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build",
-  "board": "arduinogalileo",
-  "run": "make -f Makefile.arduinogalileo run",
-  "shell": "bash",
-  "stop": "kill -9"
+  printf '{
+  "config_file":  "/media/card/wyliodrin.json",
+  "home":         "/wyliodrin",
+  "mount_file":   "/wyliodrin/projects/mnt",
+  "build_file":   "/wyliodrin/projects/build",
+  "shell":        "bash",
+  "run":          "make -f Makefile.arduinogalileo run",
+  "stop":         "kill -9",
+  "poweroff":     "poweroff",
+  "logout":       "/etc/wyliodrin/logs.out",
+  "logerr":       "/etc/wyliodrin/logs.err",
+  "hlogout":      "/etc/wyliodrin/hlogs.out",
+  "hlogerr":      "/etc/wyliodrin/hlogs.err"
 }\n' > /etc/wyliodrin/settings_arduinogalileo.json
 
-elif [ "$wyliodrin_board" = "edison" ]; then
-  CMAKE_PARAMS="-DEDISON=ON"
+  printf '[Unit]
+Description=Wyliodrin Server
+After=wyliodrin-hypervisor
+ConditionFileNotEmpty=/media/card/wyliodrin.json
 
-printf '{
-  "config_file": "/media/storage/wyliodrin.json",
-  "home": "/wyliodrin",
-  "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build",
-  "board": "edison",
-  "run": "make -f Makefile.edison run",
-  "shell": "bash",
-  "stop": "kill -9"
-}\n' > /etc/wyliodrin/settings_edison.json
+[Service]
+Type=simple
+Environment="HOME=/wyliodrin"
+ExecStart=/usr/bin/wyliodrind
+TimeoutStartSec=0
+Restart=always
 
-elif [ "$wyliodrin_board" = "redpitaya" ]; then
-  CMAKE_PARAMS="-DREDPITAYA=ON"
+[Install]
+WantedBy=multi-user.target
+' > /lib/systemd/system/wyliodrin-server.service
 
-printf '{
-  "config_file": "/boot/wyliodrin.json",
-  "home": "/wyliodrin",
-  "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build",
-  "board": "redpitaya",
-  "run": "make -f Makefile.redpitaya run",
-  "shell": "bash",
-  "stop": "kill -9"
-}\n' > /etc/wyliodrin/settings_redpitaya.json
+  printf '[Unit]
+Description=Wyliodrin Hypervisor
+After=redis
+ConditionFileNotEmpty=/media/card/wyliodrin.json
 
-elif [ "$wyliodrin_board" = "" ]; then
-  echo "ERROR: there is no environment variable named wyliodrin_board" \
-    >/dev/stderr
-  exit 1
+[Service]
+Type=simple
+Environment="HOME=/wyliodrin"
+ExecStart=/usr/bin/wyliodrin_hypervisor
+TimeoutStartSec=0
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+' > /lib/systemd/system/wyliodrin-hypervisor.service
+
+  systemctl enable wyliodrin-server.service
+  systemctl enable wyliodrin-hypervisor.service
 
 else
-  echo "ERROR: unknown board: $wyliodrin_board" > /dev/stderr
+  echo "ERROR: unknown board: " $BOARD > /dev/stderr
   exit 1
 fi
 
@@ -114,6 +88,12 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr $CMAKE_PARAMS ..
 make
 make install
+cd $SANDBOX_PATH
+cd libwyliodrin/wylio
+make
+make install
+cd $SANDBOX_PATH
+rm -rf libwyliodrin
 
 # Update wyliodrin-server
 cd $SANDBOX_PATH
@@ -126,6 +106,17 @@ cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr $CMAKE_PARAMS ..
 make
 make install
+cd $SANDBOX_PATH
+cd wyliodrin-server/hypervisor
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
+make
+make install
 
 # Clean
 rm -rf $SANDBOX_PATH
+
+reboot
+
+###################################################################################################
