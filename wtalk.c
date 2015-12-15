@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
     change_owner_of_directories_for_raspberry_pi();
   }
 
-  create_running_projects_file_if_does_not_exist();
+  // create_running_projects_file_if_does_not_exist();
 
   check_is_fuse_available();
 
