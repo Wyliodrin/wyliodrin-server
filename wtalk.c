@@ -139,8 +139,14 @@ int main(int argc, char *argv[]) {
   winfo("Starting wyliodrind");
 
   /* Get libwyliodrin version */
-  char *libwyliodrin_version = getenv("libwyliodrin_version");
-  werr2(libwyliodrin_version == NULL, goto _finish, "There is no libwyliodrin_version env");
+  FILE *fp = popen("/usr/bin/wylio -v", "r");
+  wsyserr2(fp == NULL, goto _finish, "Cannot run /usr/bin/wylio -v");
+
+  char libwyliodrin_version[8];
+  char *fgets_rc = fgets(libwyliodrin_version, sizeof(libwyliodrin_version)-1, fp);
+  wsyserr2(fgets_rc == NULL, goto _finish, "Cannot read from /usr/bin/wylio -v stream");
+  pclose(fp);
+
   int sscanf_rc = sscanf(libwyliodrin_version, "v%d.%d", &libwyliodrin_version_major,
                                                          &libwyliodrin_version_minor);
   werr2(sscanf_rc != 2, goto _finish, "Invalid libwyliodrin_version format.");
