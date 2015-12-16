@@ -512,7 +512,19 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
 
       /* Manage pong */
       if (r->element[2]->len == 4 && strcmp(r->element[2]->str, "pong") == 0) {
-        // winfo("Hypervisor is up and running");
+        if (is_xmpp_connection_set) {
+          xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
+          xmpp_stanza_set_name(message_stz, "message");
+          xmpp_stanza_set_attribute(message_stz, "to", owner);
+          xmpp_stanza_t *keepalive_stz = xmpp_stanza_new(global_ctx);
+          xmpp_stanza_set_name(keepalive_stz, "keepalive");
+          xmpp_stanza_set_ns(keepalive_stz, WNS);
+          xmpp_stanza_add_child(message_stz, keepalive_stz);
+          xmpp_send(global_conn, message_stz);
+          xmpp_stanza_release(keepalive_stz);
+          xmpp_stanza_release(message_stz);
+        }
+
         return;
       }
 
