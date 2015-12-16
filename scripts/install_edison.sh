@@ -1,21 +1,25 @@
 #!/bin/bash
 
+
+
 ###################################################################################################
 # Edison install script
+#
+# Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
+# Date last modified: December 2015
 ###################################################################################################
 
 
-###################################################################################################
-# Script variables
-###################################################################################################
+
+### Script variables ##############################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v3.0
-LWVERSION=v1.16
+WVERSION=v3.2
+LWVERSION=v2.0
 
-###################################################################################################
-# Actual installation
-###################################################################################################
+
+
+### Actual installation ###########################################################################
 
 # Create sandbox directory
 mkdir -p $SANDBOX_PATH
@@ -47,19 +51,13 @@ if [ ! -e /usr/lib/node ];
 then
 	ln -s /usr/lib/node_modules /usr/lib/node
 fi
-#mkdir -p /home/node
-#cp -R /usr/lib/node_modules/* /home/node
-#rm -rf /usr/node
-#rm -rf /usr/lib/node_modules
-#ln -s /home/node /usr/lib/node
-#ln -s /home/node /usr/lib/node_modules
 
 # Install redis
 cd $SANDBOX_PATH
 echo "Checking for python setuptools"
 if ! echo "import setuptools" | python; then
-echo "Installing python setuptools"
-curl -L https://bootstrap.pypa.io/ez_setup.py | python
+  echo "Installing python setuptools"
+  curl -L https://bootstrap.pypa.io/ez_setup.py | python
 fi
 git clone https://github.com/andymccurdy/redis-py.git /tmp/redis-py
 cd /tmp/redis-py
@@ -86,7 +84,10 @@ cd build
 cmake -DEDISON=ON -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
 make
 make install
-cd $SANDBOX_PATH/wylio && make install
+cd $SANDBOX_PATH
+cd libwyliodrin/wylio
+make
+make install
 cd $SANDBOX_PATH
 rm -rf libwyliodrin
 
@@ -127,10 +128,12 @@ mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
 make install
-cd $SANDBOX_PATH/hypervisor
+cd $SANDBOX_PATH
+cd wyliodrin-server/hypervisor
 mkdir build
 cd build
-cmake cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
+cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
+make
 make install
 cd $SANDBOX_PATH
 rm -rf wyliodrin-server
@@ -138,15 +141,19 @@ rm -rf wyliodrin-server
 mkdir -p /etc/wyliodrin
 echo -n edison > /etc/wyliodrin/boardtype
 
-printf '
-  "config_file": "/boot/wyliodrin.json",
-  "home": "/wyliodrin",
-  "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build",
-  "board": "edison",
-  "run": "make -f Makefile.edison run",
-  "shell": "bash",
-  "stop": "kill -9"
+printf '{
+  "config_file":  "/media/storage/wyliodrin.json",
+  "home":         "/wyliodrin",
+  "mount_file":   "/wyliodrin/projects/mnt",
+  "build_file":   "/wyliodrin/projects/build",
+  "shell":        "bash",
+  "run":          "make -f Makefile.edison run",
+  "stop":         "kill -9",
+  "poweroff":     "poweroff",
+  "logout":       "/etc/wyliodrin/logs.out",
+  "logerr":       "/etc/wyliodrin/logs.err",
+  "hlogout":      "/etc/wyliodrin/hlogs.out",
+  "hlogerr":      "/etc/wyliodrin/hlogs.err"
 }\n' > /etc/wyliodrin/settings_edison.json
 
 mkdir -p /wyliodrin
@@ -160,7 +167,7 @@ After=wyliodrin-hypervisor.service
 ConditionFileNotEmpty=/media/storage/wyliodrin.json
 [Service]
 Type=simple
-Environment=\"libwyliodrin_version=v1.16\"
+Environment=\"HOME=/wyliodrin\"
 ExecStart=/usr/bin/wyliodrind
 Restart=always
 ExecStop=/bin/kill -15 $MAINPID
@@ -177,6 +184,7 @@ After=redis.service
 ConditionFileNotEmpty=/media/storage/wyliodrin.json
 [Service]
 Type=simple
+Environment=\"HOME=/wyliodrin\"
 ExecStart=/usr/bin/wyliodrin_hypervisor
 Restart=always
 ExecStop=/bin/kill -15 $MAINPID
