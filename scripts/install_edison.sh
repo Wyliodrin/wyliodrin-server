@@ -14,7 +14,7 @@
 ### Script variables ##############################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v3.2
+WVERSION=v3.8
 LWVERSION=v2.0
 
 

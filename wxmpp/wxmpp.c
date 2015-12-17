@@ -354,9 +354,11 @@ static int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza
         werr("No IP addresses available");
       } else {
         network_list_t *aux;
+        char prefixed_name[32];
         while (hosts != NULL) {
           winfo("IP address: %s <%s>", hosts->name, hosts->host);
-          xmpp_stanza_set_attribute(version_stz, hosts->name, hosts->host);
+          snprintf(prefixed_name, 32, "ip_%s", hosts->name);
+          xmpp_stanza_set_attribute(version_stz, prefixed_name, hosts->host);
           free(hosts->name);
           free(hosts->host);
           aux = hosts;
