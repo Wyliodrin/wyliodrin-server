@@ -350,15 +350,19 @@ static int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza
       xmpp_stanza_set_attribute(version_stz, "lwmajor", lwmajor);
       xmpp_stanza_set_attribute(version_stz, "lwminor", lwminor);
 
-      /* Add hosts */
-      network_list_t *aux;
-      while (hosts != NULL) {
-        xmpp_stanza_set_attribute(version_stz, hosts->name, hosts->host);
-        free(hosts->name);
-        free(hosts->host);
-        aux = hosts;
-        hosts = hosts->next;
-        free(aux);
+      if (hosts == NULL) {
+        werr("No IP addresses available");
+      } else {
+        network_list_t *aux;
+        while (hosts != NULL) {
+          winfo("IP address: %s <%s>", hosts->name, hosts->host);
+          xmpp_stanza_set_attribute(version_stz, hosts->name, hosts->host);
+          free(hosts->name);
+          free(hosts->host);
+          aux = hosts;
+          hosts = hosts->next;
+          free(aux);
+        }
       }
 
       xmpp_stanza_add_child(message_stz, version_stz);
