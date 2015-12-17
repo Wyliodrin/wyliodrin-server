@@ -6,7 +6,7 @@
 
 SANDBOX_PATH=/wyliodrin/sandbox
 HOME=/wyliodrin
-WVERSION=v3.2
+WVERSION=v3.6
 LWVERSION=v2.0
 BOARD=$(cat /etc/wyliodrin/boardtype)
 
@@ -71,6 +71,9 @@ WantedBy=multi-user.target
 
   systemctl enable wyliodrin-server.service
   systemctl enable wyliodrin-hypervisor.service
+
+elif [ $BOARD = "raspberrypi" ]; then
+  CMAKE_PARAMS="-DRASPBERRYPI=ON"
 
 else
   echo "ERROR: unknown board: " $BOARD > /dev/stderr
