@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.8.8)
 project (wyliodrin-server)
 
 set (WTALK_VERSION_MAJOR 3)
-set (WTALK_VERSION_MINOR 5)
+set (WTALK_VERSION_MINOR 6)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/wtalk_config.h.in"
@@ -49,6 +49,7 @@ set (wyliodrind_SRCS
   ${PROJECT_SOURCE_DIR}/base64/base64.c
   ${PROJECT_SOURCE_DIR}/logs/logs.c
   ${PROJECT_SOURCE_DIR}/cmp/cmp.c
+  ${PROJECT_SOURCE_DIR}/network/network.c
 )
 
 add_library (dbs STATIC

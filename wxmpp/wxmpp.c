@@ -23,6 +23,7 @@
 #include "../make/make.h"
 #include "../communication/communication.h"
 #include "../ps/ps.h"
+#include "../network/network.h"
 
 #include "wxmpp.h" /* API */
 
@@ -325,6 +326,8 @@ static int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza
 
       is_owner_online = true;
 
+      network_list_t *hosts = get_hosts();
+
       /* Send version */
       char wmajor[4];
       char wminor[4];
@@ -346,6 +349,18 @@ static int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza
       xmpp_stanza_set_attribute(version_stz, "wminor", wminor);
       xmpp_stanza_set_attribute(version_stz, "lwmajor", lwmajor);
       xmpp_stanza_set_attribute(version_stz, "lwminor", lwminor);
+
+      /* Add hosts */
+      network_list_t *aux;
+      while (hosts != NULL) {
+        xmpp_stanza_set_attribute(version_stz, hosts->name, hosts->host);
+        free(hosts->name);
+        free(hosts->host);
+        aux = hosts;
+        hosts = hosts->next;
+        free(aux);
+      }
+
       xmpp_stanza_add_child(message_stz, version_stz);
       xmpp_send(global_conn, message_stz);
       xmpp_stanza_release(version_stz);
