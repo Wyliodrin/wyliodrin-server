@@ -56,7 +56,6 @@ network_list_t *get_hosts() {
                     NULL, 0, NI_NUMERICHOST);
     werr2(s != 0, continue, "getnameinfo() failed: %s", gai_strerror(s));
 
-    printf("%s <%s>\n", ifa->ifa_name, host);
     network_list_t *elem = malloc(sizeof(network_list_t));
     wsyserr2(elem == NULL, continue, "Memory allocation failed");
     elem->name = strdup(ifa->ifa_name);

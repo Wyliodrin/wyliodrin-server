@@ -83,6 +83,9 @@ static hashmap_p modules = NULL;
 extern char *owner;
 extern char *board;
 
+extern const char *poweroff;
+extern const char *nameserver;
+
 extern bool is_fuse_available;
 
 extern pthread_mutex_t mutex;
@@ -130,6 +133,11 @@ static int message_handler  (xmpp_conn_t *const conn, xmpp_stanza_t *const stanz
  */
 static void create_modules_hashmap();
 
+/**
+ * Update resolv.conf
+ */
+static void update_resolv_conf();
+
 /*************************************************************************************************/
 
 
@@ -159,6 +167,7 @@ void xmpp_connect(const char *jid, const char *pass) {
 
   /* Initiate connection in loop */
   while (1) {
+    update_resolv_conf();
     int conn_rc = xmpp_connect_client(global_conn, NULL, XMPP_PORT, conn_handler, global_ctx);
     if (conn_rc < 0) {
       werr("Attempt to connect to XMPP server failed. Retrying...");
@@ -469,6 +478,20 @@ static void create_modules_hashmap() {
     addr = ps;
     hashmap_put(modules, "ps", &addr, sizeof(void *));
   #endif
+}
+
+
+static void update_resolv_conf() {
+  if (nameserver != NULL) {
+    winfo("Updating /etc/resolv.conf");
+    char cmd[128];
+    if (strlen(poweroff) >= 4 && strncmp(poweroff, "sudo", 4) == 0) {
+      snprintf(cmd, 128, "sudo echo \"nameserver %s\" > /etc/resolv.conf", nameserver);
+    } else {
+      snprintf(cmd, 128, "echo \"nameserver %s\" > /etc/resolv.conf", nameserver);
+    }
+    system(cmd);
+  }
 }
 
 /*************************************************************************************************/

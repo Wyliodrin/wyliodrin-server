@@ -52,7 +52,9 @@ const char *owner;
 static const char *password;
 static const char *ssid;
 static const char *psk;
+
 bool privacy = false;
+const char *nameserver;
 
 bool is_fuse_available = false;
 
@@ -343,6 +345,7 @@ static bool load_content_from_config_file(json_t *config_json, const char *confi
 
   ssid = get_str_value(config_json, "ssid");
   psk  = get_str_value(config_json, "psk");
+  nameserver = get_str_value(config_json, "nameserver");
 
   /* Set privacy based on privacy value from wyliodrin.json (if exists) */
   json_t *privacy_json = json_object_get(config_json, "privacy");
@@ -361,19 +364,6 @@ static bool load_content_from_config_file(json_t *config_json, const char *confi
 
   /* Success */
   return_value = true;
-
-  /* Update /etc/resolv.conf */
-  const char *nameserver_str = get_str_value(config_json, "nameserver");
-  if (nameserver_str != NULL) {
-    winfo("Updating /etc/resolv.conf");
-    char cmd[128];
-    if (strlen(poweroff) >= 4 && strncmp(poweroff, "sudo", 4) == 0) {
-      snprintf(cmd, 128, "sudo echo \"nameserver %s\" > /etc/resolv.conf", nameserver_str);
-    } else {
-      snprintf(cmd, 128, "echo \"nameserver %s\" > /etc/resolv.conf", nameserver_str);
-    }
-    system(cmd);
-  }
 
   _finish: ;
     return return_value;

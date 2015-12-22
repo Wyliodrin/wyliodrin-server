@@ -217,7 +217,7 @@ printf '{
   "mount_file":   "/wyliodrin/projects/mnt",
   "build_file":   "/wyliodrin/projects/build",
   "shell":        "bash",
-  "run":          "sudo make -f Makefile.arduinogalileo run",
+  "run":          "sudo -E make -f Makefile.raspberrypi run",
   "stop":         "sudo kill -9",
   "poweroff":     "sudo poweroff",
   "logout":       "/etc/wyliodrin/logs.out",
