@@ -74,7 +74,6 @@ target_link_libraries (wyliodrin_hypervisor
   ${CMAKE_THREAD_LIBS_INIT}
   ${CURL_LIBRARIES}
   -lutil
-  -lwyliodrin
   ${HIREDIS_LIBRARIES}
   ${EVENT_LIBRARIES}
   ${FUSE_LIBRARIES}
