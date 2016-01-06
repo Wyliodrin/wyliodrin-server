@@ -58,8 +58,8 @@ const char *nameserver;
 
 bool is_fuse_available = false;
 
-int libwyliodrin_version_major;
-int libwyliodrin_version_minor;
+int libwyliodrin_version_major = 0;
+int libwyliodrin_version_minor = 0;
 
 FILE *log_out;
 FILE *log_err;
@@ -144,16 +144,19 @@ int main(int argc, char *argv[]) {
 
   /* Get libwyliodrin version */
   FILE *fp = popen("/usr/bin/wylio -v", "r");
-  wsyserr2(fp == NULL, goto _finish, "Cannot run /usr/bin/wylio -v");
 
-  char libwyliodrin_version[8];
-  char *fgets_rc = fgets(libwyliodrin_version, sizeof(libwyliodrin_version)-1, fp);
-  wsyserr2(fgets_rc == NULL, goto _finish, "Cannot read from /usr/bin/wylio -v stream");
-  pclose(fp);
+  if (fp != NULL) {
+    char libwyliodrin_version[8];
+    char *fgets_rc = fgets(libwyliodrin_version, sizeof(libwyliodrin_version)-1, fp);
+    wsyserr2(fgets_rc == NULL, /* Do nothing */, "Cannot read from /usr/bin/wylio -v stream");
+    pclose(fp);
 
-  int sscanf_rc = sscanf(libwyliodrin_version, "v%d.%d", &libwyliodrin_version_major,
-                                                         &libwyliodrin_version_minor);
-  werr2(sscanf_rc != 2, goto _finish, "Invalid libwyliodrin_version format.");
+    if (fgets_rc != NULL) {
+      int sscanf_rc = sscanf(libwyliodrin_version, "v%d.%d", &libwyliodrin_version_major,
+                                                             &libwyliodrin_version_minor);
+      werr2(sscanf_rc != 2, goto _finish, "Invalid libwyliodrin_version format.");
+    }
+  }
 
   /* Catch SIGTERM */
   if (signal(SIGTERM, signal_handler) == SIG_ERR) {
