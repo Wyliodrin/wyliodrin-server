@@ -276,12 +276,6 @@ static char *get_boardtype() {
                "Could not close %s", BOARDTYPE_PATH);
     }
 
-    if (error) {
-      if (boardtype != NULL) {
-        free(boardtype);
-      }
-    }
-
     return return_value;
 }
 
