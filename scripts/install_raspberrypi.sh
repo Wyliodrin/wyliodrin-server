@@ -140,15 +140,15 @@ rm -rf wiringPi
 
 # Install pcre
 cd $SANDBOX_PATH
-wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.36.tar.gz
-tar -xzf pcre-8.36.tar.gz
-rm -f pcre-8.36.tar.gz
-cd pcre-8.36
+wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.38.tar.gz
+tar -xzf pcre-8.38.tar.gz
+rm -f pcre-8.38.tar.gz
+cd pcre-8.38
 ./configure --prefix=/usr
 make
 make install
 cd $SANDBOX_PATH
-rm -rf pcre-8.36
+rm -rf pcre-8.38
 
 # Install swig 3+
 cd $SANDBOX_PATH
