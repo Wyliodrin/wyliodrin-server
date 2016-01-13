@@ -32,7 +32,7 @@ LWVERSION=v3.0
 
 # Install some stuff
 apt-get install -y cmake libexpat1-dev libssl-dev libhiredis-dev libfuse-dev libcurl4-gnutls-dev \
-  libevent-dev libjansson-dev libtool redis-server supervisor python-dev
+  libevent-dev libjansson-dev libtool redis-server supervisor python-dev xvfb
 
 pip install redis
 

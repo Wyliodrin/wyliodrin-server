@@ -207,6 +207,11 @@ int main(int argc, char *argv[]) {
     wifi_raspberrypi();
   }
 
+  /* Configure wifi of UDOO NEO boards */
+  if (strcmp(board, "udooneo") == 0) {
+    wifi_raspberrypi();
+  }
+
   umount_mount_file();
 
   create_home_mount_and_build_directories();

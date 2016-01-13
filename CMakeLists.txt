@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.8.8)
 project (wyliodrin-server)
 
 set (WTALK_VERSION_MAJOR 3)
-set (WTALK_VERSION_MINOR 11)
+set (WTALK_VERSION_MINOR 12)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/wtalk_config.h.in"
@@ -90,7 +90,12 @@ target_link_libraries (wyliodrind
 )
 
 option (RASPBERRYPI "Build for the RaspberryPi." OFF)
+option (UDOONEO     "Build for the UDOO NEO."    OFF)
 
 if (RASPBERRYPI)
+  install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
+endif ()
+
+if (UDOONEO)
   install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
 endif ()
