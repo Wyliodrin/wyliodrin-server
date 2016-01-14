@@ -55,8 +55,8 @@ fi
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v3.8
-LWVERSION=v2.0
+WVERSION=v3.14
+LWVERSION=v2.1
 
 
 
@@ -281,6 +281,8 @@ apt-get clean
 rm -rf $SANDBOX_PATH
 rm -rf /home/pi/.npm
 rm -rf /home/root/.npm
+
+ echo v3.14 > /etc/wyliodrin/version
 
 # Reboot
 reboot

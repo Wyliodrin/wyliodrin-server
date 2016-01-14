@@ -6,8 +6,8 @@
 
 SANDBOX_PATH=/wyliodrin/sandbox
 HOME=/wyliodrin
-WVERSION=v3.10
-LWVERSION=v2.0
+WVERSION=v3.14
+LWVERSION=v2.1
 BOARD=$(cat /etc/wyliodrin/boardtype)
 
 ###################################################################################################

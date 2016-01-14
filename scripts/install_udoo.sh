@@ -21,8 +21,8 @@
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v3.10
-LWVERSION=v3.0
+WVERSION=v3.14
+LWVERSION=v2.1
 
 
 
@@ -176,3 +176,5 @@ chown -R udooer:udooer /etc/wyliodrin
 
 # Add pi to the fuse group
 usermod -a -G fuse udooer
+
+echo v3.14 > /etc/wyliodrin/version
