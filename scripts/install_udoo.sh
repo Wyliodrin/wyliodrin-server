@@ -5,7 +5,7 @@
 ###################################################################################################
 # UDOO Neo install script
 #
-# ssh udooer@192.168.7.2
+# ssh udooer@192.168.7.2 when powered via usb
 # password: udooer
 #
 # sudo visudo -> udooer ALL=(ALL) NOPASSWD: ALL
@@ -27,12 +27,35 @@ LWVERSION=v3.0
 
 
 ###################################################################################################
+# Sanity checks
+###################################################################################################
+
+# Test whether the script is run by root or not
+if [ ! "$(whoami)" = "root" ]; then
+  printf 'ERROR: This script must be run as root\n' 1>&2
+  exit 1
+fi
+
+# Check minimum space required
+MIN_SIZE=$((700 * 1024))
+df_result=($(df / | tail -n 1))
+if [ ${df_result[3]} -lt $MIN_SIZE ]; then
+  printf 'ERROR: At least 700MB of space required\n' 1>&2
+  exit 1
+fi
+
+
+
+###################################################################################################
 # Actual installation
 ###################################################################################################
 
 # Install some stuff
+apt-get update
 apt-get install -y cmake libexpat1-dev libssl-dev libhiredis-dev libfuse-dev libcurl4-gnutls-dev \
-  libevent-dev libjansson-dev libtool redis-server supervisor python-dev xvfb
+  libevent-dev libjansson-dev libtool redis-server supervisor python-dev xvfb libbluetooth-dev   \
+  libusb-dev libudev-dev libusb-1.0-0-dev libi2c-dev
+apt-get clean
 
 pip install redis
 
@@ -57,6 +80,7 @@ cp -R * /usr
 cd $SANDBOX_PATH
 rm -rf node-v0.10.24-linux-arm-armv6j-vfp-hard
 
+# Link node
 ln -s /usr/lib/node_modules /usr/lib/node
 
 # Install wyliodrin-server
@@ -78,6 +102,21 @@ make
 make install
 cd $SANDBOX_PATH
 rm -rf wyliodrin-server
+
+# Install wyliodrin-shell
+cd $SANDBOX_PATH
+git clone https://github.com/Wyliodrin/wyliodrin-shell.git
+cd wyliodrin-shell
+npm install
+npm install grunt-cli
+./node_modules/grunt-cli/bin/grunt build
+rm -rf gruntfile.js package.json public/ server/
+mv tmp/* .
+rm -rf tmp/
+mkdir -p /usr/wyliodrin/wyliodrin-shell
+sudo cp -rf * /usr/wyliodrin/wyliodrin-shell
+cd $SANDBOX_PATH
+rm -rf wyliodrin-shell
 
 mkdir -p /etc/wyliodrin
 echo -n raspberrypi > /etc/wyliodrin/boardtype
@@ -119,6 +158,16 @@ autostart=true
 autorestart=true
 environment=HOME="/wyliodrin"
 priority=10
+
+[supervisord]
+[program:wyliodrin-shell]
+directory=/usr/wyliodrin/wyliodrin-shell
+command=/usr/bin/node main.js
+user=udooer
+autostart=true
+autorestart=true
+environment=PORT="9000"
+priority=30
 ' >> /etc/supervisor/supervisord.conf
 
 # Change owner of directories used by wyliodrin
