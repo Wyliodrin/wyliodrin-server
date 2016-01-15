@@ -93,7 +93,7 @@ update_wyliodrin_server () {
   make                                                                                           &&
   make install                                                                                   &&
   cd $SANDBOX_PATH                                                                               &&
-  rm -rf libwyliodrin                                                                            &&
+  rm -rf wyliodrin-server                                                                        &&
   echo "$WVERSION" > /etc/wyliodrin/version                                                      &&
   echo "wyliodrin-server update success"                                                         &&
   return 0
