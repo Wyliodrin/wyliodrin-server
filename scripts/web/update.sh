@@ -164,6 +164,9 @@ WantedBy=multi-user.target
 elif [ $BOARD = "raspberrypi" ]; then
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
 
+elif [ $BOARD = "udooneo" ]; then
+  CMAKE_PARAMS="-DUDOONEO=ON"
+
 else
   echo "ERROR: unknown board: " $BOARD > /dev/stderr
   exit 1
