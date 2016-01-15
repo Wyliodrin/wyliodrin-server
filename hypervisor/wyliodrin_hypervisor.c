@@ -147,7 +147,6 @@ int main() {
 
 static char *get_boardtype() {
   char *return_value = NULL;
-  bool error = true;
 
   /* Open boardtype */
   int boardtype_fd = open(BOARDTYPE_PATH, O_RDONLY);
@@ -164,12 +163,11 @@ static char *get_boardtype() {
 
   /* Success */
   return_value = boardtype;
-  error = false;
 
   _finish: ;
     if (boardtype_fd != -1) {
       int close_rc = close(boardtype_fd);
-      wsyserr2(close_rc == -1, error = true; return_value = NULL,
+      wsyserr2(close_rc == -1, return_value = NULL,
                "Could not close %s", BOARDTYPE_PATH);
     }
 
