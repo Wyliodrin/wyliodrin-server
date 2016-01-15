@@ -38,8 +38,7 @@ BOARD=$(cat /etc/wyliodrin/boardtype)
 ### Functions #####################################################################################
 
 update_libwyliodrin() {
-  if [ "$#" -ne 1 ]
-  then
+  if [ "$#" -ne 1 ]; then
     echo "usage: update_libwyliodrin -DBOARD=ON"
     return -1
   fi
@@ -176,10 +175,14 @@ mkdir -p $SANDBOX_PATH
 # Update
 if ! [ -a /usr/bin/wylio ] || [[ "$(/usr/bin/wylio -v)" < "$LWVERSION" ]]; then
   update_libwyliodrin $CMAKE_PARAMS
+else
+  echo "libwyliodrin is up to date"
 fi
 
 if ! [ -a /etc/wyliodrin/version ] || [[ "$(cat /etc/wyliodrin/version)" < "$WVERSION" ]]; then
   update_wyliodrin_server $CMAKE_PARAMS
+else
+  echo "wyliodrin-server is up to date"
 fi
 
 # Clean
