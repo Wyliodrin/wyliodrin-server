@@ -139,6 +139,11 @@ static void shells_status(hashmap_p hm);
 static void shells_disconnect(hashmap_p hm);
 
 /**
+ * Resize shell.
+ */
+static void shells_resize(hashmap_p hm);
+
+/**
  * Poweroff board.
  */
 static void shells_poweroff();
@@ -247,6 +252,8 @@ void shells(hashmap_p hm) {
     shells_poweroff();
   } else if (strncasecmp(action, "d", 1) == 0) {
     shells_disconnect(hm);
+  } else if (strncasecmp(action, "r", 1) == 0) {
+    shells_resize(hm);
   } else {
     werr("Received shells stanza with unknown action attribute %s", action);
   }
@@ -826,6 +833,39 @@ static void shells_disconnect(hashmap_p hm) {
   pthread_mutex_lock(&shells_lock);
   shells_vector[shellid]->is_connected = false;
   pthread_mutex_unlock(&shells_lock);
+}
+
+
+static void shells_resize(hashmap_p hm) {
+  char *shellid_attr = (char *)hashmap_get(hm, "s");
+  werr2(shellid_attr == NULL, return,
+        "Received shells close stanza without shellid attribute");
+
+  char *endptr;
+  long shellid = strtol(shellid_attr, &endptr, 10);
+  werr2(*endptr != '\0', return, "Invalid shellid attribute: %s", shellid_attr);
+
+  werr2(shells_vector[shellid] == NULL, return, "Shell %ld not open", shellid);
+
+  char *width_attr = (char *)hashmap_get(hm, "w");
+  werr2(width_attr == NULL, return,
+        "Received shells resize stanza without width");
+
+  char *height_attr = (char *)hashmap_get(hm, "h");
+  werr2(height_attr == NULL, return,
+        "Received shells resize stanza without height");
+
+  long width = strtol(width_attr, &endptr, 10);
+  werr2(*endptr != '\0', return, "Invalid width attribute: %s", width_attr);
+
+  long height = strtol(height_attr, &endptr, 10);
+  werr2(*endptr != '\0', return, "Invalid height attribute: %s", height_attr);
+
+  struct winsize ws = { height, width, 0, 0 };
+
+  ioctl(shells_vector[shellid]->fdm, TIOCSWINSZ, &ws);
+
+  winfo("Shell %ld resized to %ld x %ld", shellid, width, height);
 }
 
 

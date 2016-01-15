@@ -80,6 +80,7 @@ void init_shells() {
   hashmap_put(action_hm, "status",     "s", strlen("s") + 1);
   hashmap_put(action_hm, "poweroff",   "p", strlen("p") + 1);
   hashmap_put(action_hm, "disconnect", "d", strlen("d") + 1);
+  hashmap_put(action_hm, "resize",     "r", strlen("r") + 1);
 }
 
 
