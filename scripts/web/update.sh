@@ -2,9 +2,30 @@
 
 
 
+###################################################################################################
+# Update libwyliodrin and wyliodrin-server
+#
+# Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
+# Date last modified: January 2016
+###################################################################################################
+
+
+
+### Sanity checks #################################################################################
+
+# Test whether the script is run by root or not
+if [ ! "$(whoami)" = "root" ]; then
+  printf 'ERROR: This script must be run as root\n' 1>&2
+  exit 1
+fi
+
+###################################################################################################
+
+
+
 ### Script variables ##############################################################################
 
-SANDBOX_PATH=/wyliodrin/sandbox
+SANDBOX_PATH=/sandbox
 HOME=/wyliodrin
 WVERSION=v3.14
 LWVERSION=v2.1
@@ -14,10 +35,79 @@ BOARD=$(cat /etc/wyliodrin/boardtype)
 
 
 
-### Actual update #################################################################################
+### Functions #####################################################################################
 
-# Create sandbox
-mkdir -p $SANDBOX_PATH
+update_libwyliodrin() {
+  if [ "$#" -ne 1 ]
+  then
+    echo "usage: update_libwyliodrin -DBOARD=ON"
+    return -1
+  fi
+
+  echo "Updating libwyliodrin"                                                                   &&
+  cd $SANDBOX_PATH                                                                               &&
+  rm -rf libwyliodrin                                                                            &&
+  git clone https://github.com/Wyliodrin/libwyliodrin.git                                        &&
+  cd libwyliodrin                                                                                &&
+  git checkout $LWVERSION                                                                        &&
+  mkdir build                                                                                    &&
+  cd build                                                                                       &&
+  cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr $1 ..                                                   &&
+  make                                                                                           &&
+  make install                                                                                   &&
+  cd $SANDBOX_PATH                                                                               &&
+  cd libwyliodrin/wylio                                                                          &&
+  make                                                                                           &&
+  make install                                                                                   &&
+  cd $SANDBOX_PATH                                                                               &&
+  rm -rf libwyliodrin                                                                            &&
+  echo "libwyliodrin update success"                                                             &&
+  return 0
+
+  echo "libwyliodrin update fail"
+  return -1
+}
+
+update_wyliodrin_server () {
+  if [ "$#" -ne 1 ]
+  then
+    echo "usage: update_wyliodrin_server -DBOARD=ON"
+    return -1
+  fi
+
+  echo "Updating wyliodrin-server"                                                               &&
+  cd $SANDBOX_PATH                                                                               &&
+  rm -rf wyliodrin_server                                                                        &&
+  git clone https://github.com/Wyliodrin/wyliodrin-server.git                                    &&
+  cd wyliodrin-server                                                                            &&
+  git checkout $WVERSION                                                                         &&
+  mkdir build                                                                                    &&
+  cd build                                                                                       &&
+  cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr $1 ..                                                   &&
+  make                                                                                           &&
+  make install                                                                                   &&
+  cd $SANDBOX_PATH                                                                               &&
+  cd wyliodrin-server/hypervisor                                                                 &&
+  mkdir build                                                                                    &&
+  cd build                                                                                       &&
+  cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..                                                      &&
+  make                                                                                           &&
+  make install                                                                                   &&
+  cd $SANDBOX_PATH                                                                               &&
+  rm -rf libwyliodrin                                                                            &&
+  echo "$WVERSION" > /etc/wyliodrin/version                                                      &&
+  echo "wyliodrin-server update success"                                                         &&
+  return 0
+
+  echo "wyliodrin-server update fail"
+  return -1
+}
+
+###################################################################################################
+
+
+
+### Actual update #################################################################################
 
 if [ $BOARD = "arduinogalileo" ]; then
   CMAKE_PARAMS="-DGALILEO=ON"
@@ -80,46 +170,21 @@ else
   exit 1
 fi
 
-# Update libwyliodrin
-cd $SANDBOX_PATH
-rm -rf libwyliodrin
-git clone https://github.com/Wyliodrin/libwyliodrin.git
-cd libwyliodrin
-git checkout $LWVERSION
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr $CMAKE_PARAMS ..
-make
-make install
-cd $SANDBOX_PATH
-cd libwyliodrin/wylio
-make
-make install
-cd $SANDBOX_PATH
-rm -rf libwyliodrin
+# Create sandbox
+mkdir -p $SANDBOX_PATH
 
-# Update wyliodrin-server
-cd $SANDBOX_PATH
-rm -rf wyliodrin_server
-git clone https://github.com/Wyliodrin/wyliodrin-server.git
-cd wyliodrin-server
-git checkout $WVERSION
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr $CMAKE_PARAMS ..
-make
-make install
-cd $SANDBOX_PATH
-cd wyliodrin-server/hypervisor
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
-make
-make install
+# Update
+if ! [ -a /usr/bin/wylio ] || [[ "$(/usr/bin/wylio -v)" < "$LWVERSION" ]]; then
+  update_libwyliodrin $CMAKE_PARAMS
+fi
+
+if ! [ -a /etc/wyliodrin/version ] || [[ "$(cat /etc/wyliodrin/version)" < "$WVERSION" ]]; then
+  update_wyliodrin_server $CMAKE_PARAMS
+fi
 
 # Clean
 rm -rf $SANDBOX_PATH
 
-reboot
+echo "Changes will be applied on next reboot"
 
 ###################################################################################################
