@@ -21,7 +21,7 @@
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v3.14
+WVERSION=v3.15
 LWVERSION=v2.1
 
 
@@ -102,6 +102,7 @@ make
 make install
 cd $SANDBOX_PATH
 rm -rf wyliodrin-server
+echo "$WVERSION" > /etc/wyliodrin/version
 
 # Install wyliodrin-shell
 cd $SANDBOX_PATH
@@ -176,5 +177,3 @@ chown -R udooer:udooer /etc/wyliodrin
 
 # Add pi to the fuse group
 usermod -a -G fuse udooer
-
-echo v3.14 > /etc/wyliodrin/version

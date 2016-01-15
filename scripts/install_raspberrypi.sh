@@ -55,7 +55,7 @@ fi
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v3.14
+WVERSION=v3.15
 LWVERSION=v2.1
 
 
@@ -205,6 +205,22 @@ make
 make install
 cd $SANDBOX_PATH
 rm -rf wyliodrin-server
+echo "$WVERSION" > /etc/wyliodrin/version
+
+# Install wyliodrin-shell
+cd $SANDBOX_PATH
+git clone https://github.com/Wyliodrin/wyliodrin-shell.git
+cd wyliodrin-shell
+npm install
+npm install grunt-cli
+./node_modules/grunt-cli/bin/grunt build
+rm -rf gruntfile.js package.json public/ server/
+mv tmp/* .
+rm -rf tmp/
+mkdir -p /usr/wyliodrin/wyliodrin-shell
+sudo cp -rf * /usr/wyliodrin/wyliodrin-shell
+cd $SANDBOX_PATH
+rm -rf wyliodrin-shell
 
 # Set boardtype to raspberry
 mkdir -p /etc/wyliodrin
@@ -252,6 +268,16 @@ autostart=true
 autorestart=true
 environment=HOME="/wyliodrin"
 priority=10
+
+[supervisord]
+[program:wyliodrin-shell]
+directory=/usr/wyliodrin/wyliodrin-shell
+command=/usr/bin/node main.js
+user=udooer
+autostart=true
+autorestart=true
+environment=PORT="9000"
+priority=30
 ' >> /etc/supervisor/supervisord.conf
 
 # Wifi
@@ -281,8 +307,6 @@ apt-get clean
 rm -rf $SANDBOX_PATH
 rm -rf /home/pi/.npm
 rm -rf /home/root/.npm
-
- echo v3.14 > /etc/wyliodrin/version
 
 # Reboot
 reboot
