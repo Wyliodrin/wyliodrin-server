@@ -218,7 +218,7 @@ rm -rf gruntfile.js package.json public/ server/
 mv tmp/* .
 rm -rf tmp/
 mkdir -p /usr/wyliodrin/wyliodrin-shell
-sudo cp -rf * /usr/wyliodrin/wyliodrin-shell
+cp -rf * /usr/wyliodrin/wyliodrin-shell
 cd $SANDBOX_PATH
 rm -rf wyliodrin-shell
 

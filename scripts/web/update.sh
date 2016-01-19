@@ -103,10 +103,11 @@ update_wyliodrin_server () {
 }
 
 update_wyliodrin_shell() {
-  echo "Updating wyliodrin-server"                                                               &&
+  echo "Updating wyliodrin-shell"                                                                &&
   cd $SANDBOX_PATH                                                                               &&
   git clone https://github.com/Wyliodrin/wyliodrin-shell.git                                     &&
   cd wyliodrin-shell                                                                             &&
+  npm update -g npm                                                                              &&
   npm install                                                                                    &&
   npm install grunt-cli                                                                          &&
   ./node_modules/grunt-cli/bin/grunt build                                                       &&
@@ -114,7 +115,7 @@ update_wyliodrin_shell() {
   mv tmp/* .                                                                                     &&
   rm -rf tmp/                                                                                    &&
   mkdir -p /usr/wyliodrin/wyliodrin-shell                                                        &&
-  sudo cp -rf * /usr/wyliodrin/wyliodrin-shell                                                   &&
+  cp -rf * /usr/wyliodrin/wyliodrin-shell                                                        &&
   cd $SANDBOX_PATH                                                                               &&
   rm -rf wyliodrin-shell                                                                         &&
   echo "wyliodrin-shell update success"                                                          &&
@@ -129,6 +130,9 @@ update_wyliodrin_shell() {
 
 
 ### Actual update #################################################################################
+
+# Create sandbox
+mkdir -p $SANDBOX_PATH
 
 if [ $BOARD = "arduinogalileo" ]; then
   CMAKE_PARAMS="-DGALILEO=ON"
@@ -222,9 +226,6 @@ else
   echo "ERROR: unknown board: " $BOARD > /dev/stderr
   exit 1
 fi
-
-# Create sandbox
-mkdir -p $SANDBOX_PATH
 
 # Update
 if ! [ -a /usr/bin/wylio ] || [[ "$(/usr/bin/wylio -v)" < "$LWVERSION" ]]; then
