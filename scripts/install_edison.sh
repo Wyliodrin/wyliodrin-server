@@ -14,8 +14,8 @@
 ### Script variables ##############################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v3.8
-LWVERSION=v2.0
+WVERSION=v3.15
+LWVERSION=v2.1
 
 
 
@@ -119,6 +119,22 @@ make install
 cd $SANDBOX_PATH
 rm -rf libstrophe
 
+# Install wyliodrin-shell
+cd $SANDBOX_PATH
+git clone https://github.com/Wyliodrin/wyliodrin-shell.git
+cd wyliodrin-shell
+npm update -g npm
+npm install
+npm install grunt-cli
+./node_modules/grunt-cli/bin/grunt build
+rm -rf gruntfile.js package.json public/ server/
+mv tmp/* .
+rm -rf tmp/
+mkdir -p /usr/wyliodrin/wyliodrin-shell
+cp -rf * /usr/wyliodrin/wyliodrin-shell
+cd $SANDBOX_PATH
+rm -rf wyliodrin-shell
+
 # Install wyliodrin-server
 cd $SANDBOX_PATH
 git clone https://github.com/Wyliodrin/wyliodrin-server.git
@@ -194,10 +210,29 @@ PIDFile=/var/run/wyliodrin-hypervisor.pid
 WantedBy=multi-user.target
 " > /lib/systemd/system/wyliodrin-hypervisor.service
 
+echo "
+[Unit]
+Description=Wyliodrin Shell
+After=wyliodrin-hypervisor
+ConditionFileNotEmpty=/media/card/wyliodrin.json
+
+[Service]
+Type=simple
+Environment=\"PORT=9000\"
+WorkingDirectory=/usr/wyliodrin/wyliodrin-shell
+ExecStart=/usr/bin/node main.js
+TimeoutStartSec=0
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+" > /lib/systemd/system/wyliodrin-shell.service
+
 # Enable services
 systemctl enable redis
 systemctl enable wyliodrin-server
 systemctl enable wyliodrin-hypervisor
+systemctl enable wyliodrin-shell
 
 # Run some more scripts
 export wyliodrin_board=edison
