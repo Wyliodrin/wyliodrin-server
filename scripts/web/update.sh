@@ -63,7 +63,7 @@ update_libwyliodrin() {
   echo "libwyliodrin update success"                                                             &&
   return 0
 
-  echo "libwyliodrin update fail"
+  echo "libwyliodrin update fail" > /dev/stderr
   return -1
 }
 
@@ -98,7 +98,29 @@ update_wyliodrin_server () {
   echo "wyliodrin-server update success"                                                         &&
   return 0
 
-  echo "wyliodrin-server update fail"
+  echo "wyliodrin-server update fail" > /dev/stderr
+  return -1
+}
+
+update_wyliodrin_shell() {
+  echo "Updating wyliodrin-server"                                                               &&
+  cd $SANDBOX_PATH                                                                               &&
+  git clone https://github.com/Wyliodrin/wyliodrin-shell.git                                     &&
+  cd wyliodrin-shell                                                                             &&
+  npm install                                                                                    &&
+  npm install grunt-cli                                                                          &&
+  ./node_modules/grunt-cli/bin/grunt build                                                       &&
+  rm -rf gruntfile.js package.json public/ server/                                               &&
+  mv tmp/* .                                                                                     &&
+  rm -rf tmp/                                                                                    &&
+  mkdir -p /usr/wyliodrin/wyliodrin-shell                                                        &&
+  sudo cp -rf * /usr/wyliodrin/wyliodrin-shell                                                   &&
+  cd $SANDBOX_PATH                                                                               &&
+  rm -rf wyliodrin-shell                                                                         &&
+  echo "wyliodrin-shell update success"                                                          &&
+  return 0
+
+  echo "wyliodrin-shell update fail" > /dev/stderr
   return -1
 }
 
@@ -158,14 +180,43 @@ Restart=always
 WantedBy=multi-user.target
 ' > /lib/systemd/system/wyliodrin-hypervisor.service
 
+  printf '[Unit]
+Description=Wyliodrin Shell
+After=wyliodrin-hypervisor
+ConditionFileNotEmpty=/media/card/wyliodrin.json
+
+[Service]
+Type=simple
+Environment="PORT=9000"
+WorkingDirectory=/usr/wyliodrin/wyliodrin-shell
+ExecStart=/usr/bin/node main.js
+TimeoutStartSec=0
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+' > /lib/systemd/system/wyliodrin-shell.service
+
+  update_wyliodrin_shell
+
   systemctl enable wyliodrin-server.service
   systemctl enable wyliodrin-hypervisor.service
+  systemctl enable wyliodrin-shell.service
 
 elif [ $BOARD = "raspberrypi" ]; then
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
 
 elif [ $BOARD = "udooneo" ]; then
   CMAKE_PARAMS="-DUDOONEO=ON"
+
+elif [ $BOARD = "edison" ]; then
+  CMAKE_PARAMS="-DEDISON=ON"
+
+elif [ $BOARD = "beaglebone" ]; then
+  CMAKE_PARAMS="-DBEAGLEBONE=ON"
+
+elif [ $BOARD = "REDPITAYA" ]; then
+  CMAKE_PARAMS="-DREDPITAYA=ON"
 
 else
   echo "ERROR: unknown board: " $BOARD > /dev/stderr
