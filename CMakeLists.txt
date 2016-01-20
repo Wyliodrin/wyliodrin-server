@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 2.8.8)
 project (wyliodrin-server)
 
 set (WTALK_VERSION_MAJOR 3)
-set (WTALK_VERSION_MINOR 15)
+set (WTALK_VERSION_MINOR 16)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/wtalk_config.h.in"
