@@ -153,6 +153,7 @@ make
 make install
 cd $SANDBOX_PATH
 rm -rf wyliodrin-server
+echo "$WVERSION" > /etc/wyliodrin/version
 
 mkdir -p /etc/wyliodrin
 echo -n edison > /etc/wyliodrin/boardtype
@@ -214,7 +215,7 @@ echo "
 [Unit]
 Description=Wyliodrin Shell
 After=wyliodrin-hypervisor
-ConditionFileNotEmpty=/media/card/wyliodrin.json
+ConditionFileNotEmpty=/media/storage/wyliodrin.json
 
 [Service]
 Type=simple
