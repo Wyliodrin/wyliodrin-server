@@ -63,20 +63,20 @@ following:
 ```
 -->
 {
-  "a" : "k",                  // "action":  "keys"                (required)
-  "r" : "19",                 // "request": "19"                  (required)
-  "s" : "3",                  // "shellid": "3"                   (required)
-  "t" : "base64 encoded data" // "text":    "base64 encoded data" (required)
+  "a" : "k",         // "action":  "keys"       (required)
+  "r" : "19",        // "request": "19"         (required)
+  "s" : "3",         // "shellid": "3"          (required)
+  "t" : "plain text" // "text":    "plain text" (required)
 }
 ```
 
 ```
 <--
 {
-  "a" : "k"                   // "action":  "keys"                (required)
-  "r" : "19"                  // "request": "19"                  (required)
-  "s" : "3"                   // "shellid": "3"                   (required)
-  "t" : "base64 encoded data" // "text":    "base64 encoded data" (required)
+  "a" : "k"          // "action":  "keys"       (required)
+  "r" : "19"         // "request": "19"         (required)
+  "s" : "3"          // "shellid": "3"          (required)
+  "t" : "plain text" // "text":    "plain text" (required)
 }
 ```
 

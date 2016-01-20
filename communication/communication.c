@@ -559,7 +559,14 @@ void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
 
           if (strcmp(key, "t") == 0) {
             xmpp_stanza_t *data_stz = xmpp_stanza_new(global_ctx);
-            xmpp_stanza_set_text(data_stz, value);
+
+            char *encoded_data = malloc(BASE64_SIZE(strlen(value)) * sizeof(char));
+            wsyserr2(encoded_data == NULL, return, "Could not allocate memory for keys");
+            encoded_data = base64_encode(encoded_data, BASE64_SIZE(strlen(value)),
+              (const unsigned char *)value, strlen(value));
+            werr2(encoded_data == NULL, return, "Could not encode keys data");
+
+            xmpp_stanza_set_text(data_stz, encoded_data);
             xmpp_stanza_add_child(shells_stz, data_stz);
           } else {
             char *key_replacement = (char *)hashmap_get(hm, key);

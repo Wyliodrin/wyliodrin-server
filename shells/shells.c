@@ -21,6 +21,7 @@
 #include "../wxmpp/wxmpp.h"                 /* xmpp handling */
 #include "../cmp/cmp.h"                     /* msgpack       */
 #include "../communication/communication.h" /* redis         */
+#include "../base64/base64.h"               /* base64        */
 
 #include "shells.h" /* API */
 
@@ -116,6 +117,14 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   /* Get text from stanza */
   char *text = xmpp_stanza_get_text(stanza);
 
+  /* Decode the text */
+  char *decoded = NULL;
+  if (text != NULL) {
+    int dec_size = stanza_to_text_len * 3 / 4 + 1; /* decoded text length */
+    decoded = calloc(dec_size, sizeof(uint8_t)); /* decoded text */
+    base64_decode((uint8_t *)decoded, text, dec_size);
+  }
+
   /* Write map */
   werr2(!cmp_write_map(&cmp, 2 +                  /* text */
                              2 * num_attrs - 4 ), /* attributes without gadgetid and xmlns */
@@ -126,7 +135,7 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   werr2(!cmp_write_str(&cmp, "t", 1),
         return,
         "cmp_write_str error: %s", cmp_strerror(&cmp));
-  werr2(!cmp_write_str(&cmp, text, text != NULL ? strlen(text) : 0),
+  werr2(!cmp_write_str(&cmp, decoded, decoded != NULL ? strlen(decoded) : 0),
         return,
         "cmp_write_str error: %s", cmp_strerror(&cmp));
 

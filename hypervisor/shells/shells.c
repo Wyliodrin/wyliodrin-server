@@ -713,10 +713,12 @@ static void shells_keys(hashmap_p hm) {
   }
 
   /* Decode */
-  int dec_size = strlen(data_str) * 3 / 4 + 1;
-  uint8_t *decoded = calloc(dec_size, sizeof(uint8_t));
-  werr2(decoded == NULL, return, "Could not allocate memory for decoding keys");
-  int decode_rc = base64_decode(decoded, data_str, dec_size);
+  // int dec_size = strlen(data_str) * 3 / 4 + 1;
+  // uint8_t *decoded = calloc(dec_size, sizeof(uint8_t));
+  // werr2(decoded == NULL, return, "Could not allocate memory for decoding keys");
+  // int decode_rc = base64_decode(decoded, data_str, dec_size);
+  char *decoded = data_str;
+  int decode_rc = strlen(data_str);
 
   char *endptr;
   long int shellid = strtol(shellid_attr, &endptr, 10);
@@ -877,12 +879,12 @@ static void shells_poweroff() {
 
 static void send_shells_keys_response(char *data_str, int data_len, int shell_id) {
   /* Encode data */
-  char *encoded_data = malloc(BASE64_SIZE(data_len) * sizeof(char));
-  wsyserr2(encoded_data == NULL, return, "Could not allocate memory for keys");
-  encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len),
-    (const unsigned char *)data_str, data_len);
-  werr2(encoded_data == NULL, return, "Could not encode keys data");
-
+  // char *encoded_data = malloc(BASE64_SIZE(data_len) * sizeof(char));
+  // wsyserr2(encoded_data == NULL, return, "Could not allocate memory for keys");
+  // encoded_data = base64_encode(encoded_data, BASE64_SIZE(data_len),
+  //   (const unsigned char *)data_str, data_len);
+  // werr2(encoded_data == NULL, return, "Could not encode keys data");
+  char *encoded_data = data_str;
 
   /* Init msgpack */
   cmp_ctx_t cmp;
@@ -929,7 +931,7 @@ static void send_shells_keys_response(char *data_str, int data_len, int shell_id
   werr2(!cmp_write_str(&cmp, "t", 1),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
-  werr2(!cmp_write_str(&cmp, encoded_data, strlen(encoded_data)),
+  werr2(!cmp_write_str(&cmp, encoded_data, /* strlen(encoded_data) */ data_len),
         return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
@@ -937,7 +939,7 @@ static void send_shells_keys_response(char *data_str, int data_len, int shell_id
   publish(msgpack_buf, cmp.writer_offset);
 
   /* Clean */
-  free(encoded_data);
+  // free(encoded_data);
 }
 
 
