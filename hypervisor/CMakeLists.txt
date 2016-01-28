@@ -47,26 +47,18 @@ set (wyliodrin_hypervisor_SRCS
   ${PROJECT_SOURCE_DIR}/logs/logs.c
 )
 
-add_library (dbs STATIC
-  ${PROJECT_SOURCE_DIR}/../libds/treetest.c
-  ${PROJECT_SOURCE_DIR}/../libds/listtest.c
-  ${PROJECT_SOURCE_DIR}/../libds/maptest.c
-  ${PROJECT_SOURCE_DIR}/../libds/heap.c
-  ${PROJECT_SOURCE_DIR}/../libds/hashmap.c
-  ${PROJECT_SOURCE_DIR}/../libds/vector.c
-  ${PROJECT_SOURCE_DIR}/../libds/strutiltest.c
-  ${PROJECT_SOURCE_DIR}/../libds/heaptest.c
-  ${PROJECT_SOURCE_DIR}/../libds/strutils.c
-  ${PROJECT_SOURCE_DIR}/../libds/vectest.c
-  ${PROJECT_SOURCE_DIR}/../libds/tree.c
-  ${PROJECT_SOURCE_DIR}/../libds/list.c
-)
-
 add_executable (wyliodrin_hypervisor
   ${wyliodrin_hypervisor_SRCS}
 )
 
 install (TARGETS wyliodrin_hypervisor DESTINATION bin)
+
+if (DEVICEINTEL)
+  add_definitions (-DDEVICEINTEL)
+  pkg_check_modules (MRAA REQUIRED mraa>=0.4.0)
+  message (INFO "found libmraa version: ${MRAA_VERSION}")
+  set(FLAGS "-DDEVICEINTEL")
+endif ()
 
 add_definitions ("-Wall -g -DLOG -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
 
@@ -77,6 +69,7 @@ target_link_libraries (wyliodrin_hypervisor
   ${HIREDIS_LIBRARIES}
   ${EVENT_LIBRARIES}
   ${FUSE_LIBRARIES}
+  ${MRAA_LIBRARIES}
   ${JANSSON_LIBRARIES}
   ${STROPHE_LIBRARIES}
   ${EXPAT_LIBRARIES}

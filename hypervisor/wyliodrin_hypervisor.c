@@ -9,6 +9,10 @@
 
 /*** INCLUDES ************************************************************************************/
 
+#ifdef DEVICEINTEL
+#include <mraa.h>
+#endif
+
 #include <unistd.h>  /* sleep */
 #include <stdbool.h> /* bools */
 
@@ -146,6 +150,27 @@ int main() {
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
 
 static char *get_boardtype() {
+  #ifdef DEVICEINTEL
+  const char* board = mraa_get_platform_name();
+  if (strncmp (board, "Intel Galileo ", 14)==0)
+  {
+    return "arduinogalileo";
+  }
+  else
+  if (strncmp (board, "Intel Edison", 12)==0)
+  {
+    return "edison";
+  }
+  else
+  if (strncmp (board, "MinnowBoard MAX", 16)==0)
+  {
+    return "minnowboardmax";
+  }
+  else
+  {
+    return NULL;
+  }
+  #else
   char *return_value = NULL;
 
   /* Open boardtype */
@@ -172,6 +197,7 @@ static char *get_boardtype() {
     }
 
     return return_value;
+    #endif
 }
 
 

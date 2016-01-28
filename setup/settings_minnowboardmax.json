@@ -1,0 +1,14 @@
+{
+  "config_file":  "/media/sdcard/wyliodrin.json",
+  "home":         "/wyliodrin",
+  "mount_file":   "/wyliodrin/projects/mnt",
+  "build_file":   "/wyliodrin/projects/build",
+  "shell":        "bash",
+  "run":          "make -f Makefile.minnowboardmax run",
+  "stop":         "kill -9",
+  "poweroff":     "poweroff",
+  "logout":       "/etc/wyliodrin/logs.out",
+  "logerr":       "/etc/wyliodrin/logs.err",
+  "hlogout":      "/etc/wyliodrin/hlogs.out",
+  "hlogerr":      "/etc/wyliodrin/hlogs.err"
+}

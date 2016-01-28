@@ -9,6 +9,10 @@
 
 /*** INCLUDES ************************************************************************************/
 
+#ifdef DEVICEINTEL
+#include <mraa.h>
+#endif
+
 #include <ctype.h>     /* tolower      */
 #include <errno.h>     /* errno        */
 #include <fcntl.h>     /* file stuff   */
@@ -26,6 +30,7 @@
 #include "wxmpp/wxmpp.h"           /* xmpp connection */
 
 /*************************************************************************************************/
+
 
 
 
@@ -165,6 +170,7 @@ int main(int argc, char *argv[]) {
 
   /* Get boartype */
   board = get_boardtype();
+  printf ("%s\n", board);
   werr2(board == NULL, goto _finish, "Could not get type of board");
 
   /* Build path of settings_<boardtype>.json */
@@ -257,6 +263,27 @@ int main(int argc, char *argv[]) {
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
 
 static char *get_boardtype() {
+  #ifdef DEVICEINTEL
+  const char* board = mraa_get_platform_name();
+  if (strncmp (board, "Intel Galileo ", 14)==0)
+  {
+    return "arduinogalileo";
+  }
+  else
+  if (strncmp (board, "Intel Edison", 12)==0)
+  {
+    return "edison";
+  }
+  else
+  if (strncmp (board, "MinnowBoard MAX", 16)==0)
+  {
+    return "minnowboardmax";
+  }
+  else
+  {
+    return NULL;
+  }
+  #else
   char *return_value = NULL;
 
   /* Open boardtype */
@@ -283,6 +310,7 @@ static char *get_boardtype() {
     }
 
     return return_value;
+    #endif
 }
 
 
