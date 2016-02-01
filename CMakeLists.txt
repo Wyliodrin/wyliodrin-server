@@ -67,6 +67,13 @@ add_library (dbs STATIC
   ${PROJECT_SOURCE_DIR}/libds/list.c
 )
 
+if (DEVICEINTEL)
+  add_definitions (-DDEVICEINTEL)
+  pkg_check_modules (MRAA REQUIRED mraa>=0.4.0)
+  message (INFO "found libmraa version: ${MRAA_VERSION}")
+  set(FLAGS "-DDEVICEINTEL")
+endif ()
+
 add_executable (wyliodrind
   ${wyliodrind_SRCS}
 )
@@ -95,12 +102,6 @@ add_subdirectory (hypervisor)
 option (RASPBERRYPI "Build for the RaspberryPi." OFF)
 option (UDOONEO     "Build for the UDOO NEO."    OFF)
 
-if (DEVICEINTEL)
-  add_definitions (-DDEVICEINTEL)
-  pkg_check_modules (MRAA REQUIRED mraa>=0.4.0)
-  message (INFO "found libmraa version: ${MRAA_VERSION}")
-  set(FLAGS "-DDEVICEINTEL")
-endif ()
 
 install (FILES setup/settings_raspberrypi.json DESTINATION etc/wyliodrin/ PERMISSIONS WORLD_READ)
 install (FILES setup/settings_arduinogalileo.json DESTINATION etc/wyliodrin/ PERMISSIONS WORLD_READ)
