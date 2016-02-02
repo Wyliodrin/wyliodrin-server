@@ -103,11 +103,11 @@ option (RASPBERRYPI "Build for the RaspberryPi." OFF)
 option (UDOONEO     "Build for the UDOO NEO."    OFF)
 
 
-install (FILES setup/settings_raspberrypi.json DESTINATION etc/wyliodrin/ PERMISSIONS WORLD_READ)
-install (FILES setup/settings_arduinogalileo.json DESTINATION etc/wyliodrin/ PERMISSIONS WORLD_READ)
-install (FILES setup/settings_edison.json DESTINATION etc/wyliodrin/ PERMISSIONS WORLD_READ)
-install (FILES setup/settings_minnowboardmax.json DESTINATION etc/wyliodrin/ PERMISSIONS WORLD_READ)
-install (FILES setup/settings_udooneo.json DESTINATION etc/wyliodrin/ PERMISSIONS WORLD_READ)
+install (FILES setup/settings_raspberrypi.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
+install (FILES setup/settings_arduinogalileo.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
+install (FILES setup/settings_edison.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
+install (FILES setup/settings_minnowboardmax.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
+install (FILES setup/settings_udooneo.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
 
 
 
