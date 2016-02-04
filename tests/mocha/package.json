@@ -1,0 +1,14 @@
+{
+  "name": "wyliodrin-server-nodejs",
+  "version": "0.0.3",
+  "private": true,
+  "scripts": {
+  "start": "node start_script.js"
+},
+
+"dependencies": {
+  "node-xmpp-client":"1.0.0-alpha2",
+  "node-stringprep":"0.2.3",
+  "underscore":"1.6.0"
+  }
+}

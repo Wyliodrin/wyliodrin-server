@@ -72,9 +72,18 @@ static void start_send_logs_routine();
 /*** API IMPLEMENTATION **************************************************************************/
 
 void add_log(log_type_t log_type, const char *msg, ...) {
-  if (logs_size == MAX_LOGS) {
-    fprintf(stderr, "Maximum number of logs reached\n");
+  if (jid == NULL) {
+    // fprintf(stderr, "Can't send logs because there is no jid\n");
     return;
+  }
+
+  if (logs_size == MAX_LOGS) {
+    fprintf(stderr, "Maximum number of logs reached. Discard old logs\n");
+    int i;
+    for (i = 0; i < logs_size; i++) {
+      free(logs[i]);
+    }
+    logs_size = 0;
   }
 
   if (!is_send_logs_routine_started) {
@@ -130,6 +139,7 @@ void add_log(log_type_t log_type, const char *msg, ...) {
 
 static void *send_logs_routine(void *args) {
   char URL[512];
+  int i;
 
   while (1) {
     sleep(UPDATE_TIME);
@@ -141,20 +151,16 @@ static void *send_logs_routine(void *args) {
       char *big_msg = calloc(logs_size * MAX_LOG_SIZE, sizeof(char));
       if (big_msg == NULL) {
         fprintf(stderr, "Calloc failed\n");
+        pthread_mutex_unlock(&logs_mutex);
         continue;
       }
       sprintf(big_msg, "{\"str\":\"");
-      int i;
-      for (i = 0; i < logs_size; i++) {
+      for (i = 0; i < logs_size - 1; i++) {
         strcat(big_msg, logs[i]);
-        free(logs[i]);
-        if (i != logs_size - 1) {
-          strcat(big_msg, "\\n");
-        }
+        strcat(big_msg, "\\n");
       }
+      strcat(big_msg, logs[logs_size - 1]);
       strcat(big_msg, "\"}");
-
-      logs_size = 0;
 
       pthread_mutex_unlock(&logs_mutex);
 
@@ -199,6 +205,11 @@ static void *send_logs_routine(void *args) {
 
       if (res != CURLE_OK) {
         fprintf(stderr, "Curl failed");
+      } else {
+        for (i = 0; i < logs_size; i++) {
+          free(logs[i]);
+        }
+        logs_size = 0;
       }
 
       curl_easy_cleanup(curl);

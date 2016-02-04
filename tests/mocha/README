@@ -1,0 +1,4 @@
+* openfire xmpp server at x500jk: 127.0.0.1:9090
+* owner and board users created (password = wyliodrin)
+* export libwyliodrin_version (export libwyliodrin_version=$(wylio -v))
+* run tests command: sudo -E mocha test --no-timeouts

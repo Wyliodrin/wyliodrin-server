@@ -2,7 +2,7 @@
  * Shells module API
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: October 2015
+ * Date last modified: November 2015
  *************************************************************************************************/
 
 #ifdef SHELLS
@@ -20,49 +20,18 @@
 
 
 
-/*** DEFINES *************************************************************************************/
-
-#define MAX_SHELLS 256 /* Maximum number of shells */
-
-/*************************************************************************************************/
-
-
-
-/*** TYPEDEFS ************************************************************************************/
-
-typedef struct {
-  long int width;      /* width */
-  long int height;     /* height */
-  int pid;             /* PID */
-  int fdm;             /* PTY file descriptor */
-  int id;              /* shell id */
-  char *request;       /* open request */
-  char *projectid;     /* projectid in case of make shell */
-  char *userid;        /* userid in case of make shell */
-  bool is_connected;   /* is project connected */
-} shell_t;
-
-/*************************************************************************************************/
-
-
-
 /*** API *****************************************************************************************/
 
 /**
- * Initialize with NULL shells_vector
+ * Shell initialization
  */
 void init_shells();
 
 /**
  * Parse shells commands
-*/
+ */
 void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
             xmpp_conn_t *const conn, void *const userdata);
-
-/**
- * Start projects that died on board shutdown.
- */
-void start_dead_projects();
 
 /*************************************************************************************************/
 

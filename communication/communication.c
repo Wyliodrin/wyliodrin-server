@@ -16,6 +16,7 @@
 #include <jansson.h>
 #include <unistd.h>
 #include <curl/curl.h>
+#include <time.h>
 
 #include <hiredis/hiredis.h>
 #include <hiredis/async.h>
@@ -24,6 +25,10 @@
 #include "../winternals/winternals.h" /* logs and errs */
 #include "../wxmpp/wxmpp.h"
 #include "../base64/base64.h"
+
+#include "../cmp/cmp.h"  /* msgpack handling */
+#include "../libds/ds.h" /* hashmap          */
+
 #include "communication.h"
 
 
@@ -32,8 +37,15 @@ redisContext *c = NULL;
 extern xmpp_ctx_t *global_ctx;
 extern xmpp_conn_t *global_conn;
 extern const char *jid;
+extern const char *owner;
+extern bool is_xmpp_connection_set;
 
 static bool is_connetion_in_progress = false;
+
+static hashmap_p hm;
+static hashmap_p action_hm;
+
+time_t time_of_last_hypervior_msg = 0;
 
 #ifdef USEMSGPACK
   #include <stdbool.h>
@@ -213,21 +225,23 @@ void onMessage(redisAsyncContext *c, void *reply, void *privdata) {
     werr2(encoded_data == NULL, return, "Could not encode");
 
     /* Send it */
-    xmpp_stanza_t *message = xmpp_stanza_new(global_ctx);
-    xmpp_stanza_set_name(message, "message");
-    xmpp_stanza_set_attribute(message, "to", id_str);
-    xmpp_stanza_t *communication = xmpp_stanza_new(global_ctx);
-    xmpp_stanza_set_name(communication, "communication");
-    xmpp_stanza_set_ns(communication, WNS);
-    xmpp_stanza_set_attribute(communication, "port", port);
+    if (is_xmpp_connection_set) {
+      xmpp_stanza_t *message = xmpp_stanza_new(global_ctx);
+      xmpp_stanza_set_name(message, "message");
+      xmpp_stanza_set_attribute(message, "to", id_str);
+      xmpp_stanza_t *communication = xmpp_stanza_new(global_ctx);
+      xmpp_stanza_set_name(communication, "communication");
+      xmpp_stanza_set_ns(communication, WNS);
+      xmpp_stanza_set_attribute(communication, "port", port);
 
-    xmpp_stanza_t *data_stz = xmpp_stanza_new(global_ctx);
-    xmpp_stanza_set_text(data_stz, encoded_data);
+      xmpp_stanza_t *data_stz = xmpp_stanza_new(global_ctx);
+      xmpp_stanza_set_text(data_stz, encoded_data);
 
-    xmpp_stanza_add_child(communication, data_stz);
-    xmpp_stanza_add_child(message, communication);
-    xmpp_send(global_conn, message);
-    xmpp_stanza_release(message);
+      xmpp_stanza_add_child(communication, data_stz);
+      xmpp_stanza_add_child(message, communication);
+      xmpp_send(global_conn, message);
+      xmpp_stanza_release(message);
+    }
   } else {
     werr("Got message on subscription different from REDIS_REPLY_ARRAY");
   }
@@ -482,6 +496,112 @@ void onWyliodrinMessage(redisAsyncContext *ac, void *reply, void *privdata) {
   }
 }
 
+void onHypervisorMessage(redisAsyncContext *ac, void *reply, void *privdata) {
+  redisReply *r = reply;
+  if (reply == NULL) return;
+
+  if (r->type == REDIS_REPLY_ARRAY) {
+    if (r->elements == 3 && strncmp(r->element[0]->str, "subscribe", 9) == 0) {
+      winfo("Successfully subscribed to %s", r->element[1]->str);
+      publish(HYPERVISOR_PUB_CHANNEL, "ping", 4);
+    }
+
+    /* Manage message */
+    else if ((r->elements == 3 && strncmp(r->element[0]->str, "message", 7) == 0)) {
+      time_of_last_hypervior_msg = time(NULL);
+
+      /* Manage pong */
+      if (r->element[2]->len == 4 && strcmp(r->element[2]->str, "pong") == 0) {
+        if (is_xmpp_connection_set) {
+          xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
+          xmpp_stanza_set_name(message_stz, "message");
+          xmpp_stanza_set_attribute(message_stz, "to", owner);
+          xmpp_stanza_t *keepalive_stz = xmpp_stanza_new(global_ctx);
+          xmpp_stanza_set_name(keepalive_stz, "keepalive");
+          xmpp_stanza_set_ns(keepalive_stz, WNS);
+          xmpp_stanza_add_child(message_stz, keepalive_stz);
+          xmpp_send(global_conn, message_stz);
+          xmpp_stanza_release(keepalive_stz);
+          xmpp_stanza_release(message_stz);
+        }
+
+        return;
+      }
+
+      cmp_ctx_t cmp;
+      cmp_init(&cmp, r->element[2]->str, r->element[2]->len);
+
+      uint32_t map_size;
+      werr2(!cmp_read_map(&cmp, &map_size),
+            return,
+            "cmp_read_map error: %s", cmp_strerror(&cmp));
+
+      /* Build stanza */
+      if (is_xmpp_connection_set) {
+        xmpp_stanza_t *message_stz = xmpp_stanza_new(global_ctx);
+        xmpp_stanza_set_name(message_stz, "message");
+        xmpp_stanza_set_attribute(message_stz, "to", owner);
+        xmpp_stanza_t *shells_stz = xmpp_stanza_new(global_ctx);
+        xmpp_stanza_set_name(shells_stz, "shells");
+        xmpp_stanza_set_ns(shells_stz, WNS);
+
+        int i;
+        char *key = NULL;
+        char *value = NULL;
+        for (i = 0; i < map_size / 2; i++) {
+          werr2(!cmp_read_str(&cmp, &key),
+                return,
+                "cmp_read_str error: %s", cmp_strerror(&cmp));
+
+          werr2(!cmp_read_str(&cmp, &value),
+                return,
+                "cmp_read_str error: %s", cmp_strerror(&cmp));
+
+          if (strcmp(key, "t") == 0) {
+            xmpp_stanza_t *data_stz = xmpp_stanza_new(global_ctx);
+
+            char *encoded_data = malloc(BASE64_SIZE(strlen(value)) * sizeof(char));
+            wsyserr2(encoded_data == NULL, return, "Could not allocate memory for keys");
+            encoded_data = base64_encode(encoded_data, BASE64_SIZE(strlen(value)),
+              (const unsigned char *)value, strlen(value));
+            werr2(encoded_data == NULL, return, "Could not encode keys data");
+
+            xmpp_stanza_set_text(data_stz, encoded_data);
+            xmpp_stanza_add_child(shells_stz, data_stz);
+          } else {
+            char *key_replacement = (char *)hashmap_get(hm, key);
+            werr2(key_replacement == NULL, return, "No entry named %s in attribute hashmap", key);
+
+            char *value_replacement;
+            if (strncmp(key, "a", strlen("a")) == 0) {
+              value_replacement = (char *)hashmap_get(action_hm, value);
+              werr2(value_replacement == NULL, return, "No entry named %s in attribute action hashmap",
+                    value);
+            } else {
+              value_replacement = value;
+            }
+
+            xmpp_stanza_set_attribute(shells_stz, key_replacement, value_replacement);
+          }
+
+          free(key);
+          free(value);
+        }
+
+        xmpp_stanza_add_child(message_stz, shells_stz);
+        xmpp_send(global_conn, message_stz);
+
+        xmpp_stanza_release(shells_stz);
+        xmpp_stanza_release(message_stz);
+      }
+    } else {
+      werr("Strange redis reply");
+    }
+  } else {
+    werr("Got message on wyliodrin subscription different from REDIS_REPLY_ARRAY");
+  }
+}
+
 void connectCallback(const redisAsyncContext *c, int status) {
   if (status != REDIS_OK) {
     werr("connectCallback: %s", c->errstr);
@@ -491,6 +611,14 @@ void connectCallback(const redisAsyncContext *c, int status) {
 }
 
 void wyliodrinConnectCallback(const redisAsyncContext *c, int status) {
+  if (status != REDIS_OK) {
+    werr("connectCallback: %s", c->errstr);
+    return;
+  }
+  wlog("REDIS connected");
+}
+
+void hypervisorConnectCallback(const redisAsyncContext *c, int status) {
   if (status != REDIS_OK) {
     werr("connectCallback: %s", c->errstr);
     return;
@@ -535,6 +663,25 @@ void *start_wyliodrin_subscriber_routine(void *arg) {
   return NULL;
 }
 
+void *start_hypervisor_subscriber_routine(void *arg) {
+  redisAsyncContext *c;
+
+  signal(SIGPIPE, SIG_IGN);
+  struct event_base *base = event_base_new();
+
+  c = redisAsyncConnect(REDIS_HOST, REDIS_PORT);
+  werr2(c->err != 0, return NULL, "redisAsyncConnect error: %s", c->errstr);
+
+  redisLibeventAttach(c, base);
+  redisAsyncSetConnectCallback(c, hypervisorConnectCallback);
+  redisAsyncCommand(c, onHypervisorMessage, NULL, "SUBSCRIBE %s", HYPERVISOR_SUB_CHANNEL);
+  event_base_dispatch(base);
+
+  werr("Return from start_wyliodrin_subscriber_routine");
+
+  return NULL;
+}
+
 void start_subscriber() {
   pthread_t t;
   int rc;
@@ -553,6 +700,15 @@ void start_wyliodrin_subscriber() {
   pthread_detach(t);
 }
 
+void start_hypervisor_subscriber() {
+  pthread_t t;
+  int rc;
+
+  rc = pthread_create(&t, NULL, start_hypervisor_subscriber_routine, NULL); /* Read rc */
+  wsyserr(rc < 0, "pthread_create");
+  pthread_detach(t);
+}
+
 void *init_communication_routine(void *args) {
   struct timeval timeout = {1, 500000}; /* 1.5 seconds */
 
@@ -561,11 +717,12 @@ void *init_communication_routine(void *args) {
   while (1) {
     c = redisConnectWithTimeout(REDIS_HOST, REDIS_PORT, timeout);
     if (c == NULL || c->err != 0) {
-      werr("redis connect error: %s", c->err != 0 ? c->errstr : "context is NULL");
+      werr("redis connect error: %s", c != NULL ? c->errstr : "context is NULL");
       sleep(1);
     } else {
       start_subscriber();
       start_wyliodrin_subscriber();
+      start_hypervisor_subscriber();
 
       is_connetion_in_progress = false;
       return NULL;
@@ -574,6 +731,28 @@ void *init_communication_routine(void *args) {
 }
 
 void init_communication() {
+  hm = create_hashmap();
+
+  hashmap_put(hm, "w",  "width",     strlen("width")     + 1);
+  hashmap_put(hm, "h",  "height",    strlen("height")    + 1);
+  hashmap_put(hm, "r",  "request",   strlen("request")   + 1);
+  hashmap_put(hm, "a",  "action",    strlen("action")    + 1);
+  hashmap_put(hm, "p",  "projectid", strlen("projectid") + 1);
+  hashmap_put(hm, "s",  "shellid",   strlen("shellid")   + 1);
+  hashmap_put(hm, "u",  "userid",    strlen("userid")    + 1);
+  hashmap_put(hm, "c",  "code",      strlen("code")      + 1);
+  hashmap_put(hm, "ru", "running",   strlen("running")   + 1);
+  hashmap_put(hm, "re", "response",  strlen("response")  + 1);
+
+  action_hm = create_hashmap();
+
+  hashmap_put(action_hm, "o", "open",       strlen("open")       + 1);
+  hashmap_put(action_hm, "c", "close",      strlen("close")      + 1);
+  hashmap_put(action_hm, "k", "keys",       strlen("keys")       + 1);
+  hashmap_put(action_hm, "s", "status",     strlen("status")     + 1);
+  hashmap_put(action_hm, "p", "poweroff",   strlen("poweroff")   + 1);
+  hashmap_put(action_hm, "d", "disconnect", strlen("disconnect") + 1);
+
   pthread_t t; /* Read thread */
   int rc_int;
 
@@ -656,6 +835,12 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
     }
     freeReplyObject(reply);
   }
+}
+
+void publish(const char* channel, const char *data, int data_len) {
+  redisReply *reply = redisCommand(c, "PUBLISH %s %b", channel, data, data_len);
+  werr2(reply == NULL, /* Do nothing */, "Redis publish error: %s", c->errstr);
+  freeReplyObject(reply);
 }
 
 #endif /* COMMUNICATION */

@@ -15,10 +15,10 @@
 #
 # [1] https://www.abelectronics.co.uk/i2c-raspbian-wheezy/info.aspx
 #
-# Tested on 2015-05-05-raspbian-wheezy.
+# Tested on 2015-11-21-raspbian-jessie-lite.
 #
 # Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
-# Date last modified: October 2015
+# Date last modified: December 2015
 ###################################################################################################
 
 
@@ -55,8 +55,8 @@ fi
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v2.24
-LWVERSION=v1.16
+WVERSION=v3.15
+LWVERSION=v2.1
 
 
 
@@ -69,9 +69,8 @@ apt-get update
 apt-get install -y git gcc g++ gcc-4.7 g++-4.7 make pkg-config libexpat1-dev libssl-dev           \
   libhiredis-dev dh-autoreconf libfuse-dev libcurl4-gnutls-dev libevent-dev redis-server          \
   supervisor vim python-dev libi2c-dev python-pip libjansson-dev cmake mc mplayer arduino minicom \
-  picocom bluez-utils bluez-compat bluez-hcidump libusb-dev libbluetooth-dev bluetooth joystick   \
-  python-smbus curl libicu-dev mpg123 firmware-ralink firmware-realtek wireless-tools             \
-  wpasupplicant
+  picocom bluez fuse libusb-dev libbluetooth-dev bluetooth joystick wpasupplicant                 \
+  python-smbus curl libicu-dev mpg123 firmware-ralink firmware-realtek wireless-tools
 apt-get clean
 
 # Use gcc and g++ 4.7
@@ -141,15 +140,15 @@ rm -rf wiringPi
 
 # Install pcre
 cd $SANDBOX_PATH
-wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.36.tar.gz
-tar -xzf pcre-8.36.tar.gz
-rm -f pcre-8.36.tar.gz
-cd pcre-8.36
+wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.38.tar.gz
+tar -xzf pcre-8.38.tar.gz
+rm -f pcre-8.38.tar.gz
+cd pcre-8.38
 ./configure --prefix=/usr
 make
 make install
 cd $SANDBOX_PATH
-rm -rf pcre-8.36
+rm -rf pcre-8.38
 
 # Install swig 3+
 cd $SANDBOX_PATH
@@ -174,6 +173,10 @@ cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
 make
 make install
 cd $SANDBOX_PATH
+cd libwyliodrin/wylio
+make
+make install
+cd $SANDBOX_PATH
 rm -rf libwyliodrin
 
 # Run libwyliodrin scripts
@@ -194,27 +197,53 @@ cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
 make
 make install
 cd $SANDBOX_PATH
+cd wyliodrin-server/hypervisor
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
+make
+make install
+cd $SANDBOX_PATH
 rm -rf wyliodrin-server
+echo "$WVERSION" > /etc/wyliodrin/version
+
+# Install wyliodrin-shell
+cd $SANDBOX_PATH
+git clone https://github.com/Wyliodrin/wyliodrin-shell.git
+cd wyliodrin-shell
+npm install
+npm install grunt-cli
+./node_modules/grunt-cli/bin/grunt build
+rm -rf gruntfile.js package.json public/ server/
+mv tmp/* .
+rm -rf tmp/
+mkdir -p /usr/wyliodrin/wyliodrin-shell
+cp -rf * /usr/wyliodrin/wyliodrin-shell
+cd $SANDBOX_PATH
+rm -rf wyliodrin-shell
 
 # Set boardtype to raspberry
 mkdir -p /etc/wyliodrin
 echo -n raspberrypi > /etc/wyliodrin/boardtype
 
 # Create settings_raspberry.json
-printf '
-  "config_file": "/boot/wyliodrin.json",
-  "home": "/wyliodrin",
-  "mount_file": "/wyliodrin/projects/mnt",
-  "build_file": "/wyliodrin/projects/build\",
-  "board": "raspberrypi",
-  "run": "sudo -E make -f Makefile.raspberrypi run",
-  "shell": "bash",
-  "stop": "sudo kill -9"
+printf '{
+  "config_file":  "/boot/wyliodrin.json",
+  "home":         "/wyliodrin",
+  "mount_file":   "/wyliodrin/projects/mnt",
+  "build_file":   "/wyliodrin/projects/build",
+  "shell":        "bash",
+  "run":          "sudo -E make -f Makefile.raspberrypi run",
+  "stop":         "sudo kill -9",
+  "poweroff":     "sudo poweroff",
+  "logout":       "/etc/wyliodrin/logs.out",
+  "logerr":       "/etc/wyliodrin/logs.err",
+  "hlogout":      "/etc/wyliodrin/hlogs.out",
+  "hlogerr":      "/etc/wyliodrin/hlogs.err"
 }\n' > /etc/wyliodrin/settings_raspberrypi.json
 
-# Create running_projects file
-mkdir -p /wyliodrin
-touch /wyliodrin/running_projects
+# Create home
+mkdir /wyliodrin
 
 # Create mount and build directories
 mkdir -p /wyliodrin/projects/mnt
@@ -223,12 +252,32 @@ mkdir -p /wyliodrin/projects/build
 # Startup script
 printf '
 [supervisord]
-[program:wtalk]
+[program:wyliodrind]
 command=/usr/bin/wyliodrind
 user=pi
 autostart=true
 autorestart=true
 environment=HOME="/wyliodrin"
+priority=20
+
+[supervisord]
+[program:wyliodrin_hypervisor]
+command="/usr/bin/wyliodrin_hypervisor"
+user=pi
+autostart=true
+autorestart=true
+environment=HOME="/wyliodrin"
+priority=10
+
+[supervisord]
+[program:wyliodrin-shell]
+directory=/usr/wyliodrin/wyliodrin-shell
+command=/usr/bin/node main.js
+user=udooer
+autostart=true
+autorestart=true
+environment=PORT="9000"
+priority=30
 ' >> /etc/supervisor/supervisord.conf
 
 # Wifi

@@ -1,8 +1,8 @@
 cmake_minimum_required (VERSION 2.8.8)
 project (wyliodrin-server)
 
-set (WTALK_VERSION_MAJOR 2)
-set (WTALK_VERSION_MINOR 24)
+set (WTALK_VERSION_MAJOR 3)
+set (WTALK_VERSION_MINOR 16)
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/wtalk_config.h.in"
@@ -49,6 +49,7 @@ set (wyliodrind_SRCS
   ${PROJECT_SOURCE_DIR}/base64/base64.c
   ${PROJECT_SOURCE_DIR}/logs/logs.c
   ${PROJECT_SOURCE_DIR}/cmp/cmp.c
+  ${PROJECT_SOURCE_DIR}/network/network.c
 )
 
 add_library (dbs STATIC
@@ -66,6 +67,13 @@ add_library (dbs STATIC
   ${PROJECT_SOURCE_DIR}/libds/list.c
 )
 
+if (DEVICEINTEL)
+  add_definitions (-DDEVICEINTEL)
+  pkg_check_modules (MRAA REQUIRED mraa>=0.4.0)
+  message (INFO "found libmraa version: ${MRAA_VERSION}")
+  set(FLAGS "-DDEVICEINTEL")
+endif ()
+
 add_executable (wyliodrind
   ${wyliodrind_SRCS}
 )
@@ -78,9 +86,9 @@ target_link_libraries (wyliodrind
   ${CMAKE_THREAD_LIBS_INIT}
   ${CURL_LIBRARIES}
   -lutil
-  -lwyliodrin
   ${HIREDIS_LIBRARIES}
   ${EVENT_LIBRARIES}
+  ${MRAA_LIBRARIES}
   ${FUSE_LIBRARIES}
   ${JANSSON_LIBRARIES}
   ${STROPHE_LIBRARIES}
@@ -89,8 +97,26 @@ target_link_libraries (wyliodrind
   ${CMAKE_BINARY_DIR}/libdbs.a
 )
 
+add_subdirectory (hypervisor)
+
 option (RASPBERRYPI "Build for the RaspberryPi." OFF)
+option (UDOONEO     "Build for the UDOO NEO."    OFF)
+
+
+install (FILES setup/settings_raspberrypi.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
+install (FILES setup/settings_arduinogalileo.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
+install (FILES setup/settings_edison.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
+install (FILES setup/settings_minnowboardmax.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
+install (FILES setup/settings_udooneo.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
+
+
+
+
 
 if (RASPBERRYPI)
+  install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
+endif ()
+
+if (UDOONEO)
   install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
 endif ()

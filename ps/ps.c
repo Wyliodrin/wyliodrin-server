@@ -34,8 +34,6 @@ bool keep_sending = false;
 extern const char *owner; /* owner from init.c */
 extern const char *stop;
 
-extern shell_t *shells_vector[];
-
 static void ps_kill(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 static void ps_send(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
 static void ps_stop(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata);
@@ -57,8 +55,6 @@ static void *send_tasks_routine(void *args) {
     char fn[64];
     char buf[BUF_SIZE];
     int fd, rc;
-    int i;
-    bool found;
 
     char pid[32];
     char comm[32];
@@ -131,24 +127,8 @@ static void *send_tasks_routine(void *args) {
           xmpp_stanza_set_attribute(ps, "cpu", "50");
           xmpp_stanza_set_attribute(ps, "mem", vmSize);
 
-          found = false;
-          for (i = 0; i < MAX_SHELLS; i++) {
-            if (shells_vector[i] != NULL) {
-              char pid_str[16];
-              snprintf(pid_str, 16, "%d", shells_vector[i]->pid);
+          xmpp_stanza_set_attribute(ps, "name", comm);
 
-              if (strcmp(pid_str, ep->d_name) == 0) {
-                if (shells_vector[i]->projectid != NULL) {
-                  xmpp_stanza_set_attribute(ps, "name", shells_vector[i]->projectid);
-                  found = true;
-                }
-                break;
-              }
-            }
-          }
-          if (!found) {
-            xmpp_stanza_set_attribute(ps, "name", comm);
-          }
 
           xmpp_stanza_add_child(info, ps);
         }

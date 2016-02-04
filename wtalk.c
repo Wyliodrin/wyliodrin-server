@@ -2,12 +2,16 @@
  * WTalk
  *
  * Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
- * Date last modified: October 2015
+ * Date last modified: November 2015
  *************************************************************************************************/
 
 
 
 /*** INCLUDES ************************************************************************************/
+
+#ifdef DEVICEINTEL
+#include <mraa.h>
+#endif
 
 #include <ctype.h>     /* tolower      */
 #include <errno.h>     /* errno        */
@@ -18,7 +22,6 @@
 #include <sys/types.h> /* stat         */
 #include <sys/wait.h>  /* waitpid      */
 #include <unistd.h>    /* stat         */
-#include <Wyliodrin.h> /* lw version   */
 
 #include "winternals/winternals.h" /* logs and errs   */
 #include "wjson/wjson.h"           /* json stuff      */
@@ -30,16 +33,22 @@
 
 
 
+
 /*** VARIABLES ***********************************************************************************/
 
-/* Values from settings configuration file */
 const char *board;
+
+/* Values from settings configuration file */
 const char *home;
 const char *mount_file;
 const char *build_file;
 const char *shell;
 const char *run;
 const char *stop;
+const char *poweroff;
+const char *logout_path;
+const char *logerr_path;
+int pong_timeout = DEFAULT_PONG_TIMEOUT;
 static const char *config_file;
 
 /* Values from wyliodrin.json */
@@ -48,9 +57,17 @@ const char *owner;
 static const char *password;
 static const char *ssid;
 static const char *psk;
+
 bool privacy = false;
+const char *nameserver;
 
 bool is_fuse_available = false;
+
+int libwyliodrin_version_major = 0;
+int libwyliodrin_version_minor = 0;
+
+FILE *log_out;
+FILE *log_err;
 
 /*************************************************************************************************/
 
@@ -86,7 +103,7 @@ static void check_is_fuse_available();
 /**
  * Create running projects if this file does not exists.
  */
-static void create_running_projects_file_if_does_not_exist();
+// static void create_running_projects_file_if_does_not_exist();
 
 /**
  * Signal handler used to catch SIGTERM.
@@ -125,20 +142,43 @@ static void wifi_raspberrypi();
 /*** MAIN ****************************************************************************************/
 
 int main(int argc, char *argv[]) {
+  log_out = stdout;
+  log_err = stderr;
+
+  winfo("Starting wyliodrind");
+
+  /* Get libwyliodrin version */
+  FILE *fp = popen("/usr/bin/wylio -v", "r");
+
+  if (fp != NULL) {
+    char libwyliodrin_version[8];
+    char *fgets_rc = fgets(libwyliodrin_version, sizeof(libwyliodrin_version)-1, fp);
+    wsyserr2(fgets_rc == NULL, /* Do nothing */, "Cannot read from /usr/bin/wylio -v stream");
+    pclose(fp);
+
+    if (fgets_rc != NULL) {
+      int sscanf_rc = sscanf(libwyliodrin_version, "v%d.%d", &libwyliodrin_version_major,
+                                                             &libwyliodrin_version_minor);
+      werr2(sscanf_rc != 2, goto _finish, "Invalid libwyliodrin_version format.");
+    }
+  }
+
   /* Catch SIGTERM */
   if (signal(SIGTERM, signal_handler) == SIG_ERR) {
     werr("Unable to catch SIGTERM");
   }
 
   /* Get boartype */
-  char *boardtype = get_boardtype();
-  werr2(boardtype == NULL, goto _finish, "Could not get boardtype");
+  board = get_boardtype();
+  printf ("%s\n", board);
+  werr2(board == NULL, goto _finish, "Could not get type of board");
 
   /* Build path of settings_<boardtype>.json */
   char settings_file[128];
-  int snprintf_rc = snprintf(settings_file, 128, "%s%s.json", SETTINGS_PATH, boardtype);
+  int snprintf_rc = snprintf(settings_file, 128, "%s%s.json", SETTINGS_PATH, board);
   wsyserr2(snprintf_rc < 0, goto _finish, "Could not build the settings configuration file");
   werr2(snprintf_rc >= 128, goto _finish, "File path of settings configuration file too long");
+
 
   /* Get the content from the settings_<boardtype> file in a json_object */
   json_t *settings_json = file_to_json(settings_file);
@@ -148,10 +188,12 @@ int main(int argc, char *argv[]) {
   bool load_settings_rc = load_content_from_settings_file(settings_json, settings_file);
   werr2(!load_settings_rc, goto _finish, "Invalid settings in %s", settings_file);
 
-  werr2(strcmp(board, boardtype) != 0, goto _finish,
-    "Content of boardtype does not coincide with board value from settings file");
 
-  free(boardtype);
+  /* Set local logs */
+  log_out = fopen(logout_path, "a");
+  if (log_out == NULL) { log_out = stdout; }
+  log_err = fopen(logerr_path, "a");
+  if (log_err == NULL) { log_err = stderr; }
 
   /* Load content from wyliodrin.json. The path to this file is indicated by the config_file
    * entry from the settings configuration file. */
@@ -171,6 +213,11 @@ int main(int argc, char *argv[]) {
     wifi_raspberrypi();
   }
 
+  /* Configure wifi of UDOO NEO boards */
+  if (strcmp(board, "udooneo") == 0) {
+    wifi_raspberrypi();
+  }
+
   umount_mount_file();
 
   create_home_mount_and_build_directories();
@@ -180,17 +227,29 @@ int main(int argc, char *argv[]) {
     change_owner_of_directories_for_raspberry_pi();
   }
 
-  create_running_projects_file_if_does_not_exist();
+  // create_running_projects_file_if_does_not_exist();
 
   check_is_fuse_available();
 
   winfo("Starting wyliodrin-server v%d.%d with libwyliodrin v%d.%d",
     WTALK_VERSION_MAJOR, WTALK_VERSION_MINOR,
-    get_version_major(), get_version_minor());
+    libwyliodrin_version_major, libwyliodrin_version_minor);
+
+  winfo("Board = %s", board);
+  winfo("Owner = %s", owner);
+  winfo("Connecting to XMPP as %s", jid);
 
   xmpp_connect(jid, password);
 
   _finish: ;
+    if (log_out != stdout) {
+      fclose(log_out);
+    }
+
+    if (log_err != stderr) {
+      fclose(log_err);
+    }
+
     /* Let it sleep for a while for error messages to be sent */
     sleep(3);
 
@@ -204,8 +263,28 @@ int main(int argc, char *argv[]) {
 /*** STATIC FUNCTIONS IMPLEMENTATIONS ************************************************************/
 
 static char *get_boardtype() {
+  #ifdef DEVICEINTEL
+  const char* board = mraa_get_platform_name();
+  if (strncmp (board, "Intel Galileo ", 14)==0)
+  {
+    return "arduinogalileo";
+  }
+  else
+  if (strncmp (board, "Intel Edison", 12)==0)
+  {
+    return "edison";
+  }
+  else
+  if (strncmp (board, "MinnowBoard MAX", 16)==0)
+  {
+    return "minnowboardmax";
+  }
+  else
+  {
+    return NULL;
+  }
+  #else
   char *return_value = NULL;
-  bool error = true;
 
   /* Open boardtype */
   int boardtype_fd = open(BOARDTYPE_PATH, O_RDONLY);
@@ -222,30 +301,21 @@ static char *get_boardtype() {
 
   /* Success */
   return_value = boardtype;
-  error = false;
 
   _finish: ;
     if (boardtype_fd != -1) {
       int close_rc = close(boardtype_fd);
-      wsyserr2(close_rc == -1, error = true; return_value = NULL,
+      wsyserr2(close_rc == -1, return_value = NULL,
                "Could not close %s", BOARDTYPE_PATH);
     }
 
-    if (error) {
-      if (boardtype != NULL) {
-        free(boardtype);
-      }
-    }
-
     return return_value;
+    #endif
 }
 
 
 static bool load_content_from_settings_file(json_t *settings_json, const char *settings_file) {
   bool return_value = false;
-
-  board = get_str_value(settings_json, "board");
-  werr2(board == NULL, goto _finish, "There is no board entry in %s", settings_file);
 
   config_file = get_str_value(settings_json, "config_file");
   werr2(config_file == NULL, goto _finish, "There is no config_file entry in %s", settings_file);
@@ -267,6 +337,19 @@ static bool load_content_from_settings_file(json_t *settings_json, const char *s
 
   stop = get_str_value(settings_json, "stop");
   werr2(stop == NULL, goto _finish, "There is no stop entry in %s", settings_file);
+
+  poweroff = get_str_value(settings_json, "poweroff");
+  werr2(poweroff == NULL, goto _finish, "There is no poweroff entry in %s", settings_file);
+
+  logout_path = get_str_value(settings_json, "logout");
+  if (logout_path == NULL) {
+    logout_path = LOCAL_STDOUT_PATH;
+  }
+
+  logerr_path = get_str_value(settings_json, "logerr");
+  if (logerr_path == NULL) {
+    logerr_path = LOCAL_STDERR_PATH;
+  }
 
   /* Success */
   return_value = true;
@@ -290,11 +373,21 @@ static bool load_content_from_config_file(json_t *config_json, const char *confi
 
   ssid = get_str_value(config_json, "ssid");
   psk  = get_str_value(config_json, "psk");
+  nameserver = get_str_value(config_json, "nameserver");
 
   /* Set privacy based on privacy value from wyliodrin.json (if exists) */
   json_t *privacy_json = json_object_get(config_json, "privacy");
   if (privacy_json != NULL && json_is_boolean(privacy_json) && json_is_true(privacy_json)) {
     privacy = true;
+  }
+
+  const char *pong_timeout_str = get_str_value(config_json, "pong_timeout");
+  if (pong_timeout_str != NULL) {
+    char *pEnd;
+    pong_timeout = strtol(pong_timeout_str, &pEnd, 10);
+    if (pong_timeout == 0) {
+      pong_timeout = DEFAULT_PONG_TIMEOUT;
+    }
   }
 
   /* Success */
@@ -321,18 +414,17 @@ static void check_is_fuse_available() {
 }
 
 
-static void create_running_projects_file_if_does_not_exist() {
-  /* Try to open RUNNING_PROJECTS_PATH */
-  int open_rc = open(RUNNING_PROJECTS_PATH, O_RDONLY);
+// static void create_running_projects_file_if_does_not_exist() {
+//   /* Try to open RUNNING_PROJECTS_PATH */
+//   int open_rc = open(RUNNING_PROJECTS_PATH, O_RDONLY);
 
-  /* Create RUNNING_PROJECTS_PATH if it does not exist */
-  if (open_rc == -1) {
-    open_rc = open(RUNNING_PROJECTS_PATH, O_CREAT | O_RDWR);
-    wsyserr2(open_rc == -1, return, "Error while trying to create " RUNNING_PROJECTS_PATH);
-  }
+//   if (open_rc == -1) {
+//     open_rc = open(RUNNING_PROJECTS_PATH, O_CREAT | O_RDWR);
+//     wsyserr2(open_rc == -1, return, "Error while trying to create " RUNNING_PROJECTS_PATH);
+//   }
 
-  close(open_rc);
-}
+//   close(open_rc);
+// }
 
 
 static void signal_handler(int signum) {
