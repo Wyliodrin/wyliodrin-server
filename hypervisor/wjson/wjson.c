@@ -35,13 +35,14 @@
 
 json_t* file_to_json(const char *filename) {
 	json_t *return_value = NULL;
+  char *buffer = NULL;
 
 	/* Open filename */
 	int filename_fd = open(filename, O_RDONLY);
 	wsyserr2(filename_fd == -1, goto _finish, "Could not open %s", filename);
 
 	/* Allocate memory for buffer */
-	char *buffer = calloc(BUFFER_SIZE, sizeof(char));
+	buffer = calloc(BUFFER_SIZE, sizeof(char));
 	wsyserr2(buffer == NULL, goto _finish, "Could not allocate memory for buffer");
 
 	/* Read data in buffer */
