@@ -1,5 +1,5 @@
 {
-  "config_file":  "/media/sdcard/wyliodrin.json",
+  "config_file":  "/media/card/wyliodrin.json",
   "home":         "/wyliodrin",
   "mount_file":   "/wyliodrin/projects/mnt",
   "build_file":   "/wyliodrin/projects/build",
