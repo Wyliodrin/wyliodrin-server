@@ -152,6 +152,10 @@ int main() {
 static char *get_boardtype() {
   #ifdef DEVICEINTEL
   const char* board = mraa_get_platform_name();
+  if (board == NULL)
+  {
+    return "edison";
+  }
   if (strncmp (board, "Intel Galileo ", 14)==0)
   {
     return "arduinogalileo";
