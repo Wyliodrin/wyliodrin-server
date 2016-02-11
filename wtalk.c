@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) {
   system("ls /media/storage/wyliodrin.json || "
          "(mkdir -p /media/storage ; mount -o loop,ro,offset=8192 /dev/mmcblk0p9 /media/storage)");
   json_t *config_json = file_to_json(config_file);
-  system("ls /media/storage/wyliodrin.json && sleep 1 && umount /media/storage");
+  system("ls /media/storage/wyliodrin.json && umount /media/storage");
   werr2(config_json == NULL, goto _finish, "Could not load JSON from %s", config_file);
 
   bool load_config_rc = load_content_from_config_file(config_json, config_file);
