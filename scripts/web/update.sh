@@ -227,6 +227,13 @@ WantedBy=multi-user.target
 elif [ $BOARD = "raspberrypi" ]; then
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
 
+  # Install wyliodrin-app-server
+  if ! [ -a /usr/wyliodrin-app-server/startup.sh ]; then
+    update_wyliodrin_app_server
+  else
+    echo "wyliodrin-app-server is up to date"
+  fi
+
 elif [ $BOARD = "udooneo" ]; then
   CMAKE_PARAMS="-DUDOONEO=ON"
 
