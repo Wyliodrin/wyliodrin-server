@@ -55,8 +55,8 @@ fi
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v3.15
-LWVERSION=v2.1
+WVERSION=v3.17
+LWVERSION=v2.3
 
 
 
@@ -222,6 +222,16 @@ cp -rf * /usr/wyliodrin/wyliodrin-shell
 cd $SANDBOX_PATH
 rm -rf wyliodrin-shell
 
+# Install wyliodrin-app-server
+cd $SANDBOX_PATH
+git clone https://github.com/Wyliodrin/wyliodrin-app-server.git
+cd wyliodrin-app-server
+npm install
+mkdir -p /usr/wyliodrin/wyliodrin-app-server
+cp -rf * /usr/wyliodrin/wyliodrin-app-server
+cd $SANDBOX_PATH
+rm -rf wyliodrin-app-server
+
 # Set boardtype to raspberry
 mkdir -p /etc/wyliodrin
 echo -n raspberrypi > /etc/wyliodrin/boardtype
@@ -273,11 +283,21 @@ priority=10
 [program:wyliodrin-shell]
 directory=/usr/wyliodrin/wyliodrin-shell
 command=/usr/bin/node main.js
-user=udooer
+user=pi
 autostart=true
 autorestart=true
 environment=PORT="9000"
 priority=30
+
+[supervisord]
+[program:wyliodrin-app-server]
+directory=/usr/wyliodrin/wyliodrin-app-server
+command=/usr/bin/node startup.js
+user=pi
+autostart=true
+autorestart=true
+environment=HOME="/wyliodrin"
+priority=40
 ' >> /etc/supervisor/supervisord.conf
 
 # Wifi

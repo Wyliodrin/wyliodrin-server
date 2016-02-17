@@ -27,8 +27,8 @@ fi
 
 SANDBOX_PATH=/sandbox
 HOME=/wyliodrin
-WVERSION=v3.16
-LWVERSION=v2.1
+WVERSION=v3.17
+LWVERSION=v2.3
 BOARD=$(cat /etc/wyliodrin/boardtype)
 
 ###################################################################################################
@@ -122,6 +122,23 @@ update_wyliodrin_shell() {
   return 0
 
   echo "wyliodrin-shell update fail" > /dev/stderr
+  return -1
+}
+
+update_wyliodrin_app_server() {
+  echo "Updating wyliodrin-app-server"                                                           &&
+  cd $SANDBOX_PATH                                                                               &&
+  git clone https://github.com/Wyliodrin/wyliodrin-app-server.git                                &&
+  cd wyliodrin-app-server                                                                        &&
+  npm install                                                                                    &&
+  mkdir -p /usr/wyliodrin/wyliodrin-app-server                                                   &&
+  cp -rf * /usr/wyliodrin/wyliodrin-app-server                                                   &&
+  cd $SANDBOX_PATH                                                                               &&
+  rm -rf wyliodrin-app-server                                                                    &&
+  echo "wyliodrin-app-server update success"                                                     &&
+  return 0
+
+  echo "wyliodrin-app-server update fail" > /dev/stderr
   return -1
 }
 
