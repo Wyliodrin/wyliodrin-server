@@ -4,6 +4,8 @@ project (wyliodrin-server)
 set (WTALK_VERSION_MAJOR 3)
 set (WTALK_VERSION_MINOR 18)
 
+file (WRITE "/etc/wyliodrin/version" "v${WTALK_VERSION_MAJOR}.${WTALK_VERSION_MINOR}\n")
+
 configure_file (
   "${PROJECT_SOURCE_DIR}/wtalk_config.h.in"
   "${PROJECT_BINARY_DIR}/wtalk_config.h"
