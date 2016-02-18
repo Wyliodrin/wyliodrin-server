@@ -1072,7 +1072,7 @@ static char **build_local_env_for_shell(int *num_env, char *request_attr, char *
 
 static char **build_local_env_for_project(int *num_env, char *request_attr, char *projectid_attr,
                                           char *userid_attr) {
-  *num_env = 7;
+  *num_env = 8;
 
   char **local_env = malloc((*num_env) * sizeof(char *));
   int i;
@@ -1088,6 +1088,7 @@ static char **build_local_env_for_project(int *num_env, char *request_attr, char
   snprintf(local_env[4], 64, "wyliodrin_jid=%s", jid);
   snprintf(local_env[5], 64, "wyliodrin_server=%d.%d",
            WYLIODRIN_HYPERVISOR_VERSION_MAJOR, WYLIODRIN_HYPERVISOR_VERSION_MINOR);
+  snprintf(local_env[6], 64, "HOME=%s", home);
 
   return local_env;
 }
