@@ -121,7 +121,7 @@ fi
 
 cd $INSTALL_SOCIAL_PATH
 echo "Checking python requests"
-if ! echo "import request" | python; then
+if ! echo "import requests" | python; then
 	echo "Installing requests"
 	git clone git://github.com/kennethreitz/requests.git
 	cd requests
