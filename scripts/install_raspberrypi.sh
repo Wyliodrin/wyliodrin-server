@@ -197,15 +197,7 @@ cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
 make
 make install
 cd $SANDBOX_PATH
-cd wyliodrin-server/hypervisor
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
-make
-make install
-cd $SANDBOX_PATH
 rm -rf wyliodrin-server
-echo "$WVERSION" > /etc/wyliodrin/version
 
 # Install wyliodrin-shell
 cd $SANDBOX_PATH
@@ -266,7 +258,8 @@ printf '
 command=/usr/bin/wyliodrind
 user=pi
 autostart=true
-autorestart=true
+exitcodes=255
+autorestart=unexpected
 environment=HOME="/wyliodrin"
 priority=20
 
@@ -275,7 +268,8 @@ priority=20
 command="/usr/bin/wyliodrin_hypervisor"
 user=pi
 autostart=true
-autorestart=true
+exitcodes=255
+autorestart=unexpected
 environment=HOME="/wyliodrin"
 priority=10
 
@@ -285,7 +279,8 @@ directory=/usr/wyliodrin/wyliodrin-shell
 command=/usr/bin/node main.js
 user=pi
 autostart=true
-autorestart=true
+exitcodes=255
+autorestart=unexpected
 environment=PORT="9000"
 priority=30
 
@@ -295,7 +290,8 @@ directory=/usr/wyliodrin/wyliodrin-app-server
 command=/usr/bin/node startup.js
 user=pi
 autostart=true
-autorestart=true
+exitcodes=255
+autorestart=unexpected
 environment=HOME="/wyliodrin"
 priority=40
 ' >> /etc/supervisor/supervisord.conf
