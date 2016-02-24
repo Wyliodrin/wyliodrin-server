@@ -142,18 +142,10 @@ cd wyliodrin-server
 git checkout $WVERSION
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DDEVICEINTEL=ON ..
-make install
-cd $SANDBOX_PATH
-cd wyliodrin-server/hypervisor
-mkdir build
-cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
-make
+cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DDEVICEINTEL=ON..
 make install
 cd $SANDBOX_PATH
 rm -rf wyliodrin-server
-echo "$WVERSION" > /etc/wyliodrin/version
 
 mkdir -p /etc/wyliodrin
 echo -n edison > /etc/wyliodrin/boardtype
