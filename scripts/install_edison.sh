@@ -142,7 +142,7 @@ cd wyliodrin-server
 git checkout $WVERSION
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
+cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DDEVICEINTEL=ON ..
 make install
 cd $SANDBOX_PATH
 cd wyliodrin-server/hypervisor

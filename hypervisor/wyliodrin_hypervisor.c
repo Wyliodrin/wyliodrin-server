@@ -102,21 +102,21 @@ int main() {
 
   /* Get boartype */
   board = get_boardtype();
-  werr2(board == NULL, return -1, "Could not get boardtype");
+  werr2(board == NULL, return 0, "Could not get boardtype");
 
   /* Build path of settings_<boardtype>.json */
   char settings_file[128];
   int snprintf_rc = snprintf(settings_file, 128, "%s%s.json", SETTINGS_PATH, board);
-  wsyserr2(snprintf_rc < 0, return -1, "Could not build the settings configuration file");
-  werr2(snprintf_rc >= 128, return -1, "File path of settings configuration file too long");
+  wsyserr2(snprintf_rc < 0, return 0, "Could not build the settings configuration file");
+  werr2(snprintf_rc >= 128, return 0, "File path of settings configuration file too long");
 
   /* Get the content from the settings_<boardtype> file in a json_object */
   json_t *settings_json = file_to_json(settings_file);
-  werr2(settings_json == NULL, return -1, "Could not load JSON from %s", settings_file);
+  werr2(settings_json == NULL, return 0, "Could not load JSON from %s", settings_file);
 
   /* Load content from settings_<boardtype> in variables */
   bool load_settings_rc = load_content_from_settings_file(settings_json, settings_file);
-  werr2(!load_settings_rc, return -1, "Invalid settings in %s", settings_file);
+  werr2(!load_settings_rc, return 0, "Invalid settings in %s", settings_file);
 
   /* Set local logs */
   log_out = fopen(logout_path, "a");
@@ -134,10 +134,10 @@ int main() {
   if (strncmp(board, "edison", strlen("edison")) == 0) {
     system("ls /media/storage/wyliodrin.json && umount /media/storage");
   }
-  werr2(config_json == NULL, return -1, "Could not load JSON from %s", config_file);
+  werr2(config_json == NULL, return 0, "Could not load JSON from %s", config_file);
 
   bool load_config_rc = load_content_from_config_file(config_json, config_file);
-  werr2(!load_config_rc, return -1, "Invalid configuration in %s", config_file);
+  werr2(!load_config_rc, return 0, "Invalid configuration in %s", config_file);
 
   init_shells();
   init_redis();
