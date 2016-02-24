@@ -260,7 +260,7 @@ int main(int argc, char *argv[]) {
     /* Let it sleep for a while for error messages to be sent */
     sleep(3);
 
-    return -1;
+    return 0;
 }
 
 /*************************************************************************************************/
