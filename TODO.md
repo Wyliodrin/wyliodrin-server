@@ -1,0 +1,1 @@
+- [:broken_heart:] get version in hypervisor's CMakeLists.txt from parent directory
