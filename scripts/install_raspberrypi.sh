@@ -14,7 +14,7 @@
 # Add "i2c-dev" and "i2c-bcm2708" in /etc/modules.
 # Follow [1] for more details on how to enable I2C on your raspberry pi.
 #
-# [1] https://www.abelectronics.co.uk/i2c-raspbian-wheezy/info.aspx
+# [1] https://www.abelectronics.co.uk/kb/article/1/i2c--smbus-and-raspbian-wheezy
 #
 # Tested on 2015-11-21-raspbian-jessie-lite.
 #
