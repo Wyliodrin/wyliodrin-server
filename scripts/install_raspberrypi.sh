@@ -7,13 +7,14 @@
 #
 # !!! BEFORE RUNNING THIS SCRIPT !!!
 # Select 1 Expand Filesystem.
-# Select 8 Advanced Options and then  A6 SPI - Enable/Disable automatic loading.
-# Select 8 Advanced Options and then  A7 I2C - Enable/Disable automatic loading.
+# Select 9 Advanced Options and then  A6 SPI - Enable/Disable automatic loading.
+# Select 9 Advanced Options and then  A7 I2C - Enable/Disable automatic loading.
+# Select 9 Advanced Options and then  A8 Serial - Disable serial shell.
 # Add "dtparam=i2c1=on" in /boot/config.txt.
 # Add "i2c-dev" and "i2c-bcm2708" in /etc/modules.
 # Follow [1] for more details on how to enable I2C on your raspberry pi.
 #
-# [1] https://www.abelectronics.co.uk/i2c-raspbian-wheezy/info.aspx
+# [1] https://www.abelectronics.co.uk/kb/article/1/i2c--smbus-and-raspbian-wheezy
 #
 # Tested on 2015-11-21-raspbian-jessie-lite.
 #
