@@ -181,7 +181,6 @@ int main(int argc, char *argv[]) {
     }
 
     int libevent_fd = open("/usr/lib/libevent.so", O_RDONLY);
-    /usr/lib/libevent-2.0.so.5
     if (libevent_fd == -1) {
       int symlink_fd = symlink("/usr/lib/libevent-2.0.so.5", "/usr/lib/libevent.so");
       wsyserr2(symlink_rc == -1, /* Do nothing */, "libevent.so does not exist and cannot be created");
