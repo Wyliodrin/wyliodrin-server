@@ -170,8 +170,23 @@ int main(int argc, char *argv[]) {
 
   /* Get boartype */
   board = get_boardtype();
-  printf ("%s\n", board);
   werr2(board == NULL, goto _finish, "Could not get type of board");
+
+  /* For Edison, create libwyliodrin.so and libevent.so exists if do not exist */
+  if (strncmp(board, "edison", strlen("edison")) == 0) {
+    int libwyliodrin_fd = open("/usr/lib/libwyliodrin.so", O_RDONLY);
+    if (libwyliodrin_fd == -1) {
+      int symlink_rc = symlink("/usr/lib/libwyliodrin.so.2", "/usr/lib/libwyliodrin.so");
+      wsyserr2(symlink_rc == -1, /* Do nothing */, "libwyliodrin.so does not exist and cannot be created");
+    }
+
+    int libevent_fd = open("/usr/lib/libevent.so", O_RDONLY);
+    /usr/lib/libevent-2.0.so.5
+    if (libevent_fd == -1) {
+      int symlink_fd = symlink("/usr/lib/libevent-2.0.so.5", "/usr/lib/libevent.so");
+      wsyserr2(symlink_rc == -1, /* Do nothing */, "libevent.so does not exist and cannot be created");
+    }
+  }
 
   /* Build path of settings_<boardtype>.json */
   char settings_file[128];
