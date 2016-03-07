@@ -221,16 +221,44 @@ Restart=always
 WantedBy=multi-user.target
 " > /lib/systemd/system/wyliodrin-shell.service
 
+
+echo "
+[Unit]
+Description=Wyliodrin app server
+After=redis
+
+[Service]
+Type=simple
+WorkingDirectory=/use/wyliodrin/wyliodrin-app-server
+ExecStart=/usr/bin/node startup.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+" > /lib/systemd/system/wyliodrin-app-server.service
+
+
 # Enable services
 systemctl enable redis
 systemctl enable wyliodrin-server
 systemctl enable wyliodrin-hypervisor
 systemctl enable wyliodrin-shell
+systemctl enable wyliodrin-app-server
 
 # Run some more scripts
 export wyliodrin_board=edison
 install_social
 update_streams
+
+# Install app-server
+cd $SANDBOX_PATH
+wget https://github.com/Wyliodrin/wyliodrin-app-server/archive/master.zip
+unzip master.zip
+rm master.zip
+cd wyliodrin-app-server-master
+npm install
+mkdir -p /usr/wyliodrin/wyliodrin-app-server
+cp -rf * /usr/wyliodrin/wyliodrin-app-server
 
 # Clean
 rm -rf $SANDBOX_PATH
