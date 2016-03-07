@@ -1,8 +1,8 @@
 cmake_minimum_required (VERSION 2.8.8)
 project (wyliodrin-connect)
 
-set (WYLIODRIN_HYPERVISOR_VERSION_MAJOR 3)
-set (WYLIODRIN_HYPERVISOR_VERSION_MINOR 17)
+set (WYLIODRIN_HYPERVISOR_VERSION_MAJOR ${WTALK_VERSION_MAJOR})
+set (WYLIODRIN_HYPERVISOR_VERSION_MINOR ${WTALK_VERSION_MINOR})
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/wyliodrin_hypervisor_config.h.in"
