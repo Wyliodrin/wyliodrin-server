@@ -4,7 +4,7 @@ project (wyliodrin-server)
 set (WTALK_VERSION_MAJOR 3)
 set (WTALK_VERSION_MINOR 20)
 
-file (WRITE "/etc/wyliodrin/version" "v${WTALK_VERSION_MAJOR}.${WTALK_VERSION_MINOR}\n")
+# file (WRITE "/etc/wyliodrin/version" "v${WTALK_VERSION_MAJOR}.${WTALK_VERSION_MINOR}\n")
 
 configure_file (
   "${PROJECT_SOURCE_DIR}/wtalk_config.h.in"
@@ -104,16 +104,11 @@ add_subdirectory (hypervisor)
 option (RASPBERRYPI "Build for the RaspberryPi." OFF)
 option (UDOONEO     "Build for the UDOO NEO."    OFF)
 
-
 install (FILES setup/settings_raspberrypi.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
 install (FILES setup/settings_arduinogalileo.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
 install (FILES setup/settings_edison.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
 install (FILES setup/settings_minnowboardmax.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
 install (FILES setup/settings_udooneo.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
-
-
-
-
 
 if (RASPBERRYPI)
   install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
