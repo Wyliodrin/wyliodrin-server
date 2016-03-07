@@ -21,8 +21,8 @@
 ###################################################################################################
 
 SANDBOX_PATH=/sandbox
-WVERSION=v3.15
-LWVERSION=v2.1
+WVERSION=v3.20
+LWVERSION=v2.3
 
 
 
@@ -90,19 +90,11 @@ cd wyliodrin-server
 git checkout $WVERSION
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DRASPBERRYPI=ON ..
-make
-make install
-cd $SANDBOX_PATH
-cd wyliodrin-server/hypervisor
-mkdir build
-cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr ..
 make
 make install
 cd $SANDBOX_PATH
 rm -rf wyliodrin-server
-echo "$WVERSION" > /etc/wyliodrin/version
 
 # Install wyliodrin-shell
 cd $SANDBOX_PATH
