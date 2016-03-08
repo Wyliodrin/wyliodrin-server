@@ -12,7 +12,7 @@ cd debian
 sudo rm -rf README.* docs *.ex wyliodrin-server*
 # In source/format replace "quilt" with "native"
 # In changelog replace "unstable" with "trusty"
-# Replace control file with the file bellow
+# Replace the file named "control" with the [file](#control) bellow
 sudo apt-get install cmake libhiredis-dev libcurl4-gnutls-dev libfuse-dev libjansson-dev libevent-dev
 cd ..
 DEB_CXXFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" DEB_CFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" dpkg-buildpackage -us -uc -j4
