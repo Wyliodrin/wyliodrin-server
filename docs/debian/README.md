@@ -2,6 +2,9 @@
 
 ## wyliodrin-server
 ```
+# Install libstrophe
+dpkg -i libstrophe-dev_20151014-1_armhf.deb
+dpkg -i libstrophe_20151014-1_armhf.deb
 git clone https://github.com/Wyliodrin/wyliodrin-server.git wyliodrin-server-3.21
 cd wyliodrin-server-3.21
 git checkout v3.21
