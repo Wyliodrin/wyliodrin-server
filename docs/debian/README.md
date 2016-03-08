@@ -55,7 +55,6 @@ sudo rm -rf README.* docs *.ex wyliodrin-app-server*
 sudo apt-get install libpam-dev
 # Install node
 cd ..
-# Add the makefile below
 DEB_CXXFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" DEB_CFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" dpkg-buildpackage -us -uc -j4
 ```
 
@@ -92,11 +91,4 @@ override_dh_auto_build:
 override_dh_clean:
 	rm -rf node_modules
 	dh_clean
-```
-
-### Makefile
-```
-install:
-	mkdir -p $(DESTDIR)/usr/wyliodrin/wyliodrin-app-server
-	cp -rf network.js nm.js package.json publish.js startup.js update-server.sh node_modules $(DESTDIR)/usr/wyliodrin/wyliodrin-app-server
 ```
