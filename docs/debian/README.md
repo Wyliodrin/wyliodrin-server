@@ -2,9 +2,6 @@
 
 ## wyliodrin-server
 ```
-# Install libstrophe
-dpkg -i libstrophe-dev_20151014-1_armhf.deb
-dpkg -i libstrophe_20151014-1_armhf.deb
 git clone https://github.com/Wyliodrin/wyliodrin-server.git wyliodrin-server-3.21
 cd wyliodrin-server-3.21
 git checkout v3.21
@@ -17,6 +14,8 @@ sudo rm -rf README.* docs *.ex wyliodrin-server*
 # In changelog replace "unstable" with "trusty"
 # Replace the file named "control" with the file bellow
 sudo apt-get install cmake libhiredis-dev libcurl4-gnutls-dev libfuse-dev libjansson-dev libevent-dev
+sudo dpkg -i libstrophe-dev_20151014-1_armhf.deb
+sudo dpkg -i libstrophe_20151014-1_armhf.deb
 cd ..
 DEB_CXXFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" DEB_CFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" dpkg-buildpackage -us -uc -j4
 ```
@@ -27,7 +26,7 @@ Source: wyliodrin-server
 Section: unknown
 Priority: extra
 Maintainer: Razvan MATEI <matei.rm94@gmail.com>
-Build-Depends: debhelper (>= 8.0.0), cmake, libhiredis-dev, libcurl4-gnutls-dev, libfuse-dev, libjansson-dev, libevent-dev
+Build-Depends: debhelper (>= 8.0.0), cmake, libhiredis-dev, libcurl4-gnutls-dev, libfuse-dev, libjansson-dev, libevent-dev, libstrophe
 Standards-Version: 3.9.2
 Homepage: https://wyliodrin.com/
 Vcs-Git: https://github.com/Wyliodrin/wyliodrin-server.git

@@ -1,0 +1,28 @@
+Format: 1.8
+Date: Tue, 08 Mar 2016 10:49:24 +0000
+Source: wyliodrin-server
+Binary: wyliodrin-server
+Architecture: source armhf
+Version: 3.21-1
+Distribution: trusty
+Urgency: low
+Maintainer: Razvan MATEI <matei.rm94@gmail.com>
+Changed-By: Razvan MATEI <matei.rm94@gmail.com>
+Description: 
+ wyliodrin-server - wyliodrin server
+Changes: 
+ wyliodrin-server (3.21-1) trusty; urgency=low
+ .
+   * Initial release
+Checksums-Sha1: 
+ 0a65b19c6507fff145c3fd09d85e3533dc305663 815 wyliodrin-server_3.21-1.dsc
+ 1020563584ad477b7fedfdc142e83e1114b2dd4f 123534 wyliodrin-server_3.21-1.tar.gz
+ 563d80561d5c0ce3bf764d8312812d68fa97d450 69550 wyliodrin-server_3.21-1_armhf.deb
+Checksums-Sha256: 
+ edadf1d10c730956502ed14be14be8767a4f6d052394d33c3a13ea2261484cd3 815 wyliodrin-server_3.21-1.dsc
+ 91bbdd0f4659a67c2f8deccf93ceda35196b9f4f5ccd85cde2758fdfc66b3024 123534 wyliodrin-server_3.21-1.tar.gz
+ 703a6b6c3d3d76c3b6d0a125e3108dcd5078036a5fea7a9d34a90e3f0056bec4 69550 wyliodrin-server_3.21-1_armhf.deb
+Files: 
+ 3655cbec59bb4cd991e3d7184fc9d2e3 815 unknown extra wyliodrin-server_3.21-1.dsc
+ 87052584060cacbd4e68c68d63526631 123534 unknown extra wyliodrin-server_3.21-1.tar.gz
+ 460248c4ce2bfd9eccd33bd9ec4805b0 69550 unknown extra wyliodrin-server_3.21-1_armhf.deb
