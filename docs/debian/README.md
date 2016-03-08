@@ -12,7 +12,7 @@ cd debian
 sudo rm -rf README.* docs *.ex wyliodrin-server*
 # In source/format replace "quilt" with "native"
 # In changelog replace "unstable" with "trusty"
-# Replace the file named "control" with the [file](#control) bellow
+# Replace the file named "control" with the file bellow
 sudo apt-get install cmake libhiredis-dev libcurl4-gnutls-dev libfuse-dev libjansson-dev libevent-dev
 cd ..
 DEB_CXXFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" DEB_CFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" dpkg-buildpackage -us -uc -j4
@@ -26,7 +26,7 @@ Priority: extra
 Maintainer: Razvan MATEI <matei.rm94@gmail.com>
 Build-Depends: debhelper (>= 8.0.0), cmake, libhiredis-dev, libcurl4-gnutls-dev, libfuse-dev, libjansson-dev, libevent-dev
 Standards-Version: 3.9.2
-Homepage: <insert the upstream URL, if relevant>
+Homepage: https://wyliodrin.com/
 Vcs-Git: https://github.com/Wyliodrin/wyliodrin-server.git
 Vcs-Browser: https://github.com/Wyliodrin/wyliodrin-server
 
