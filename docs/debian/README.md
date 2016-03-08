@@ -1,4 +1,4 @@
-# UDOO
+# UDOO DUAL/QUAD
 
 ## wyliodrin-server
 ```
