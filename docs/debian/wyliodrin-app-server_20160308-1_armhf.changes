@@ -1,0 +1,28 @@
+Format: 1.8
+Date: Tue, 08 Mar 2016 17:28:53 +0000
+Source: wyliodrin-app-server
+Binary: wyliodrin-app-server
+Architecture: source armhf
+Version: 20160308-1
+Distribution: trusty
+Urgency: low
+Maintainer: Razvan MATEI <matei.rm94@gmail.com>
+Changed-By: Razvan MATEI <matei.rm94@gmail.com>
+Description: 
+ wyliodrin-app-server - wyliodrin app server
+Changes: 
+ wyliodrin-app-server (20160308-1) trusty; urgency=low
+ .
+   * Initial release
+Checksums-Sha1: 
+ d066c2eb967cd255488cf803a589d291e024c455 773 wyliodrin-app-server_20160308-1.dsc
+ 9d38b69016ef087d919eee728bf058ae31231cf8 22850 wyliodrin-app-server_20160308-1.tar.gz
+ 2e95a847682446b4842b669ca5d92d9877069239 3737016 wyliodrin-app-server_20160308-1_armhf.deb
+Checksums-Sha256: 
+ b52f2d60ae333179698f45f557ac08d8c30e140a1115cc97c4794a1e559c9c70 773 wyliodrin-app-server_20160308-1.dsc
+ 4082cb1cf1177738950c792e1f708f97e0045b1b8d319e505cfb0341f1b0e98c 22850 wyliodrin-app-server_20160308-1.tar.gz
+ 0902a6e3cf1fc1afe11feb05a98b2c492667a709575930d2b77f188b442cb82e 3737016 wyliodrin-app-server_20160308-1_armhf.deb
+Files: 
+ a2d727a0d117b99fa79fbb38007eca08 773 unknown extra wyliodrin-app-server_20160308-1.dsc
+ 87b6ea8fabe594bee3f2689a0ce7b403 22850 unknown extra wyliodrin-app-server_20160308-1.tar.gz
+ c2fa542f01d9e7674f8bbb8ff03f2bae 3737016 unknown extra wyliodrin-app-server_20160308-1_armhf.deb
