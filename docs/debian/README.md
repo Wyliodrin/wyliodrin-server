@@ -1,5 +1,7 @@
 # UDOO DUAL/QUAD
 
+
+
 ## wyliodrin-server
 ```
 git clone https://github.com/Wyliodrin/wyliodrin-server.git wyliodrin-server-3.21
@@ -51,9 +53,7 @@ sudo rm -rf README.* docs *.ex wyliodrin-app-server*
 # In source/format replace "quilt" with "native"
 # In changelog replace "unstable" with "trusty"
 # Replace the file named "control" with the file below
-# Replace the file named "rules" with the file below
 sudo apt-get install libpam-dev
-# Install node
 cd ..
 DEB_CXXFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" DEB_CFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" dpkg-buildpackage -us -uc -j4
 ```
@@ -76,19 +76,37 @@ Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: wyliodrin app server
 ```
 
-### rules
+
+
+## wyliodrin-shell
 ```
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+git clone https://github.com/Wyliodrin/wyliodrin-shell.git wyliodrin-shell-20150309
+cd wyliodrin-shell-20150309
+DEBFULLNAME="Razvan MATEI" EMAIL="matei.rm94@gmail.com" DEBEMAIL="matei.rm94@gmail.com" dh_make -e matei.rm94@gmail.com -c gpl2 --createorig
+# When asked the type of package, choose single binary
+cd debian
+sudo rm -rf README.* docs *.ex wyliodrin-shell*
+# In source/format replace "quilt" with "native"
+# In changelog replace "unstable" with "trusty"
+# Replace the file named "control" with the file below
+cd ..
+DEB_CXXFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" DEB_CFLAGS_APPEND="-mthumb -O2 -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon -mvectorize-with-neon-quad -pipe -fomit-frame-pointer" dpkg-buildpackage -us -uc -j4
+```
 
-%:
-	dh $@
+### control
+```
+Source: wyliodrin-shell
+Section: unknown
+Priority: extra
+Maintainer: Razvan MATEI <matei.rm94@gmail.com>
+Build-Depends: debhelper (>= 8.0.0), npm
+Standards-Version: 3.9.2
+Homepage: https://wyliodrin.com/
+Vcs-Git: https://github.com/Wyliodrin/wyliodrin-shell.git
+Vcs-Browser: https://github.com/Wyliodrin/wyliodrin-shell
 
-override_dh_auto_build:
-	npm install
-	dh_auto_build
-
-override_dh_clean:
-	rm -rf node_modules
-	dh_clean
+Package: wyliodrin-shell
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: wyliodrin shell
 ```
