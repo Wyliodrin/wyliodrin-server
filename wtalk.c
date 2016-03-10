@@ -135,11 +135,6 @@ static void wifi_edison();
  */
 static void wifi_raspberrypi();
 
-/**
- * Add udooer to fuse group
- */
-static void add_udooer_to_fuse_group();
-
 /*************************************************************************************************/
 
 
@@ -242,7 +237,6 @@ int main(int argc, char *argv[]) {
   /* Configure wifi of UDOO NEO boards */
   if (strcmp(board, "udooneo") == 0) {
     wifi_raspberrypi();
-    add_udooer_to_fuse_group();
   }
 
   umount_mount_file();
@@ -547,11 +541,6 @@ static void wifi_raspberrypi() {
     waitpid(wifi_pid, NULL, 0);
     winfo("Wifi connection established");
   }
-}
-
-
-static void add_udooer_to_fuse_group() {
-  system("(groups udooer | grep fuse) || sudo usermod -a -G fuse udooer");
 }
 
 /*************************************************************************************************/
