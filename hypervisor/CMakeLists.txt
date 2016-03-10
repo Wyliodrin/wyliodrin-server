@@ -53,7 +53,9 @@ add_executable (wyliodrin_hypervisor
 
 install (TARGETS wyliodrin_hypervisor DESTINATION bin)
 
-install (FILES setup/wyliodrin-hypervisor.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
+if (UDOONEO)
+  install (FILES ../setup/wyliodrin-hypervisor.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
+endif ()
 
 if (DEVICEINTEL)
   add_definitions (-DDEVICEINTEL)
