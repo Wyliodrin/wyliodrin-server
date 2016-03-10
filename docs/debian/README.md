@@ -36,7 +36,7 @@ Vcs-Browser: https://github.com/Wyliodrin/wyliodrin-server
 
 Package: wyliodrin-server
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, supervisor
 Description: wyliodrin server
 ```
 
@@ -110,3 +110,35 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: wyliodrin shell
 ```
+
+
+## libwyliodrin
+```
+git clone https://github.com/Wyliodrin/libwyliodrin.git libwyliodrin-2.3
+cd libwyliodrin-2.3
+git checkout v3.21
+# Modify "cmake_minimum_required (VERSION 2.8.8)" to "cmake_minimum_required (VERSION 2.8.7)" in CMakeLists.txt
+DEBFULLNAME="Razvan MATEI" EMAIL="matei.rm94@gmail.com" DEBEMAIL="matei.rm94@gmail.com" dh_make -e matei.rm94@gmail.com -c gpl2 --createorig
+# When asked the type of package, choose library
+sudo rm -rf README.* docs *.ex libwyliodrin*
+# In source/format replace "quilt" with "native"
+# In changelog replace "unstable" with "trusty"
+# Replace the file named "control" with the file below
+```
+
+### UDOONEO
+```
+sudo apt-get install -y cmake swig redis-server libhiredis-dev libjansson-dev libevent-dev python-dev
+# node -v -> v0.12.9
+# npm -v -> 2.14.9
+
+# [ 66%] Swig source
+# swig error : Unrecognized option -javascript
+# swig error : Unrecognized option -node
+
+# Swig 3.0.8
+sudo apt-get install libpcre3-dev
+((cat README.md | grep libpcreaaa) && echo found) || echo not_found
+```
+
+# UDOONEO

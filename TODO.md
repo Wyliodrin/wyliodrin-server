@@ -10,3 +10,4 @@ Use :white_check_mark: for DONE
 
 # v3.22
 - :white_medium_square: log file auto-redimension
+- :white_medium_square: create /wyliodrin/projects/build and /wyliodrin/projects/build if they do not exist

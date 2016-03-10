@@ -269,7 +269,7 @@ priority=20
 command="/usr/bin/wyliodrin_hypervisor"
 user=pi
 autostart=true
-exitcodes=255
+exitcodes=0
 autorestart=unexpected
 environment=HOME="/wyliodrin"
 priority=10
