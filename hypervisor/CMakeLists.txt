@@ -53,6 +53,8 @@ add_executable (wyliodrin_hypervisor
 
 install (TARGETS wyliodrin_hypervisor DESTINATION bin)
 
+install (FILES setup/wyliodrin-hypervisor.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
+
 if (DEVICEINTEL)
   add_definitions (-DDEVICEINTEL)
   pkg_check_modules (MRAA REQUIRED mraa>=0.4.0)

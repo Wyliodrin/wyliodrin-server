@@ -109,6 +109,7 @@ install (FILES setup/settings_arduinogalileo.json DESTINATION /etc/wyliodrin/ PE
 install (FILES setup/settings_edison.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
 install (FILES setup/settings_minnowboardmax.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
 install (FILES setup/settings_udooneo.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
+install (FILES setup/wyliodrin-server.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
 
 if (RASPBERRYPI)
   install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
