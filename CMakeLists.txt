@@ -101,8 +101,9 @@ target_link_libraries (wyliodrind
 
 add_subdirectory (hypervisor)
 
-option (RASPBERRYPI "Build for the RaspberryPi." OFF)
-option (UDOONEO     "Build for the UDOO NEO."    OFF)
+option (RASPBERRYPI     "Build for the RaspberryPi."     OFF)
+option (UDOONEO         "Build for the UDOO NEO."        OFF)
+option (BEAGLEBONEBLACK "Build for the BEAGLEBONEBLACK." OFF)
 
 install (FILES setup/settings_raspberrypi.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
 install (FILES setup/settings_arduinogalileo.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
@@ -118,4 +119,9 @@ if (UDOONEO)
   install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
   install (FILES setup/wyliodrin-server.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
   install (FILES setup/boardtype_udooneo DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ RENAME boardtype)
+endif ()
+
+if (BEAGLEBONEBLACK)
+  install (FILES setup/wyliodrin-server-beagleboneblack.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
+  install (FILES setup/boardtype_beagleboneblack DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ RENAME boardtype)
 endif ()
