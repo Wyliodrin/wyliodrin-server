@@ -10,5 +10,5 @@ Vcs-Browser: https://github.com/Wyliodrin/wyliodrin-server
 
 Package: wyliodrin-server
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, supervisor
+Depends: ${shlibs:Depends}, ${misc:Depends}, supervisor, redis-server
 Description: wyliodrin server
