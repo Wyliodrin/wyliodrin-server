@@ -57,6 +57,10 @@ if (UDOONEO)
   install (FILES ../setup/wyliodrin-hypervisor.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
 endif ()
 
+if (BEAGLEBONEBLACK)
+  install (FILES setup/wyliodrin-hypervisor-beagleboneblack.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
+endif ()
+
 if (DEVICEINTEL)
   add_definitions (-DDEVICEINTEL)
   pkg_check_modules (MRAA REQUIRED mraa>=0.4.0)
