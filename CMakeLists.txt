@@ -119,6 +119,7 @@ if (UDOONEO)
   install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
   install (FILES setup/wyliodrin-server.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
   install (FILES setup/boardtype_udooneo DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ RENAME boardtype)
+  install (FILES setup/udooer_nopasswd DESTINATION /etc/sudoers.d/ PERMISSIONS WORLD_READ)
 endif ()
 
 if (BEAGLEBONEBLACK)

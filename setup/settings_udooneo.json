@@ -4,7 +4,7 @@
   "mount_file":   "/wyliodrin/projects/mnt",
   "build_file":   "/wyliodrin/projects/build",
   "shell":        "bash",
-  "run":          "sudo -E make -f Makefile.udoo run",
+  "run":          "sudo -E make -f Makefile.udooneo run",
   "stop":         "sudo kill -9",
   "poweroff":     "sudo poweroff",
   "logout":       "/etc/wyliodrin/logs.out",
