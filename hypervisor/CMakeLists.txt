@@ -58,7 +58,7 @@ if (UDOONEO)
 endif ()
 
 if (BEAGLEBONEBLACK)
-  install (FILES setup/wyliodrin-hypervisor-beagleboneblack.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
+  install (FILES ../setup/wyliodrin-hypervisor-beagleboneblack.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
 endif ()
 
 if (DEVICEINTEL)
