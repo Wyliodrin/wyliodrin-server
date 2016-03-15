@@ -54,7 +54,7 @@ add_executable (wyliodrin_hypervisor
 install (TARGETS wyliodrin_hypervisor DESTINATION bin)
 
 if (UDOONEO)
-  install (FILES ../setup/wyliodrin-hypervisor.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
+  install (FILES ../setup/wyliodrin-hypervisor-udooneo.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
 endif ()
 
 if (BEAGLEBONEBLACK)
