@@ -53,6 +53,10 @@ add_executable (wyliodrin_hypervisor
 
 install (TARGETS wyliodrin_hypervisor DESTINATION bin)
 
+if (RASPBERRYPI)
+  install (FILES ../setup/wyliodrin-hypervisor-raspberrypi.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
+endif ()
+
 if (UDOONEO)
   install (FILES ../setup/wyliodrin-hypervisor-udooneo.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
 endif ()
