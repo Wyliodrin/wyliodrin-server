@@ -1,0 +1,14 @@
+Source: wyliodrin-server
+Section: unknown
+Priority: optional
+Maintainer: Razvan MATEI <matei.rm94@gmail.com>
+Build-Depends: debhelper (>= 8.0.0), cmake, libhiredis-dev, libcurl4-gnutls-dev, libfuse-dev, libjansson-dev, libevent-dev, libstrophe, libexpat1-dev
+Standards-Version: 3.9.4
+Homepage: https://wyliodrin.com/
+Vcs-Git: https://github.com/Wyliodrin/wyliodrin-server.git
+Vcs-Browser: https://github.com/Wyliodrin/wyliodrin-server
+
+Package: wyliodrin-server
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, supervisor, redis-server, libexpat1-dev, libfuse-dev, fuse
+Description: wyliodrin server
