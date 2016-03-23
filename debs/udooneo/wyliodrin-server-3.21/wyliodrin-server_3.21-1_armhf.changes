@@ -15,14 +15,14 @@ Changes:
  .
    * Initial release
 Checksums-Sha1: 
- 9392aa428a0f1338cf0a04b0e0430ef1604aa86c 828 wyliodrin-server_3.21-1.dsc
- 9b17038eacc2aea031e425fb531b619589849530 22135182 wyliodrin-server_3.21-1.tar.gz
- 5011b98221f2d1c4d35817278dc71dab34114fec 49888 wyliodrin-server_3.21-1_armhf.deb
+ f0ca5f2e5242b02164e20c666d723dd261315af9 850 wyliodrin-server_3.21-1.dsc
+ 8d9c4602f6e1d0a534df678b3f1896ea9b61a11c 93823152 wyliodrin-server_3.21-1.tar.gz
+ 9a6c2b8aa1c77573973f894b69113ee0bfb60b36 49844 wyliodrin-server_3.21-1_armhf.deb
 Checksums-Sha256: 
- aaf9f7f197525a0cd215a0de618dd1107eee6ee4eafea7432e738f62b3f703e5 828 wyliodrin-server_3.21-1.dsc
- bea8806c2026abb3d700f87cba76cc5dd565e68a42b23a315c4912abb5424924 22135182 wyliodrin-server_3.21-1.tar.gz
- acaa77babaf09b2e3168ca8c32d63f032d471ca5ca1fb5e1f7de74b42fc8d66a 49888 wyliodrin-server_3.21-1_armhf.deb
+ 4564dbec3576e19e5ca2e10dbc7f22e6c3e442e39b2ae8906a605229207733a3 850 wyliodrin-server_3.21-1.dsc
+ c8901987eba6a657eaf3c44817a377b2500ab022c6d404afb153d00cded1bc3a 93823152 wyliodrin-server_3.21-1.tar.gz
+ 8753c3cd3416de7c5b6adeb4d7560fb777f3fe26bf03a4f03edeaf090cf1ee79 49844 wyliodrin-server_3.21-1_armhf.deb
 Files: 
- a9bab4c3fc70dc0f83562495e2f9f0db 828 unknown optional wyliodrin-server_3.21-1.dsc
- 4b1cacd298ffc3bd5edbd097a6faabac 22135182 unknown optional wyliodrin-server_3.21-1.tar.gz
- 6f5cc8e141a03f2fadc9515c7b611c8a 49888 unknown optional wyliodrin-server_3.21-1_armhf.deb
+ 20a867fa759bef25cbd36266e9b92b9d 850 unknown optional wyliodrin-server_3.21-1.dsc
+ 7b4c0be384fb1af2af19d323c6e7f1ff 93823152 unknown optional wyliodrin-server_3.21-1.tar.gz
+ f394a7ecc561c0833c247f9e75e2b8df 49844 unknown optional wyliodrin-server_3.21-1_armhf.deb
