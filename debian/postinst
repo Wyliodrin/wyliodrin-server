@@ -26,6 +26,10 @@ case "$1" in
 	/bin/chown -R udooer:udooer /wyliodrin
 	/bin/chown -R udooer:udooer /etc/wyliodrin
 	/usr/sbin/usermod -a -G fuse udooer
+	/usr/bin/supervisorctl reread
+	/usr/bin/supervisorctl update
+	/usr/bin/supervisorctl start wyliodrind
+	/usr/bin/supervisorctl start wyliodrin_hypervisor
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
