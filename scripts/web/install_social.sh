@@ -96,11 +96,11 @@ cd $INSTALL_SOCIAL_PATH
 echo "Checking pybass"
 if ! echo "import pybass" | python; then
 	echo "Installing pybass"
-	curl -L https://github.com/Wyliodrin/pybass/archive/master.zip > pybass.zip
-	unzip pybass.zip
-	cd pybass-master
-	chmod a+x install.sh
-	./install.sh
+	git clone https://github.com/Wyliodrin/pybass.git
+	cd pybass
+	python setup.py install
+	cp lib/hardfp/libbass* /usr/local/lib
+	ldconfig
 
 	cd $INSTALL_SOCIAL_PATH
 	rm -f pybass.zip

@@ -114,6 +114,8 @@ install (FILES setup/settings_beagleboneblack.json DESTINATION /etc/wyliodrin/ P
 
 if (RASPBERRYPI)
   install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
+  install (FILES setup/boardtype_raspberrypi DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ RENAME boardtype)
+  install (FILES setup/wyliodrin-server-raspberrypi.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
 endif ()
 
 if (UDOONEO)
