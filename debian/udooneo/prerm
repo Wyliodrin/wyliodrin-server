@@ -21,7 +21,7 @@ case "$1" in
     remove|upgrade|deconfigure|failed-upgrade)
 	/usr/bin/supervisorctl stop wyliodrind && true
 	/usr/bin/supervisorctl stop wyliodrin_hypervisor && true
-	/bin/fusermount -u /wyliodrin/projects/mnt	
+	/bin/fusermount -u /wyliodrin/projects/mnt && true
     ;;
 
     *)
