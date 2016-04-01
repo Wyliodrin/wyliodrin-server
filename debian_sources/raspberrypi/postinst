@@ -25,11 +25,13 @@ case "$1" in
 	/bin/mkdir -p /wyliodrin/projects/build
 	/bin/chown -R pi:pi /wyliodrin
 	/bin/chown -R pi:pi /etc/wyliodrin
-	/usr/sbin/usermod -a -G fuse pi && true
+	/usr/sbin/usermod -a -G fuse pi || true
 	/usr/bin/supervisorctl reread
 	/usr/bin/supervisorctl update
 	/usr/bin/supervisorctl start wyliodrind
 	/usr/bin/supervisorctl start wyliodrin_hypervisor
+	/bin/ls /usr/bin/node || /bin/ln -s /usr/bin/nodejs /usr/bin/node
+	/usr/bin/pip install redis msgpack-python ino pyfirmata
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

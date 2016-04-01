@@ -2,7 +2,7 @@ Source: wyliodrin-server
 Section: unknown
 Priority: optional
 Maintainer: Razvan MATEI <matei.rm94@gmail.com>
-Build-Depends: debhelper (>= 8.0.0), cmake, libhiredis-dev, libcurl4-gnutls-dev, libfuse-dev, libjansson-dev, libevent-dev, libstrophe, libexpat1-dev
+Build-Depends: debhelper (>= 8.0.0), cmake, libhiredis-dev, libcurl4-gnutls-dev, libfuse-dev, libjansson-dev, libevent-dev, libstrophe-dev (>= 0.8.8), libexpat1-dev
 Standards-Version: 3.9.4
 Homepage: https://wyliodrin.com/
 Vcs-Git: https://github.com/Wyliodrin/wyliodrin-server.git
@@ -10,5 +10,5 @@ Vcs-Browser: https://github.com/Wyliodrin/wyliodrin-server
 
 Package: wyliodrin-server
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, supervisor, redis-server, libexpat1-dev, libfuse-dev, fuse
+Depends: ${shlibs:Depends}, ${misc:Depends}, supervisor, redis-server, fuse, libwyliodrin-dev, libhiredis-dev, libcurl4-gnutls-dev, libfuse-dev, libjansson-dev, libevent-dev, libstrophe-dev (>= 0.8.8), libexpat1-dev, libssl-dev, dh-autoreconf, python-dev, libi2c-dev, mc, mplayer, arduino, minicom, picocom, bluez, libusb-dev, libbluetooth-dev, bluetooth, joystick, wpasupplicant, python-smbus, curl, libicu-dev, mpg123, firmware-ralink, firmware-realtek, wireless-tools
 Description: wyliodrin server
