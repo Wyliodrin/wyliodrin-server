@@ -116,6 +116,7 @@ if (RASPBERRYPI)
   install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
   install (FILES setup/boardtype_raspberrypi DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ RENAME boardtype)
   install (FILES setup/wyliodrin-server-raspberrypi.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
+  install (FILES setup/interfaces_raspberrypi DESTINATION /etc/network/ PERMISSIONS WORLD_READ RENAME interfaces)
 endif ()
 
 if (UDOONEO)
