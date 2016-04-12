@@ -1,6 +1,9 @@
 # UDOO DUAL/QUAD
 
 
+bleno, noble, bluepy, glib-dev
+
+
 
 ## wyliodrin-server
 ```

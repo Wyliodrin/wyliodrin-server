@@ -1,6 +1,6 @@
 # raspi-config stuff - Expand, I2C, SPI and Serial
 sudo apt-get update &&
-sudo bash -c "echo \"deb http://wyliodrin.com/public/debian/raspberrypi trusty main\" >> /etc/apt/sources.list" &&
+ls /etc/apt/sources.list || sudo bash -c "echo \"deb http://wyliodrin.com/public/debian/raspberrypi trusty main\" >> /etc/apt/sources.list" &&
 sudo apt-get install -y apt-transport-https &&
 sudo apt-get update &&
 sudo apt-get install -y --force-yes libstrophe=0.8.8 libstrophe-dev=0.8.8 &&
