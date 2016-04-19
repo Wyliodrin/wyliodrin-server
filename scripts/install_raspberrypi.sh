@@ -20,6 +20,14 @@
 #
 # Author: Razvan Madalin MATEI <matei.rm94@gmail.com>
 # Date last modified: December 2015
+#
+# Update 16/04/2016
+# * node install via apt-get install nodejs + ln -s /usr/bin/nodejs /usr/bin/node +
+#   apt-get install node-gyp (installs node.h)
+# * swig install via apt-get + ln -s /usr/bin/swig-3.0 /usr/bin/swig
+#   (solves error: unknown command swig_add_module)
+# * update libwyliodrin/languages/nodejs/CMakeLists.txt
+# * apt-get install libuv0.10-dev
 ###################################################################################################
 
 
