@@ -227,15 +227,42 @@ WantedBy=multi-user.target
 elif [ $BOARD = "raspberrypi" ]; then
   CMAKE_PARAMS="-DRASPBERRYPI=ON"
 
-  # Install wyliodrin-app-server
-  if ! [ -a /usr/wyliodrin-app-server/startup.sh ]; then
-    update_wyliodrin_app_server
-  else
-    echo "wyliodrin-app-server is up to date"
-  fi
+  # # Install wyliodrin-app-server
+  # if ! [ -a /usr/wyliodrin-app-server/startup.sh ]; then
+  #   update_wyliodrin_app_server
+  # else
+  #   echo "wyliodrin-app-server is up to date"
+  # fi
+
+  apt-get update &&
+  (cat /etc/apt/sources.list | grep http://wyliodrin.com/public/debian/raspberrypi) || echo "deb http://wyliodrin.com/public/debian/raspberrypi trusty main" >> /etc/apt/sources.list &&
+  apt-get install -y apt-transport-https &&
+  apt-get update &&
+  apt-get install -y --force-yes libstrophe=0.8.8 libstrophe-dev=0.8.8 &&
+  apt-get install -y --force-yes libwyliodrin1 libwyliodrin-dev &&
+  apt-get install -y --force-yes wyliodrin-server &&
+  apt-get install -y --force-yes wyliodrin-shell &&
+  apt-get install -y --force-yes wyliodrin-app-server &&
+  apt-get install -y --force-yes node-red &&
+  apt-get install -y --force-yes wyliodrin-social
+
+  exit 0
 
 elif [ $BOARD = "udooneo" ]; then
   CMAKE_PARAMS="-DUDOONEO=ON"
+
+  apt-get update &&
+  (cat /etc/apt/sources.list | grep http://wyliodrin.com/public/debian/udooneo) || echo "deb http://wyliodrin.com/public/debian/udooneo trusty main" >> /etc/apt/sources.list &&
+  apt-get update &&
+  apt-get install -y --force-yes libstrophe libstrophe-dev &&
+  apt-get install -y --force-yes libwyliodrin libwyliodrin-dev &&
+  apt-get install -y --force-yes wyliodrin-server &&
+  apt-get install -y --force-yes wyliodrin-shell &&
+  apt-get install -y --force-yes wyliodrin-app-server &&
+  apt-get install -y --force-yes node-red &&
+  apt-get install -y --force-yes social-libraries
+
+  exit 0
 
 elif [ $BOARD = "edison" ]; then
   CMAKE_PARAMS="-DEDISON=ON"
