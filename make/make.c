@@ -302,7 +302,7 @@ void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   wlog("make()");
 
   /* Get action attribute */
-  char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
+  const char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
   if (action_attr == NULL) {
     werr("No action attribute in make stanza");
     return;
@@ -311,14 +311,14 @@ void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   /* Treat build action */
   if (strcmp(action_attr, "build") == 0) {
     /* Get projectid request */
-    char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
+    const char *projectid_attr = xmpp_stanza_get_attribute(stanza, "projectid"); /* projectid attribute */
     if (projectid_attr == NULL) {
       werr("No projectid attribute in make stanza");
       return;
     }
 
     /* Get request attribute */
-    char *request_attr = xmpp_stanza_get_attribute(stanza, "request"); /* request attribute */
+    const char *request_attr = xmpp_stanza_get_attribute(stanza, "request"); /* request attribute */
     if (request_attr == NULL) {
       werr("No request attribute in make stanza");
     }
@@ -331,7 +331,7 @@ void make(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
     arg->projectid_attr = strdup(projectid_attr);
     arg->request_attr = strdup(request_attr);
     if (!is_fuse_available) {
-      char *address_attr = xmpp_stanza_get_attribute(stanza, "address"); /* address attribute */
+      const char *address_attr = xmpp_stanza_get_attribute(stanza, "address"); /* address attribute */
       if (address_attr == NULL) {
         werr("No address attribute in make stanza");
       }

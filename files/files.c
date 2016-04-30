@@ -364,7 +364,7 @@ void files(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 {
   wlog("files()");
   if (error == 0) {
-    char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
+    const char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
     if (action_attr == NULL) {
       werr("xmpp_stanza_get_attribute attribute = action");
     }
@@ -392,7 +392,7 @@ static void files_attr(xmpp_stanza_t *stanza) {
   rc = pthread_mutex_lock(&mutex);
   wsyserr(rc != 0, "pthread_mutex_lock");
 
-  char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* error attribute */
+  const char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* error attribute */
   werr2(error_attr == NULL, return, "There is no error attribute in files stanza");
 
 
@@ -400,7 +400,7 @@ static void files_attr(xmpp_stanza_t *stanza) {
     wlog("Error in attributes: %s", error_attr);
     attributes.is_valid = -1;
   } else {
-    char *type_attr = xmpp_stanza_get_attribute(stanza, "type"); /* type attribute */
+    const char *type_attr = xmpp_stanza_get_attribute(stanza, "type"); /* type attribute */
     werr2(type_attr == NULL, return, "There is no type attribute in files stanza");
 
     if (strcmp(type_attr, "directory") == 0) {
@@ -414,7 +414,7 @@ static void files_attr(xmpp_stanza_t *stanza) {
       attributes.is_valid = -1;
     }
 
-    char *size_attr = xmpp_stanza_get_attribute(stanza, "size"); /* size */
+    const char *size_attr = xmpp_stanza_get_attribute(stanza, "size"); /* size */
     if (size_attr == NULL) {
       // werr("xmpp_stanza_get_attribute attribute = size (%s)", xmpp_stanza_get_attribute(stanza, "path"));
       attributes.size = 0;
@@ -444,13 +444,13 @@ static void files_list(xmpp_stanza_t *stanza) {
   rc = pthread_mutex_lock(&mutex);
   wsyserr(rc != 0, "pthread_mutex_lock");
 
-  char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* error attribute */
+  const char *error_attr = xmpp_stanza_get_attribute(stanza, "error"); /* error attribute */
   werr2(error_attr == NULL, return, "There is no error attribute in files stanza");
 
   if (strcmp(error_attr, "0") != 0) {
     wlog("Error in attributes: %s", error_attr);
   } else {
-    char *path_attr = xmpp_stanza_get_attribute(stanza, "path"); /* path attribute */
+    const char *path_attr = xmpp_stanza_get_attribute(stanza, "path"); /* path attribute */
     werr2(path_attr == NULL, return, "There is no path attribute in files stanza");
 
     xmpp_stanza_t *child = xmpp_stanza_get_children(stanza);
@@ -460,7 +460,7 @@ static void files_list(xmpp_stanza_t *stanza) {
 
       elem->next = NULL;
 
-      char *name = xmpp_stanza_get_name(child);
+      const char *name = xmpp_stanza_get_name(child);
       werr2(name == NULL, return, "There is no name attribute in files stanza");
 
       if (strcmp(name, "directory") == 0) {
@@ -471,7 +471,7 @@ static void files_list(xmpp_stanza_t *stanza) {
         werr("Unknown name: %s", name);
       }
 
-      char *filename_attr = xmpp_stanza_get_attribute(child, "filename");
+      const char *filename_attr = xmpp_stanza_get_attribute(child, "filename");
       werr2(filename_attr == NULL, return, "There is no filename attribute in files stanza");
 
       elem->filename = strdup(filename_attr);

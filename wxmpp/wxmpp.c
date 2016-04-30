@@ -286,10 +286,10 @@ int ping_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *con
   global_ctx = (xmpp_ctx_t *)userdata;
   global_conn = conn;
 
-  char *from_attr = xmpp_stanza_get_attribute(stanza, "from");
+  const char *from_attr = xmpp_stanza_get_attribute(stanza, "from");
   werr2(from_attr == NULL, return 1, "Received ping without from attribute");
 
-  char *id_attr = xmpp_stanza_get_id(stanza);
+  const char *id_attr = xmpp_stanza_get_id(stanza);
   werr2(id_attr == NULL, return 1, "Received ping without id attribute from %s", from_attr);
 
   /* Send pong stanza:
@@ -313,7 +313,7 @@ static int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza
   global_ctx = (xmpp_ctx_t *)userdata;
   global_conn = conn;
 
-  char *from_attr = xmpp_stanza_get_attribute(stanza, "from");
+  const char *from_attr = xmpp_stanza_get_attribute(stanza, "from");
   werr2(from_attr == NULL, return 1, "Received presence stanza without from attribute");
 
   if (strncasecmp(owner, from_attr, strlen(owner)) != 0) {
@@ -321,7 +321,7 @@ static int presence_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza
     return 1;
   }
 
-  char *type = xmpp_stanza_get_type(stanza);
+  const char *type = xmpp_stanza_get_type(stanza);
 
   if (type == NULL) {
     /* User is online:
@@ -415,14 +415,14 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
   global_ctx = (xmpp_ctx_t *)userdata;
   global_conn = conn;
 
-  char *from_attr = xmpp_stanza_get_attribute(stanza, "from");
+  const char *from_attr = xmpp_stanza_get_attribute(stanza, "from");
   werr2(from_attr == NULL, return 1, "Received message without from attribute");
 
-  char *to_attr = xmpp_stanza_get_attribute(stanza, "to");
+  const char *to_attr = xmpp_stanza_get_attribute(stanza, "to");
   werr2(to_attr == NULL, return 1, "Received message without to attribute from %s", from_attr);
 
   /* Check for error type */
-  char *type = xmpp_stanza_get_type(stanza);
+  const char *type = xmpp_stanza_get_type(stanza);
   werr2(type != NULL && strncasecmp(type, "error", 5) == 0, return 1,
     "Got message with error type from %s", from_attr);
 
@@ -430,10 +430,10 @@ int message_handler(xmpp_conn_t *const conn, xmpp_stanza_t *const stanza, void *
   module_hander *handler;
   xmpp_stanza_t *child_stz = xmpp_stanza_get_children(stanza);
   while (child_stz != NULL) {
-    char *ns = xmpp_stanza_get_ns(child_stz);
+    const char *ns = xmpp_stanza_get_ns(child_stz);
     if (ns != NULL && strcmp(ns, WNS) == 0) {
-      char *name = xmpp_stanza_get_name(child_stz);
-      handler = (module_hander *)hashmap_get(modules, name);
+      const char *name = xmpp_stanza_get_name(child_stz);
+      handler = (module_hander *)hashmap_get(modules, (char *)name);
       if (handler != NULL) {
         (*handler)(from_attr, to_attr, 0, child_stz, global_conn, global_ctx);
       } else {

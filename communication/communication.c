@@ -777,7 +777,7 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
   }
 
   /* Get port attribute from the received stanza */
-  char *port_attr = xmpp_stanza_get_attribute(stanza, "port"); /* port attribute */
+  const char *port_attr = xmpp_stanza_get_attribute(stanza, "port"); /* port attribute */
   werr2(port_attr == NULL, return, "No port attribute in communication");
 
   /* Get the text from the received stanza */
