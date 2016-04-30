@@ -512,7 +512,7 @@ static void files_read(xmpp_stanza_t *stanza) {
   }
   else
   {
-    int dec_size = strlen(text) * 3 / 4 + 1;
+    int dec_size = base64_decoded_len(text) + 1;
     uint8_t *dec_text = (uint8_t *)calloc(dec_size, sizeof(uint8_t));
     rc = base64_decode(dec_text, text, dec_size);
     werr2(rc < 0, return, "Could not decode");

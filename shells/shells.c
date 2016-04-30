@@ -121,7 +121,7 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   /* Decode the text */
   char *decoded = NULL;
   if (text != NULL) {
-    int dec_size = stanza_to_text_len * 3 / 4 + 1; /* decoded text length */
+    int dec_size = base64_decoded_len(text) + 1; /* decoded text length */
     decoded = calloc(dec_size, sizeof(uint8_t)); /* decoded text */
     base64_decode((uint8_t *)decoded, text, dec_size);
   }

@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <limits.h>
+#include <string.h>
 //#include "utils.h"
 #include "base64.h"
 
@@ -99,4 +100,17 @@ char *base64_encode(char *out, int out_size, const uint8_t *in, int in_size)
   *dst = '\0';
 
   return ret;
+}
+
+int base64_decoded_len(const char *in)
+{
+  int in_size = (int)strlen(in);
+  int dec_size = in_size * 3 / 4;
+
+  if (in_size > 0 && in[in_size - 1] == '=')
+    --dec_size;
+  if (in_size > 1 && in[in_size - 2] == '=')
+    --dec_size;
+
+  return dec_size;
 }
