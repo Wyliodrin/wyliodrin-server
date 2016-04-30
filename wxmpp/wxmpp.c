@@ -144,6 +144,7 @@ static void update_resolv_conf();
 
 /* Connect to XMPP */
 void xmpp_connect(const char *jid, const char *pass) {
+reconnect:
   xmpp_initialize();
 
   #ifdef VERBOSE
@@ -191,7 +192,7 @@ void xmpp_connect(const char *jid, const char *pass) {
   /* Retry to connect */
   if (strcmp(board, "server") != 0) {
     sleep(CONN_INTERVAL);
-    return xmpp_connect(jid, pass);
+    goto reconnect;
   }
 }
 
