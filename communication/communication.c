@@ -791,6 +791,7 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
   int dec_size = strlen(text) * 3 / 4 + 1; /* decoded text length */
   uint8_t *decoded = (uint8_t *)calloc(dec_size, sizeof(uint8_t)); /* decoded text */
   base64_decode(decoded, text, dec_size);
+  xmpp_free(global_ctx, text);
 
   /* Form the JSON that will be published */
   char *to_publish = NULL; /* pointer to the data that will be published */
@@ -835,6 +836,8 @@ void communication(const char *from, const char *to, int error, xmpp_stanza_t *s
     }
     freeReplyObject(reply);
   }
+
+  free(decoded);
 }
 
 void publish(const char* channel, const char *data, int data_len) {

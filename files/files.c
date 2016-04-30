@@ -523,7 +523,7 @@ static void files_read(xmpp_stanza_t *stanza) {
     read_data = strdup((char *)dec_text);
     wsyserr(read_data == NULL, "strdup");
 
-    free(text);
+    xmpp_free(global_ctx, text);
     free(dec_text);
   }
 
