@@ -33,8 +33,6 @@
 
 /*** DEFINES *************************************************************************************/
 
-#define XMPP_PORT 5222 /* XMPP server port */
-
 #define CONN_INTERVAL 1 /* Time in seconds between connection attempts */
 
 /*************************************************************************************************/
@@ -168,7 +166,7 @@ void xmpp_connect(const char *jid, const char *pass) {
   /* Initiate connection in loop */
   while (1) {
     update_resolv_conf();
-    int conn_rc = xmpp_connect_client(global_conn, NULL, XMPP_PORT, conn_handler, global_ctx);
+    int conn_rc = xmpp_connect_client(global_conn, NULL, 0, conn_handler, global_ctx);
     if (conn_rc < 0) {
       werr("Attempt to connect to XMPP server failed. Retrying...");
       sleep(CONN_INTERVAL);
