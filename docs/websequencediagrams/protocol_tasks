@@ -1,0 +1,10 @@
+title Tasks manager protocol
+
+Cloud->wyliodrind: Processes status info request
+
+loop periodically
+    wyliodrind->Cloud: Processes status info
+end
+
+Cloud->wyliodrind: Kill process request
+Cloud->wyliodrind: Stop sending processes status
