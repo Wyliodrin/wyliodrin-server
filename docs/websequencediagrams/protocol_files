@@ -1,0 +1,18 @@
+title Files Protocol
+
+wyliodrind->Cloud: Get attributes for project's directory
+Cloud->wyliodrind: Attributes for project's directory
+wyliodrind->Cloud: List project's directory
+Cloud->wyliodrind: Project's directory listing
+
+loop for every entry in listing
+    alt entry is file
+        wyliodrind->Cloud: Get attributes for file listed in project's directory
+        Cloud->wyliodrind: Requested attributes
+        wyliodrind->Cloud: Get content of file listed in project's directory
+        Cloud->wyliodrind: Requested content
+    else entry is directory
+        loop follow same flow recursively
+        end
+    end
+end

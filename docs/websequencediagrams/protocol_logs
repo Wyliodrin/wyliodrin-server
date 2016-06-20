@@ -1,0 +1,12 @@
+title Log protocol
+
+loop periodically
+    note left of wyliodrind
+    The logs are buffered
+    end note
+    wyliodrind-->Cloud: Logs
+    note left of wyliodrind
+    If the POST call succeeded 
+    the buffer is emptied
+    end note
+end
