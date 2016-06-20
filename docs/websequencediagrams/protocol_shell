@@ -1,0 +1,49 @@
+title Shell protocol
+
+Cloud->wyliodrind: Shell Status Request
+note right of wyliodrind
+    The messages from wyliodrind
+    to hypervisor are transmitted 
+    via the Redis Pub/Sub channel
+    named wsrvhyp
+end note
+note left of hypervisor
+    The messages from hypervisor
+    to wyliodrind are transmitted 
+    via the Redis Pub/Sub channel
+    named whypsrv
+end note
+note over wyliodrind, hypervisor
+    The messages exchanged between
+    these two entities are packed
+    using MessagePack
+end note
+wyliodrind->hypervisor: Shell Status Handling Request
+hypervisor->wyliodrind: Shell Status Handling Response
+wyliodrind->Cloud: Shell Status Response
+
+Cloud->wyliodrind: Shell Open Request
+wyliodrind->hypervisor: Open Request Handling Request
+hypervisor->wyliodrind: Open Request Handling Response
+wyliodrind->Cloud: Shell Open Response
+
+Cloud->wyliodrind: Shell Keys Action
+wyliodrind->hypervisor: Shell Keys Action Handling Request
+hypervisor->wyliodrind: Shell Keys Action Handling Response
+wyliodrind->Cloud: Shell Keys Action
+
+Cloud->wyliodrind: Shell Resize Request
+wyliodrind->hypervisor: Shell Resize Handling Request
+
+
+Cloud->wyliodrind: Shell Disconnect Request
+wyliodrind->hypervisor: Shell Disconnect Handling Request
+
+Cloud->wyliodrind: Shell Close Request
+wyliodrind->hypervisor: Close Request Handling Request
+hypervisor->wyliodrind: Close Request Handling Response
+wyliodrind->Cloud: Shell Close Response
+
+Cloud->wyliodrind: Poweroff Request
+wyliodrind->hypervisor: Poweroff Handling Request
+

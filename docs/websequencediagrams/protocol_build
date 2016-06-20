@@ -1,0 +1,23 @@
+title Build protocol
+
+Cloud->wyliodrind: Build project Request
+
+note right of wyliodrind: Fork
+
+alt if FUSE is available
+    note over wyliodrind,Cloud: Give me files via Files Protocol
+    wyliodrind-->Cloud: 
+else
+    note over wyliodrind,Cloud: Give me files via CURL
+    wyliodrind-->Cloud:
+end
+
+note right of wyliodrind
+Separate threads take the output from
+stdout, stderr and status of the build
+command and send it to the Cloud.
+end note
+
+wyliodrind->Cloud: Project build stdout
+wyliodrind->Cloud: Project build sterr
+wyliodrind->Cloud: Project build status
