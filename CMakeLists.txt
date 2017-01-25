@@ -84,7 +84,7 @@ install (TARGETS wyliodrind DESTINATION bin)
 
 add_definitions ("-Wall -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
 
-target_link_libraries (wyliodrind
+target_link_libraries (wyliodrind dbs
   ${CMAKE_THREAD_LIBS_INIT}
   ${CURL_LIBRARIES}
   -lutil
@@ -96,7 +96,6 @@ target_link_libraries (wyliodrind
   ${STROPHE_LIBRARIES}
   ${EXPAT_LIBRARIES}
   ${OPENSSL_LIBRARIES}
-  ${CMAKE_BINARY_DIR}/libdbs.a
 )
 
 add_subdirectory (hypervisor)
