@@ -154,7 +154,7 @@ void ps(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
         xmpp_conn_t *const conn, void *const userdata) {
   wlog("ps()");
 
-  char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
+  const char *action_attr = xmpp_stanza_get_attribute(stanza, "action"); /* action attribute */
   if (action_attr == NULL) {
     werr("Error while getting action attribute");
     return;
@@ -176,7 +176,7 @@ void ps(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
 static void ps_kill(xmpp_stanza_t *stanza, xmpp_conn_t *const conn, void *const userdata) {
   wlog("ps_kill()");
 
-  char *pid_attr = xmpp_stanza_get_attribute(stanza, "pid");
+  const char *pid_attr = xmpp_stanza_get_attribute(stanza, "pid");
   if (pid_attr == NULL) {
     werr("Got kill command without pid");
     return;

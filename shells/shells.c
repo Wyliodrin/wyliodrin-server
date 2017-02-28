@@ -98,6 +98,7 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   int xmpp_stanza_to_text_rc = xmpp_stanza_to_text(stanza, &stanza_to_text,
                                                    &stanza_to_text_len);
   werr2(xmpp_stanza_to_text_rc < 0, return, "Could not convert stanza to text");
+  xmpp_free(global_ctx, stanza_to_text);
 
   /* Allocate memory for the msgpack buffer */
   char *msgpack_buf = malloc(stanza_to_text_len * sizeof(char));
@@ -120,24 +121,26 @@ void shells(const char *from, const char *to, int error, xmpp_stanza_t *stanza,
   /* Decode the text */
   char *decoded = NULL;
   if (text != NULL) {
-    int dec_size = stanza_to_text_len * 3 / 4 + 1; /* decoded text length */
+    int dec_size = base64_decoded_len(text) + 1; /* decoded text length */
     decoded = calloc(dec_size, sizeof(uint8_t)); /* decoded text */
     base64_decode((uint8_t *)decoded, text, dec_size);
   }
+  xmpp_free(global_ctx, text);
 
   /* Write map */
   werr2(!cmp_write_map(&cmp, 2 +                  /* text */
                              2 * num_attrs - 4 ), /* attributes without gadgetid and xmlns */
-        return,
+        free(decoded); return,
         "cmp_write_map error: %s", cmp_strerror(&cmp));
 
   /* Write text */
   werr2(!cmp_write_str(&cmp, "t", 1),
-        return,
+        free(decoded); return,
         "cmp_write_str error: %s", cmp_strerror(&cmp));
   werr2(!cmp_write_str(&cmp, decoded, decoded != NULL ? strlen(decoded) : 0),
-        return,
+        free(decoded); return,
         "cmp_write_str error: %s", cmp_strerror(&cmp));
+  free(decoded);
 
   /* Write attributes */
   int i;
