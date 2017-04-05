@@ -38,7 +38,23 @@
 /*** VARIABLES ***********************************************************************************/
 
 const char *board;
+const char *logout_path;
+const char *logerr_path;
+int pong_timeout = DEFAULT_PONG_TIMEOUT;
+static const char *config_file;
 
+/* Values from wyliodrin.json */
+const char *jid;
+const char *owner;
+static const char *password;
+static const char *ssid;
+static const char *psk;
+
+bool privacy = false;
+const char *nameserver;
+
+FILE *log_out;
+FILE *log_err;
 /*************************************************************************************************/
 
 
@@ -57,6 +73,13 @@ static char *get_boardtype();
  * settings_file is used to print error logs.
  */
 static bool load_content_from_settings_file(json_t *settings_json, const char *settings_file);
+
+/**
+ * Load values from config file in separate variables. Return true if every expected value is
+ * found in the config file, or false otherwise.
+ * config_file is used to print error logs.
+ */
+static bool load_content_from_config_file(json_t *config_json, const char *config_file);
 
 /*************************************************************************************************/
 
@@ -250,5 +273,41 @@ static bool load_content_from_settings_file(json_t *settings_json, const char *s
     return return_value;
 }
 
+static bool load_content_from_config_file(json_t *config_json, const char *config_file) {
+  bool return_value = false;
 
+  jid = get_str_value(config_json, "jid");
+  werr2(jid == NULL, goto _finish, "There is no jid entry in %s", config_file);
+
+  password = get_str_value(config_json, "password");
+  werr2(password == NULL, goto _finish, "There is no password entry in %s", config_file);
+
+  owner = get_str_value(config_json, "owner");
+  werr2(owner == NULL, goto _finish, "There is no owner entry in %s", config_file);
+
+  ssid = get_str_value(config_json, "ssid");
+  psk  = get_str_value(config_json, "psk");
+  nameserver = get_str_value(config_json, "nameserver");
+
+  /* Set privacy based on privacy value from wyliodrin.json (if exists) */
+  json_t *privacy_json = json_object_get(config_json, "privacy");
+  if (privacy_json != NULL && json_is_boolean(privacy_json) && json_is_true(privacy_json)) {
+    privacy = true;
+  }
+
+  const char *pong_timeout_str = get_str_value(config_json, "pong_timeout");
+  if (pong_timeout_str != NULL) {
+    char *pEnd;
+    pong_timeout = strtol(pong_timeout_str, &pEnd, 10);
+    if (pong_timeout == 0) {
+      pong_timeout = DEFAULT_PONG_TIMEOUT;
+    }
+  }
+
+  /* Success */
+  return_value = true;
+
+  _finish: ;
+    return return_value;
+}
 /*************************************************************************************************/
