@@ -13,7 +13,7 @@
 #include <jansson.h> /* json_t handling */
 #include <unistd.h>  /* read, close     */
 
-#include "../winternals/winternals.h" /* logs and errs */
+//#include "../winternals/winternals.h" /* logs and errs */
 
 #include "wjson.h" /* API */
 
@@ -39,21 +39,21 @@ json_t* file_to_json(const char *filename) {
 
 	/* Open filename */
 	int filename_fd = open(filename, O_RDONLY);
-	wsyserr2(filename_fd == -1, goto _finish, "Could not open %s", filename);
+	//wsyserr2(filename_fd == -1, goto _finish, "Could not open %s", filename);
 
 	/* Allocate memory for buffer */
 	buffer = calloc(BUFFER_SIZE, sizeof(char));
-	wsyserr2(buffer == NULL, goto _finish, "Could not allocate memory for buffer");
+	//wsyserr2(buffer == NULL, goto _finish, "Could not allocate memory for buffer");
 
 	/* Read data in buffer */
 	int read_rc = read(filename_fd, buffer, BUFFER_SIZE - 1);
-	wsyserr2(read_rc == -1, goto _finish, "Could not read from %s", filename);
-  werr2(read_rc == BUFFER_SIZE -1, goto _finish, "Json too long in %s", filename);
+	// wsyserr2(read_rc == -1, goto _finish, "Could not read from %s", filename);
+ //  werr2(read_rc == BUFFER_SIZE -1, goto _finish, "Json too long in %s", filename);
 
 	/* Convert data in json */
 	json_error_t error_json;
 	json_t *json = json_loads(buffer, 0, &error_json);
-	werr2(json == NULL, goto _finish, "Invalid json in %s: %s", filename, error_json.text);
+	//werr2(json == NULL, goto _finish, "Invalid json in %s: %s", filename, error_json.text);
 
 	/* Success */
 	return_value = json;
@@ -61,7 +61,7 @@ json_t* file_to_json(const char *filename) {
   _finish: ;
   	if (filename_fd != -1) {
 	  	int close_rc = close(filename_fd);
-	    wsyserr2(close_rc == -1, return_value = NULL, "Could not close %s", filename);
+	   // wsyserr2(close_rc == -1, return_value = NULL, "Could not close %s", filename);
   	}
 
   	if (buffer != NULL) {

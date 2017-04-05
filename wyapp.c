@@ -17,18 +17,19 @@
 #include <ctype.h>     /* tolower      */
 #include <errno.h>     /* errno        */
 #include <fcntl.h>     /* file stuff   */
-#include <signal.h>    /* SIGTERM      */
+//#include <signal.h>    /* SIGTERM      */
 #include <string.h>    /* string stuff */
 #include <sys/stat.h>  /* mkdir        */
 #include <sys/types.h> /* stat         */
 #include <sys/wait.h>  /* waitpid      */
 #include <unistd.h>    /* stat         */
+#include <stdbool.h>
 
-#include "winternals/winternals.h" /* logs and errs   */
+//#include "winternals/winternals.h" /* logs and errs   */
 #include "wjson/wjson.h"           /* json stuff      */
-#include "wtalk.h"                 /* file paths      */
+#include "wyapp.h"                 /* file paths      */
 #include "wtalk_config.h"          /* version         */
-#include "wxmpp/wxmpp.h"           /* xmpp connection */
+//#include "wxmpp/wxmpp.h"           /* xmpp connection */
 
 /*************************************************************************************************/
 
@@ -37,6 +38,7 @@
 
 /*** VARIABLES ***********************************************************************************/
 
+const char *home;
 const char *board;
 const char *logout_path;
 const char *logerr_path;
@@ -91,31 +93,31 @@ int main(int argc, char *argv[]) {
   log_out = stdout;
   log_err = stderr;
 
-  winfo("Starting wyliodrind");
+  //winfo("Starting wyliodrind");
 
   /* Catch SIGTERM */
-  if (signal(SIGTERM, signal_handler) == SIG_ERR) {
-    werr("Unable to catch SIGTERM");
-  }
+  // if (signal(SIGTERM, signal_handler) == SIG_ERR) {
+  //   werr("Unable to catch SIGTERM");
+  // }
 
   /* Get boardtype */
   board = get_boardtype();
-  werr2(board == NULL, goto _finish, "Could not get type of board");
+ // werr2(board == NULL, goto _finish, "Could not get type of board");
 
   /* Build path of settings_<boardtype>.json */
   char settings_file[128];
   int snprintf_rc = snprintf(settings_file, 128, "%s%s.json", SETTINGS_PATH, board);
-  wsyserr2(snprintf_rc < 0, goto _finish, "Could not build the settings configuration file");
-  werr2(snprintf_rc >= 128, goto _finish, "File path of settings configuration file too long");
+ // wsyserr2(snprintf_rc < 0, goto _finish, "Could not build the settings configuration file");
+  //werr2(snprintf_rc >= 128, goto _finish, "File path of settings configuration file too long");
 
 
   /* Get the content from the settings_<boardtype> file in a json_object */
   json_t *settings_json = file_to_json(settings_file);
-  werr2(settings_json == NULL, goto _finish, "Could not load JSON from %s", settings_file);
+  //werr2(settings_json == NULL, goto _finish, "Could not load JSON from %s", settings_file);
 
   /* Load content from settings_<boardtype> in variables */
   bool load_settings_rc = load_content_from_settings_file(settings_json, settings_file);
-  werr2(!load_settings_rc, goto _finish, "Invalid settings in %s", settings_file);
+ // werr2(!load_settings_rc, goto _finish, "Invalid settings in %s", settings_file);
 
 
   //TODO
@@ -135,10 +137,10 @@ int main(int argc, char *argv[]) {
   if (strncmp(board, "edison", strlen("edison")) == 0) {
     system("ls /media/storage/wyliodrin.json && umount /media/storage");
   }
-  werr2(config_json == NULL, goto _finish, "Could not load JSON from %s", config_file);
+ // werr2(config_json == NULL, goto _finish, "Could not load JSON from %s", config_file);
 
   bool load_config_rc = load_content_from_config_file(config_json, config_file);
-  werr2(!load_config_rc, goto _finish, "Invalid configuration in %s", config_file);
+ // werr2(!load_config_rc, goto _finish, "Invalid configuration in %s", config_file);
 
   //TODO
   // winfo("Starting wyliodrin-server v%d.%d with libwyliodrin v%d.%d",
@@ -151,14 +153,14 @@ int main(int argc, char *argv[]) {
 
   //xmpp_connect(jid, password);
 
-  // _finish: ;
-  //   if (log_out != stdout) {
-  //     fclose(log_out);
-  //   }
+  _finish: ;
+    if (log_out != stdout) {
+      fclose(log_out);
+    }
 
-  //   if (log_err != stderr) {
-  //     fclose(log_err);
-  //   }
+    if (log_err != stderr) {
+      fclose(log_err);
+    }
 
     /* Let it sleep for a while for error messages to be sent */
     sleep(3);
@@ -218,12 +220,12 @@ static char *get_boardtype() {
   /* Success */
   return_value = boardtype;
 
-  // _finish: ;
-  //   if (boardtype_fd != -1) {
-  //     int close_rc = close(boardtype_fd);
-  //     wsyserr2(close_rc == -1, return_value = NULL,
-  //              "Could not close %s", BOARDTYPE_PATH);
-  //   }
+  _finish: ;
+    if (boardtype_fd != -1) {
+      int close_rc = close(boardtype_fd);
+      //wsyserr2(close_rc == -1, return_value = NULL,
+              // "Could not close %s", BOARDTYPE_PATH);
+    }
 
     return return_value;
     #endif
@@ -233,29 +235,11 @@ static bool load_content_from_settings_file(json_t *settings_json, const char *s
   bool return_value = false;
 
   config_file = get_str_value(settings_json, "config_file");
-  werr2(config_file == NULL, goto _finish, "There is no config_file entry in %s", settings_file);
+  //werr2(config_file == NULL, goto _finish, "There is no config_file entry in %s", settings_file);
 
   home = get_str_value(settings_json, "home");
-  werr2(home == NULL, goto _finish, "There is no home entry in %s", settings_file);
-
-  mount_file = get_str_value(settings_json, "mount_file");
-  werr2(mount_file == NULL, goto _finish, "There is no mount_file entry in %s", settings_file);
-
-  build_file = get_str_value(settings_json, "build_file");
-  werr2(build_file == NULL, goto _finish, "There is no build_file entry in %s", settings_file);
-
-  shell = get_str_value(settings_json, "shell");
-  werr2(shell == NULL, goto _finish, "There is no shell entry in %s", settings_file);
-
-  run = get_str_value(settings_json, "run");
-  werr2(run == NULL, goto _finish, "There is no run entry in %s", settings_file);
-
-  stop = get_str_value(settings_json, "stop");
-  werr2(stop == NULL, goto _finish, "There is no stop entry in %s", settings_file);
-
-  poweroff = get_str_value(settings_json, "poweroff");
-  werr2(poweroff == NULL, goto _finish, "There is no poweroff entry in %s", settings_file);
-
+  //werr2(home == NULL, goto _finish, "There is no home entry in %s", settings_file);
+ 
   logout_path = get_str_value(settings_json, "logout");
   if (logout_path == NULL) {
     logout_path = LOCAL_STDOUT_PATH;
@@ -277,13 +261,13 @@ static bool load_content_from_config_file(json_t *config_json, const char *confi
   bool return_value = false;
 
   jid = get_str_value(config_json, "jid");
-  werr2(jid == NULL, goto _finish, "There is no jid entry in %s", config_file);
+  //werr2(jid == NULL, goto _finish, "There is no jid entry in %s", config_file);
 
   password = get_str_value(config_json, "password");
-  werr2(password == NULL, goto _finish, "There is no password entry in %s", config_file);
+  //werr2(password == NULL, goto _finish, "There is no password entry in %s", config_file);
 
   owner = get_str_value(config_json, "owner");
-  werr2(owner == NULL, goto _finish, "There is no owner entry in %s", config_file);
+ // werr2(owner == NULL, goto _finish, "There is no owner entry in %s", config_file);
 
   ssid = get_str_value(config_json, "ssid");
   psk  = get_str_value(config_json, "psk");

@@ -4,6 +4,7 @@ project (wyliodrin-server)
 set (WTALK_VERSION_MAJOR 3)
 set (WTALK_VERSION_MINOR 21)
 
+
 # file (WRITE "/etc/wyliodrin/version" "v${WTALK_VERSION_MAJOR}.${WTALK_VERSION_MINOR}\n")
 
 configure_file (
@@ -12,61 +13,32 @@ configure_file (
 )
 
 set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
-include (GNUInstallDirs)
 include (FindPkgConfig)
 include (FindEXPAT)
-include (FindOpenSSL)
 
-find_package (Threads REQUIRED)
 find_package (EXPAT REQUIRED)
 find_package (Hiredis REQUIRED)
+
 pkg_check_modules (STROPHE REQUIRED libstrophe)
 pkg_check_modules (JANSSON REQUIRED jansson)
-pkg_check_modules (FUSE REQUIRED fuse)
-pkg_check_modules (CURL REQUIRED libcurl)
-pkg_check_modules (EVENT REQUIRED libevent)
 
 include_directories (
   ${PROJECT_SOURCE_DIR}/libds
   ${PROJECT_BINARY_DIR}
-  ${FUSE_INCLUDE_DIRS}
   ${HIREDIS_INCLUDE_DIRS}
-  ${EVENT_INCLUDE_DIRS}
   ${JANSSON_INCLUDE_DIRS}
   ${STROPHE_INCLUDE_DIRS}
   ${EXPAT_INCLUDE_DIRS}
-  ${OPENSSL_INCLUDE_DIR}
-  ${CURL_INCLUDE_DIRS}
 )
 
 set (wyliodrind_SRCS
-  ${PROJECT_SOURCE_DIR}/wtalk.c
-  ${PROJECT_SOURCE_DIR}/wxmpp/wxmpp.c
-  ${PROJECT_SOURCE_DIR}/shells/shells.c
+  ${PROJECT_SOURCE_DIR}/wyapp.c
+#  ${PROJECT_SOURCE_DIR}/wxmpp/wxmpp.c
+#  ${PROJECT_SOURCE_DIR}/shells/shells.c
   ${PROJECT_SOURCE_DIR}/wjson/wjson.c
-  ${PROJECT_SOURCE_DIR}/ps/ps.c
-  ${PROJECT_SOURCE_DIR}/make/make.c
-  ${PROJECT_SOURCE_DIR}/files/files.c
-  ${PROJECT_SOURCE_DIR}/communication/communication.c
-  ${PROJECT_SOURCE_DIR}/base64/base64.c
-  ${PROJECT_SOURCE_DIR}/logs/logs.c
-  ${PROJECT_SOURCE_DIR}/cmp/cmp.c
-  ${PROJECT_SOURCE_DIR}/network/network.c
-)
-
-add_library (dbs STATIC
-  ${PROJECT_SOURCE_DIR}/libds/treetest.c
-  ${PROJECT_SOURCE_DIR}/libds/listtest.c
-  ${PROJECT_SOURCE_DIR}/libds/maptest.c
-  ${PROJECT_SOURCE_DIR}/libds/heap.c
-  ${PROJECT_SOURCE_DIR}/libds/hashmap.c
-  ${PROJECT_SOURCE_DIR}/libds/vector.c
-  ${PROJECT_SOURCE_DIR}/libds/strutiltest.c
-  ${PROJECT_SOURCE_DIR}/libds/heaptest.c
-  ${PROJECT_SOURCE_DIR}/libds/strutils.c
-  ${PROJECT_SOURCE_DIR}/libds/vectest.c
-  ${PROJECT_SOURCE_DIR}/libds/tree.c
-  ${PROJECT_SOURCE_DIR}/libds/list.c
+#  ${PROJECT_SOURCE_DIR}/base64/base64.c
+#  ${PROJECT_SOURCE_DIR}/logs/logs.c
+#  ${PROJECT_SOURCE_DIR}/cmp/cmp.c
 )
 
 if (DEVICEINTEL)
@@ -76,56 +48,24 @@ if (DEVICEINTEL)
   set(FLAGS "-DDEVICEINTEL")
 endif ()
 
-add_executable (wyliodrind
-  ${wyliodrind_SRCS}
+add_executable (wyapp
+ ${wyliodrind_SRCS}
 )
 
-install (TARGETS wyliodrind DESTINATION bin)
 
-add_definitions ("-Wall -DERR -DSHELLS -DFILES -DMAKE -DCOMMUNICATION -DPS -D_FILE_OFFSET_BITS=64")
 
-target_link_libraries (wyliodrind dbs
-  ${CMAKE_THREAD_LIBS_INIT}
-  ${CURL_LIBRARIES}
+target_link_libraries (wyapp
   -lutil
   ${HIREDIS_LIBRARIES}
-  ${EVENT_LIBRARIES}
   ${MRAA_LIBRARIES}
-  ${FUSE_LIBRARIES}
   ${JANSSON_LIBRARIES}
   ${STROPHE_LIBRARIES}
   ${EXPAT_LIBRARIES}
-  ${OPENSSL_LIBRARIES}
 )
 
-add_subdirectory (hypervisor)
+#add_subdirectory (hypervisor)
 
 option (RASPBERRYPI     "Build for the RaspberryPi."     OFF)
 option (UDOONEO         "Build for the UDOO NEO."        OFF)
 option (BEAGLEBONEBLACK "Build for the BEAGLEBONEBLACK." OFF)
 
-install (FILES setup/settings_raspberrypi.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
-install (FILES setup/settings_arduinogalileo.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
-install (FILES setup/settings_edison.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
-install (FILES setup/settings_minnowboardmax.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
-install (FILES setup/settings_udooneo.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
-install (FILES setup/settings_beagleboneblack.json DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ)
-
-if (RASPBERRYPI)
-  install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
-  install (FILES setup/boardtype_raspberrypi DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ RENAME boardtype)
-  install (FILES setup/wyliodrin-server-raspberrypi.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
-  install (FILES setup/interfaces_raspberrypi DESTINATION /etc/network/ PERMISSIONS WORLD_READ RENAME interfaces)
-endif ()
-
-if (UDOONEO)
-  install (FILES scripts/setup_wifi_rpi DESTINATION bin/ PERMISSIONS WORLD_READ WORLD_EXECUTE)
-  install (FILES setup/wyliodrin-server-udooneo.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
-  install (FILES setup/boardtype_udooneo DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ RENAME boardtype)
-  install (FILES setup/udooer_nopasswd DESTINATION /etc/sudoers.d/ PERMISSIONS WORLD_READ)
-endif ()
-
-if (BEAGLEBONEBLACK)
-  install (FILES setup/wyliodrin-server-beagleboneblack.conf DESTINATION /etc/supervisor/conf.d/ PERMISSIONS WORLD_READ)
-  install (FILES setup/boardtype_beagleboneblack DESTINATION /etc/wyliodrin/ PERMISSIONS WORLD_READ RENAME boardtype)
-endif ()
